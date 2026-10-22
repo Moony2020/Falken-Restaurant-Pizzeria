@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ClockIcon, MailIcon, PhoneIcon, PinIcon } from "@/components/icons";
+import { MapEmbed } from "@/components/map-embed";
 import { OpenStatus } from "@/components/open-status";
 import { BannerArt } from "@/components/banner-art";
 import { PageBanner } from "@/components/page-banner";
@@ -8,6 +9,7 @@ import { buttonClass, eyebrow } from "@/components/ui";
 import {
   contactHeroImage,
   CURRENT_SEASON,
+  dagensLunch,
   hoursDisplay,
   mapsUrl,
   PREP_MINUTES,
@@ -105,7 +107,9 @@ export default function KontaktPage() {
                 <span className="block text-[0.65rem] uppercase tracking-[0.18em] text-ivory/60">
                   {label}
                 </span>
-                <span className="block text-sm font-semibold">{value}</span>
+                <span className="block whitespace-nowrap text-sm font-semibold">
+                  {value}
+                </span>
               </span>
             </li>
           ))}
@@ -223,7 +227,82 @@ export default function KontaktPage() {
         </section>
       </div>
 
-      <section aria-labelledby="faq-title" className="bg-cream py-16 sm:py-20">
+      <section aria-labelledby="lunch-title" className="wrap pb-14 sm:pb-20">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="flex gap-4 rounded-2xl border border-line bg-white p-6 shadow-card">
+            <span className="grid size-12 shrink-0 place-items-center rounded-full bg-cream text-gold-deep">
+              <ClockIcon className="size-5" />
+            </span>
+            <div>
+              <h2
+                id="lunch-title"
+                className="font-display text-2xl font-semibold"
+              >
+                Dagens lunch · {dagensLunch.price} kr
+              </h2>
+              <p className="mt-1 text-sm text-muted">
+                {dagensLunch.days} {dagensLunch.time}. {dagensLunch.includes}
+              </p>
+              <Link
+                href="/meny#lunch"
+                className="mt-3 inline-block text-sm font-semibold text-gold-deep underline underline-offset-4"
+              >
+                Se vad du kan välja
+              </Link>
+            </div>
+          </div>
+          <div className="flex gap-4 rounded-2xl border border-line bg-white p-6 shadow-card">
+            <span className="grid size-12 shrink-0 place-items-center rounded-full bg-cream text-gold-deep">
+              <PhoneIcon className="size-5" />
+            </span>
+            <div>
+              <h2 className="font-display text-2xl font-semibold">
+                Avhämtning
+              </h2>
+              <p className="mt-1 text-sm text-muted">
+                Klart efter ca {PREP_MINUTES} minuter. Beställ online och välj
+                hämtningstid, eller ring oss på {site.phone}.
+              </p>
+              <Link
+                href="/meny"
+                className="mt-3 inline-block text-sm font-semibold text-gold-deep underline underline-offset-4"
+              >
+                Beställ online
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="map-title" className="bg-cream py-14 sm:py-20">
+        <div className="wrap">
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className={eyebrow}>Karta &amp; besök</p>
+              <h2
+                id="map-title"
+                className="mt-1 text-4xl font-medium uppercase sm:text-5xl"
+              >
+                Hitta till Falken
+              </h2>
+            </div>
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonClass("ink")}
+            >
+              Få vägbeskrivning
+            </a>
+          </div>
+          <MapEmbed />
+          <p className="mt-4 text-sm text-muted">
+            {site.address.street}, {site.address.zip} {site.address.city}
+          </p>
+        </div>
+      </section>
+
+      <section aria-labelledby="faq-title" className="py-16 sm:py-20">
         <div className="wrap max-w-3xl">
           <p className={eyebrow}>Vanliga frågor</p>
           <h2
