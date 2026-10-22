@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { IF_UNAVAILABLE } from "../data/modifier-groups.ts";
 
 // What a browser is allowed to send. There is deliberately no price, name, total or status field:
 // strictObject rejects any unknown key, so a tampered request fails validation instead of being half-trusted.
@@ -15,6 +16,8 @@ export const cartItemSchema = z.strictObject({
     .max(10)
     .default([]),
   note: z.string().max(200).default(""),
+  /** What to do if part of the dish can't be made. Kitchen instruction only; never affects price. */
+  ifUnavailable: z.enum(IF_UNAVAILABLE).default("call"),
 });
 
 export const cartSchema = z.strictObject({

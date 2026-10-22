@@ -2,7 +2,7 @@ import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { cartStore, lineKey, MAX_LINE_QUANTITY } from "../src/lib/cart-store.ts";
 
-const base = { productSlug: "vesuvio", variantId: "normal", removed: [], modifiers: [], note: "", quantity: 1 };
+const base = { productSlug: "vesuvio", variantId: "normal", removed: [], modifiers: [], note: "", ifUnavailable: "call" as const, quantity: 1 };
 
 beforeEach(() => cartStore.clear());
 

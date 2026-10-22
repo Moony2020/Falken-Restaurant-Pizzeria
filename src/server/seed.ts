@@ -73,6 +73,7 @@ export async function seedCatalog(): Promise<SeedResult> {
           $setOnInsert: {
             slug: "glutenfri-deg",
             labelSv: "Glutenfri pizzadeg",
+            groupSlug: "glutenfri",
             priceByVariantSek: { normal: GLUTEN_FREE_SURCHARGE, familj: GLUTEN_FREE_SURCHARGE },
             maxQty: 1,
             compatibleCategories: ["pizza", "kebabpizza"],

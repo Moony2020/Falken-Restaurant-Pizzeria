@@ -1,3 +1,4 @@
+import { groupOfModifier, MODIFIER_GROUPS, type ModifierGroupDef } from "../data/modifier-groups.ts";
 import { GLUTEN_FREE_SLUG, type PublicMenu, type PublicModifier, type PublicProduct } from "./menu-types.ts";
 
 // Pure helpers for the menu returned by GET /api/menu. No fallback prices exist anywhere in the browser:
@@ -31,11 +32,33 @@ export async function loadMenu(fetchImpl: typeof fetch = fetch): Promise<MenuLoa
 /** A product can be ordered if at least one size is both available and price-confirmed. */
 export const isOrderable = (p: PublicProduct): boolean => p.variants.some((v) => v.orderable);
 
-/** Extras the customer may pick for this product: only ones the server lists (active, price confirmed). */
+/** Extras the customer may pick for this product: ones the server lists, for this dish's category. */
 export function modifiersFor(product: PublicProduct, menu: PublicMenu): PublicModifier[] {
-  const allowed = new Set(product.modifierSlugs);
-  if (product.glutenFreeOption) allowed.add(GLUTEN_FREE_SLUG);
-  return menu.modifiers.filter((m) => allowed.has(m.slug) && m.compatibleCategories.includes(product.category));
+  return menu.modifiers.filter(
+    (m) => m.compatibleCategories.includes(product.category) && (m.slug !== GLUTEN_FREE_SLUG || product.glutenFreeOption),
+  );
+}
+
+export type ModifierGroupView = { def: ModifierGroupDef; items: PublicModifier[] };
+
+/** The option groups shown in the customiser, in display order. A group with no extras is left out. */
+export function groupsFor(product: PublicProduct, menu: PublicMenu): ModifierGroupView[] {
+  const available = modifiersFor(product, menu);
+  return [...MODIFIER_GROUPS]
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((def) => ({ def, items: available.filter((m) => groupOfModifier(m.slug, m.group) === def.slug) }))
+    .filter((g) => g.items.length > 0);
+}
+
+/**
+ * Picking `slug` while `chosen` is already selected. A "single" group swaps its previous choice; a full "multi"
+ * group refuses a further one. Returns the new selection (unchanged when refused).
+ */
+export function toggleModifier(chosen: string[], slug: string, view: ModifierGroupView): string[] {
+  if (chosen.includes(slug)) return chosen.filter((s) => s !== slug);
+  const inGroup = chosen.filter((s) => view.items.some((m) => m.slug === s));
+  if (view.def.kind === "single") return [...chosen.filter((s) => !inGroup.includes(s)), slug];
+  return inGroup.length >= view.def.max ? chosen : [...chosen, slug];
 }
 
 /** Price of a modifier for one size, or undefined when the owner hasn't priced it for that size. */

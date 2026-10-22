@@ -145,12 +145,13 @@ function pizza(
   name: string,
   ing: string,
   tier: Tier,
-  opts: { noBase?: boolean; review?: string; featured?: boolean; unconfirmed?: string[] } = {},
+  opts: { noBase?: boolean; review?: string; featured?: boolean; unconfirmed?: string[]; singleSize?: boolean } = {},
 ): Product {
   const [group, normal, familj] = TIERS[tier];
   const unconfirmed = new Set(opts.unconfirmed);
   if (tier === "k3") unconfirmed.add("normal"); // 130 kr or 125 kr: the two menus disagree
-  if (opts.review === closedReview) unconfirmed.add("familj"); // family size of a closed pizza is unconfirmed
+  // Family size of the other closed pizzas is unconfirmed. A calzone has no family size at all (owner, 2026-10-22).
+  if (opts.review === closedReview && !opts.singleSize) unconfirmed.add("familj");
   const own = list(ing);
   const house = own[0].toLowerCase().startsWith("husets tomatsås");
   return {
@@ -160,7 +161,7 @@ function pizza(
     category: "pizza",
     group,
     ingredients: house || opts.noBase ? own : ["Tomatsås", "Ost", ...own],
-    variants: sizes(normal, familj),
+    variants: opts.singleSize ? sizes(normal, familj).slice(0, 1) : sizes(normal, familj),
     glutenFreeOption: true,
     featured: opts.featured,
     review: opts.review,
@@ -172,7 +173,7 @@ const closedReview = "Familjestorlek för inbakad/halvinbakad pizza behöver bek
 
 const pizzas: Product[] = [
   pizza(1, "Vesuvio", "skinka", "k1"),
-  pizza(2, "Calzone", "skinka", "k1", { review: closedReview }),
+  pizza(2, "Calzone", "skinka", "k1", { singleSize: true }),
   pizza(3, "Bolognese", "köttfärs", "k1"),
   pizza(4, "Margherita", "tomat, ost", "k1", { noBase: true }),
 
@@ -180,7 +181,7 @@ const pizzas: Product[] = [
   pizza(6, "La Busola", "skinka, räkor", "k2"),
   pizza(7, "Bari", "skinka, tonfisk", "k2"),
   pizza(8, "Marinara", "musslor, räkor", "k2"),
-  pizza(9, "Calzone Special", "skinka, räkor", "k2", { review: closedReview }),
+  pizza(9, "Calzone Special", "skinka, räkor", "k2", { singleSize: true }),
   pizza(10, "La Mafia", "bacon, lök", "k2"),
   pizza(11, "Cacciatora", "pepperoni salami", "k2"),
   pizza(12, "Romana", "räkor, champinjoner", "k2"),

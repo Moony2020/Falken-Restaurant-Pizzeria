@@ -23,6 +23,8 @@ export type PublicProduct = {
 export type PublicModifier = {
   slug: string;
   label: string;
+  /** Customiser group this extra belongs to (see data/modifier-groups.ts). */
+  group: string;
   priceByVariantSek: Record<string, number>;
   maxQty: number;
   compatibleCategories: string[];

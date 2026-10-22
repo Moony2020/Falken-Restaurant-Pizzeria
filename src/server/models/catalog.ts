@@ -72,6 +72,8 @@ const modifierSchema = new Schema(
   {
     slug: { type: String, required: true, unique: true, trim: true },
     labelSv: { type: String, required: true, trim: true },
+    /** Which customiser group the extra appears in (see data/modifier-groups.ts). Older documents have none. */
+    groupSlug: { type: String },
     priceByVariantSek: {
       type: Map,
       of: sek,
@@ -117,6 +119,7 @@ export type ProductDoc = {
 export type ModifierDoc = {
   slug: string;
   labelSv: string;
+  groupSlug?: string;
   priceByVariantSek: Map<string, number>;
   maxQty: number;
   compatibleCategories: string[];

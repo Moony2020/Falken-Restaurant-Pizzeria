@@ -11,6 +11,7 @@ const line = (over: Partial<CartLine> = {}): CartLine => ({
   removed: [],
   modifiers: [],
   note: "",
+  ifUnavailable: "call",
   quantity: 1,
   ...over,
 });
@@ -31,7 +32,7 @@ const respond = (status: number, body: unknown, headers: Record<string, string> 
 describe("what the browser sends for pricing", () => {
   test("only choices are sent: no price, total, name or seen total", () => {
     const items = toPayloadItems([line({ seenTotalSek: 1, modifiers: [{ slug: "glutenfri-deg", quantity: 1 }] })]);
-    assert.deepEqual(Object.keys(items[0]).sort(), ["modifiers", "note", "productSlug", "quantity", "removedIngredients", "variantId"]);
+    assert.deepEqual(Object.keys(items[0]).sort(), ["ifUnavailable", "modifiers", "note", "productSlug", "quantity", "removedIngredients", "variantId"]);
     assert.ok(!/price|total/i.test(JSON.stringify(items)));
   });
 });
@@ -122,7 +123,7 @@ describe("pricing store (no React)", () => {
   });
 
   test("prices the cart on the server, remembers the first price, then flags a later change", async () => {
-    cartStore.add({ productSlug: "vesuvio", variantId: "normal", removed: [], modifiers: [], note: "", quantity: 1 });
+    cartStore.add({ productSlug: "vesuvio", variantId: "normal", removed: [], modifiers: [], note: "", ifUnavailable: "call" as const, quantity: 1 });
     const stop = cartPricingStore.subscribe(() => {});
     try {
       await sleep(400);
@@ -148,13 +149,13 @@ describe("pricing store (no React)", () => {
   });
 
   test("re-prices when the cart changes, and only once per burst of changes", async () => {
-    cartStore.add({ productSlug: "vesuvio", variantId: "normal", removed: [], modifiers: [], note: "", quantity: 1 });
+    cartStore.add({ productSlug: "vesuvio", variantId: "normal", removed: [], modifiers: [], note: "", ifUnavailable: "call" as const, quantity: 1 });
     const stop = cartPricingStore.subscribe(() => {});
     try {
       await sleep(400);
       const before = calls.length;
-      cartStore.add({ productSlug: "hawaii", variantId: "normal", removed: [], modifiers: [], note: "", quantity: 1 });
-      cartStore.add({ productSlug: "disco", variantId: "normal", removed: [], modifiers: [], note: "", quantity: 1 });
+      cartStore.add({ productSlug: "hawaii", variantId: "normal", removed: [], modifiers: [], note: "", ifUnavailable: "call" as const, quantity: 1 });
+      cartStore.add({ productSlug: "disco", variantId: "normal", removed: [], modifiers: [], note: "", ifUnavailable: "call" as const, quantity: 1 });
       await sleep(450);
       assert.equal(calls.length, before + 1);
       assert.equal(calls.at(-1)?.items.length, 3);

@@ -111,7 +111,9 @@ describe("orders + pricing on a local test database", { skip: !uri ? "MONGODB_UR
     });
 
     test("closed-pizza Familj and the falafel dishes are refused", async () => {
-      assert.deepEqual(await pricingCodes(createOrder(body([item({ productSlug: "calzone", variantId: "familj" })]), NOW)), ["price_unconfirmed"]);
+      assert.deepEqual(await pricingCodes(createOrder(body([item({ productSlug: "ingela", variantId: "familj" })]), NOW)), ["price_unconfirmed"]);
+      // A calzone has no family size at all, so asking for one is simply an unknown size.
+      assert.deepEqual(await pricingCodes(createOrder(body([item({ productSlug: "calzone", variantId: "familj" })]), NOW)), ["unknown_variant"]);
       assert.ok((await createOrder(body([item({ productSlug: "calzone" })]), NOW)).order.totalSek === 110);
       assert.deepEqual(await pricingCodes(createOrder(body([item({ productSlug: "falafelrulle", variantId: "standard" })]), NOW)), ["price_unconfirmed"]);
     });

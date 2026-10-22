@@ -2,6 +2,8 @@
 // It stores no prices that anyone relies on. Every price shown or charged is computed by the server.
 // `seenTotalSek` is the last line total the customer saw, kept only to warn them if it later changes.
 
+import type { IfUnavailable } from "../data/modifier-groups.ts";
+
 export type CartModifier = { slug: string; quantity: number };
 
 export type CartLine = {
@@ -11,6 +13,7 @@ export type CartLine = {
   removed: string[];
   modifiers: CartModifier[];
   note: string;
+  ifUnavailable: IfUnavailable;
   quantity: number;
   seenTotalSek?: number;
 };
@@ -27,7 +30,7 @@ const listeners = new Set<() => void>();
 
 export function lineKey(l: NewLine): string {
   const mods = [...l.modifiers].sort((a, b) => a.slug.localeCompare(b.slug)).map((m) => `${m.slug}:${m.quantity}`);
-  return [l.productSlug, l.variantId, mods.join(","), [...l.removed].sort().join(","), l.note.trim().toLowerCase()].join("|");
+  return [l.productSlug, l.variantId, mods.join(","), [...l.removed].sort().join(","), l.note.trim().toLowerCase(), l.ifUnavailable].join("|");
 }
 
 const isSlug = (v: unknown): v is string => typeof v === "string" && /^[a-z0-9-]{1,80}$/.test(v);
@@ -43,6 +46,7 @@ function isValid(l: unknown): l is CartLine {
     Array.isArray(c.modifiers) &&
     c.modifiers.every((m) => m && isSlug(m.slug) && Number.isInteger(m.quantity) && m.quantity > 0) &&
     typeof c.note === "string" &&
+    (c.ifUnavailable === undefined || ["call", "remove_item", "cancel_order"].includes(c.ifUnavailable)) &&
     Number.isInteger(c.quantity) &&
     c.quantity > 0 &&
     (c.seenTotalSek === undefined || Number.isInteger(c.seenTotalSek))
@@ -57,7 +61,11 @@ function load() {
     if (!raw) return;
     const parsed: unknown = JSON.parse(raw);
     if (Array.isArray(parsed)) {
-      lines = parsed.filter(isValid).map((l) => ({ ...l, key: lineKey(l), quantity: Math.min(l.quantity, MAX_LINE_QUANTITY) }));
+      // Carts saved before the "if unavailable" choice existed get the default.
+      lines = parsed
+        .filter(isValid)
+        .map((l) => ({ ...l, ifUnavailable: l.ifUnavailable ?? "call" }))
+        .map((l) => ({ ...l, key: lineKey(l), quantity: Math.min(l.quantity, MAX_LINE_QUANTITY) }));
     }
   } catch {
     // Corrupt or blocked storage: start with an empty cart.

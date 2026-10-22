@@ -52,7 +52,9 @@ describe("seed + persistence (local test database)", { skip: !uri ? "MONGODB_URI
     assert.equal(await status("vegetariana", "familj"), "confirmed");
     assert.equal(await status("lucas-special", "normal"), "needs_review");
     assert.equal(await status("lucas-special", "familj"), "needs_review");
-    assert.equal(await status("calzone", "familj"), "needs_review"); // closed pizza family size
+    assert.equal(await status("ingela", "familj"), "needs_review"); // closed pizza family size
+    assert.equal(await status("ingela", "normal"), "confirmed");
+    assert.equal(await status("calzone", "familj"), undefined); // a calzone has no family size
     assert.equal(await status("calzone", "normal"), "confirmed");
     assert.equal(await status("falafelrulle", "standard"), "needs_review");
     assert.equal(await status("kebabtallrik", "standard"), "confirmed");

@@ -1,4 +1,5 @@
 import type { CartInput } from "./cart-schema.ts";
+import { groupOfModifier, MODIFIER_GROUPS } from "../data/modifier-groups.ts";
 import { GLUTEN_FREE_SLUG } from "./models/constants.ts";
 import type { OrderDoc } from "./models/order.ts";
 
@@ -23,6 +24,7 @@ export type CatalogCategory = { slug: string; removable: boolean; active: boolea
 export type CatalogModifier = {
   slug: string;
   labelSv: string;
+  groupSlug?: string;
   priceByVariantSek: Record<string, number>;
   maxQty: number;
   compatibleCategories: string[];
@@ -49,7 +51,8 @@ export type IssueCode =
   | "modifier_not_allowed"
   | "modifier_price_unconfirmed"
   | "modifier_quantity"
-  | "duplicate_modifier";
+  | "duplicate_modifier"
+  | "group_limit";
 
 export type PricingIssue = { index: number; code: IssueCode; message: string };
 export type PricedLine = OrderDoc["items"][number];
@@ -104,6 +107,7 @@ export function priceCart(cart: CartInput, catalog: Catalog): PricingResult {
     // Paid extras and gluten-free dough.
     const modifiersSnapshot: PricedLine["modifiersSnapshot"] = [];
     const seen = new Set<string>();
+    const groupTotals = new Map<string, number>();
     for (const m of item.modifiers) {
       if (seen.has(m.slug)) {
         issue("duplicate_modifier", `"${m.slug}" is listed twice; send one entry with a quantity`);
@@ -116,8 +120,9 @@ export function priceCart(cart: CartInput, catalog: Catalog): PricingResult {
         issue("unknown_modifier", `Unknown extra "${m.slug}"`);
         continue;
       }
-      const allowedForProduct =
-        product.modifierSlugs.includes(m.slug) || (m.slug === GLUTEN_FREE_SLUG && product.glutenFreeOption);
+      // An extra is allowed on every dish of the categories the owner assigned it to; gluten-free dough also
+      // needs a dish that offers it.
+      const allowedForProduct = m.slug !== GLUTEN_FREE_SLUG || product.glutenFreeOption;
       if (!allowedForProduct || !modifier.compatibleCategories.includes(product.categorySlug)) {
         issue("modifier_not_allowed", `${modifier.labelSv} is not available for ${product.nameSv}`);
         continue;
@@ -136,6 +141,13 @@ export function priceCart(cart: CartInput, catalog: Catalog): PricingResult {
         continue;
       }
       modifiersSnapshot.push({ modifierSlug: modifier.slug, labelSv: modifier.labelSv, priceSek: price, quantity: m.quantity });
+      const group = groupOfModifier(modifier.slug, modifier.groupSlug);
+      groupTotals.set(group, (groupTotals.get(group) ?? 0) + m.quantity);
+    }
+    // Per-group limits (e.g. at most one gluten-free choice, at most 10 extras), enforced here, not just in the form.
+    for (const [slug, total] of groupTotals) {
+      const def = MODIFIER_GROUPS.find((g) => g.slug === slug);
+      if (def && total > def.max) issue("group_limit", `At most ${def.max} choice(s) in "${def.titleSv}"`);
     }
 
     if (issues.some((i) => i.index === index)) return;
@@ -150,6 +162,7 @@ export function priceCart(cart: CartInput, catalog: Catalog): PricingResult {
       modifiersSnapshot,
       removedIngredients: removed,
       note: sanitizeNote(item.note),
+      ifUnavailable: item.ifUnavailable,
       quantity: item.quantity,
       lineTotalSek: (variant.priceSek + extras) * item.quantity,
     });

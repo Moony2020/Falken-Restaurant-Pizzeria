@@ -1,4 +1,5 @@
 import { CategoryModel, ModifierModel, ProductModel } from "./models/catalog.ts";
+import { groupOfModifier } from "../data/modifier-groups.ts";
 import type { PublicMenu } from "../lib/menu-types.ts";
 import type { Catalog, CatalogCategory, CatalogModifier, CatalogProduct } from "./pricing-engine.ts";
 
@@ -24,6 +25,7 @@ export async function loadCatalogForCart(productSlugs: string[], modifierSlugs: 
         {
           slug: m.slug,
           labelSv: m.labelSv,
+          groupSlug: m.groupSlug,
           // lean() returns the Map as a plain object.
           priceByVariantSek: (m.priceByVariantSek instanceof Map ? Object.fromEntries(m.priceByVariantSek) : m.priceByVariantSek) as Record<string, number>,
           maxQty: m.maxQty,
@@ -75,6 +77,7 @@ export async function getPublicMenu(): Promise<PublicMenu> {
     modifiers: modifiers.map((m) => ({
       slug: m.slug,
       label: m.labelSv,
+      group: groupOfModifier(m.slug, m.groupSlug),
       priceByVariantSek: (m.priceByVariantSek instanceof Map ? Object.fromEntries(m.priceByVariantSek) : m.priceByVariantSek) as Record<string, number>,
       maxQty: m.maxQty,
       compatibleCategories: m.compatibleCategories,

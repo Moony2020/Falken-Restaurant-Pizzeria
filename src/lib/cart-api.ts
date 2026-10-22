@@ -31,6 +31,7 @@ export function toPayloadItems(lines: CartLine[]) {
     removedIngredients: l.removed,
     modifiers: l.modifiers,
     note: l.note,
+    ifUnavailable: l.ifUnavailable,
   }));
 }
 

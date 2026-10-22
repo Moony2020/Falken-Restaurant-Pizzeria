@@ -35,6 +35,7 @@ const itemSchema = new Schema(
     modifiersSnapshot: { type: [modifierSnapshotSchema], default: [] },
     removedIngredients: { type: [String], default: [] },
     note: { type: String, maxlength: 200, default: "" },
+    ifUnavailable: { type: String, enum: ["call", "remove_item", "cancel_order"], default: "call" },
     quantity: { type: Number, required: true, min: 1, max: 20, validate: Number.isInteger },
     lineTotalSek: sek,
   },
@@ -102,6 +103,7 @@ export type OrderDoc = {
     modifiersSnapshot: { modifierSlug: string; labelSv: string; priceSek: number; quantity: number }[];
     removedIngredients: string[];
     note: string;
+    ifUnavailable: "call" | "remove_item" | "cancel_order";
     quantity: number;
     lineTotalSek: number;
   }[];

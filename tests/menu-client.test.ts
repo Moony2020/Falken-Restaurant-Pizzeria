@@ -38,9 +38,11 @@ const menu: PublicMenu = {
   categories: [{ slug: "pizza", name: "Pizza", blurb: "", removable: true }],
   products: [vesuvio, vegetariana, tallrik, flagged],
   modifiers: [
-    { slug: "glutenfri-deg", label: "Glutenfri pizzadeg", priceByVariantSek: { normal: 30, familj: 30 }, maxQty: 1, compatibleCategories: ["pizza", "kebabpizza"] },
+    { slug: "glutenfri-deg", label: "Glutenfri pizzadeg", group: "glutenfri", priceByVariantSek: { normal: 30, familj: 30 }, maxQty: 1, compatibleCategories: ["pizza", "kebabpizza"] },
     // An owner-defined extra priced only for Normal: used to test size-specific availability.
-    { slug: "extra-ost", label: "Extra ost", priceByVariantSek: { normal: 20 }, maxQty: 2, compatibleCategories: ["pizza"] },
+    { slug: "extra-ost", label: "Extra ost", group: "extra", priceByVariantSek: { normal: 20 }, maxQty: 2, compatibleCategories: ["pizza"] },
+    { slug: "bacon", label: "Bacon", group: "extra", priceByVariantSek: { normal: 20, familj: 25 }, maxQty: 1, compatibleCategories: ["pizza"] },
+    { slug: "vitlokssas", label: "Vitlökssås", group: "saser", priceByVariantSek: { normal: 10, familj: 10 }, maxQty: 1, compatibleCategories: ["pizza", "kebab"] },
   ],
 };
 
@@ -93,13 +95,14 @@ describe("orderable sizes", () => {
 
 describe("pizza customisation", () => {
   test("gluten-free is offered only for products that support it", () => {
-    assert.deepEqual(modifiersFor(vesuvio, menu).map((m) => m.slug), ["glutenfri-deg"]);
-    assert.deepEqual(modifiersFor(tallrik, menu), []);
+    assert.ok(modifiersFor(vesuvio, menu).some((m) => m.slug === "glutenfri-deg"));
+    assert.ok(!modifiersFor({ ...vesuvio, glutenFreeOption: false }, menu).some((m) => m.slug === "glutenfri-deg"));
+    assert.deepEqual(modifiersFor(tallrik, menu).map((m) => m.slug), ["vitlokssas"]); // only what its category allows
   });
 
-  test("an extra the product doesn't list is not offered", () => {
-    assert.ok(!modifiersFor(vesuvio, menu).some((m) => m.slug === "extra-ost"));
-    assert.ok(modifiersFor({ ...vesuvio, modifierSlugs: ["extra-ost"] }, menu).some((m) => m.slug === "extra-ost"));
+  test("extras follow the category the owner assigned them to", () => {
+    assert.ok(modifiersFor(vesuvio, menu).some((m) => m.slug === "extra-ost"));
+    assert.ok(!modifiersFor(tallrik, menu).some((m) => m.slug === "extra-ost"));
   });
 
   test("Normal + gluten-free = 140, Familj + gluten-free = 295", () => {
