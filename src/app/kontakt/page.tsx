@@ -274,35 +274,7 @@ export default function KontaktPage() {
         </div>
       </section>
 
-      <section aria-labelledby="map-title" className="bg-cream py-14 sm:py-20">
-        <div className="wrap">
-          <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className={eyebrow}>Karta &amp; besök</p>
-              <h2
-                id="map-title"
-                className="mt-1 text-4xl font-medium uppercase sm:text-5xl"
-              >
-                Hitta till Falken
-              </h2>
-            </div>
-            <a
-              href={mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={buttonClass("ink")}
-            >
-              Få vägbeskrivning
-            </a>
-          </div>
-          <MapEmbed />
-          <p className="mt-4 text-sm text-muted">
-            {site.address.street}, {site.address.zip} {site.address.city}
-          </p>
-        </div>
-      </section>
-
-      <section aria-labelledby="faq-title" className="py-16 sm:py-20">
+      <section aria-labelledby="faq-title" className="bg-cream py-16 sm:py-20">
         <div className="wrap max-w-3xl">
           <p className={eyebrow}>Vanliga frågor</p>
           <h2
@@ -328,6 +300,34 @@ export default function KontaktPage() {
               </details>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="map-title" className="py-14 sm:py-20">
+        <div className="wrap">
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className={eyebrow}>Karta &amp; besök</p>
+              <h2
+                id="map-title"
+                className="mt-1 text-4xl font-medium uppercase sm:text-5xl"
+              >
+                Hitta till Falken
+              </h2>
+            </div>
+            <a
+              href={mapsUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonClass("ink")}
+            >
+              Få vägbeskrivning
+            </a>
+          </div>
+          <MapEmbed />
+          <p className="mt-4 text-sm text-muted">
+            {site.address.street}, {site.address.zip} {site.address.city}
+          </p>
         </div>
       </section>
     </>
