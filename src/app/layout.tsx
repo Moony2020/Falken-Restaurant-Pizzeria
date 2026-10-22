@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
+import { Suspense } from "react";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
 import { CartDrawer } from "@/components/order/cart-drawer";
@@ -71,7 +72,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           >
             Hoppa till innehållet
           </a>
-          <Header />
+          {/* The header reads the current path, which a page with a dynamic order number only knows at request time. */}
+          <Suspense fallback={<div className="h-20 bg-ink-2 sm:h-24" aria-hidden="true" />}>
+            <Header />
+          </Suspense>
           <main id="innehall" className="flex-1">
             {children}
           </main>

@@ -52,6 +52,6 @@ export function guardWrite(request: Request, bucket: string, limit: number): Res
 /** Unexpected failure: log the cause server-side, tell the client nothing about internals. */
 export function serverError(err: unknown): Response {
   console.error("API error:", err instanceof Error ? err.message : "unknown");
-  const unavailable = err instanceof Error && /Invalid server environment|ECONNREFUSED|ServerSelection|buffering timed out/i.test(err.message);
+  const unavailable = err instanceof Error && /Invalid server environment|Invalid payments configuration|ECONNREFUSED|ServerSelection|buffering timed out/i.test(err.message);
   return json({ error: unavailable ? "service_unavailable" : "internal_error" }, unavailable ? 503 : 500);
 }

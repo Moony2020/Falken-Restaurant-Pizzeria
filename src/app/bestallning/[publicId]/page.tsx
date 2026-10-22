@@ -1,0 +1,27 @@
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import { OrderStatus } from "@/components/order/order-status";
+import { PageBanner } from "@/components/page-banner";
+
+export const metadata: Metadata = {
+  title: "Din beställning",
+  robots: { index: false, follow: false },
+};
+
+// One placeholder so the page shell can be built ahead of time; every real order number is rendered when asked for.
+export function generateStaticParams() {
+  return [{ publicId: "placeholder" }];
+}
+
+export default function BestallningPage() {
+  return (
+    <>
+      <PageBanner eyebrow="Avhämtning" title="Din beställning" text="Här ser du om din betalning är bekräftad." />
+      <div className="wrap max-w-2xl py-12 sm:py-16">
+        <Suspense fallback={<p role="status" className="text-muted">Hämtar din beställning…</p>}>
+          <OrderStatus />
+        </Suspense>
+      </div>
+    </>
+  );
+}

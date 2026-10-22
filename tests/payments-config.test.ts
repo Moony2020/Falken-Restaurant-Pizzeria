@@ -22,7 +22,7 @@ const throwsWithout = (fn: () => unknown, secret: string) => {
 describe("payments configuration (test mode only)", () => {
   test("empty configuration is valid: nothing connected yet", () => {
     const c = getPaymentsConfig({});
-    assert.deepEqual(c, { mode: "test", stripe: null, paypal: null });
+    assert.deepEqual(c, { mode: "test", enabled: false, siteUrl: undefined, stripe: null, paypal: null });
   });
 
   test("Stripe TEST keys are accepted", () => {
@@ -45,6 +45,18 @@ describe("payments configuration (test mode only)", () => {
   test("malformed Stripe values are refused", () => {
     assert.throws(() => getPaymentsConfig({ STRIPE_SECRET_KEY: "not-a-key" }), /TEST mode key/);
     assert.throws(() => getPaymentsConfig({ STRIPE_WEBHOOK_SECRET: "nope" }), /whsec_/);
+  });
+
+  test("payments are off unless PAYMENTS_ENABLED=true, and the flag is validated", () => {
+    assert.equal(getPaymentsConfig({}).enabled, false);
+    assert.equal(getPaymentsConfig({ PAYMENTS_ENABLED: "false" }).enabled, false);
+    assert.equal(getPaymentsConfig({ PAYMENTS_ENABLED: "true" }).enabled, true);
+    assert.throws(() => getPaymentsConfig({ PAYMENTS_ENABLED: "yes" }), /PAYMENTS_ENABLED/);
+  });
+
+  test("SITE_URL must be a URL; a trailing slash is dropped", () => {
+    assert.equal(getPaymentsConfig({ SITE_URL: "https://falken.example/" }).siteUrl, "https://falken.example");
+    assert.throws(() => getPaymentsConfig({ SITE_URL: "not a url" }), /SITE_URL/);
   });
 
   test("only PAYMENTS_MODE=test and PAYPAL_ENV=sandbox exist", () => {

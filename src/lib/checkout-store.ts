@@ -4,7 +4,12 @@ import type { Attempt, PublicOrder } from "./checkout.ts";
 // so a page reload shows the order that exists instead of inviting a second one.
 
 /** `accessToken` proves to the server that this browser created the order; later pay/cancel calls send it. */
-export type CheckoutState = { attempt: Attempt | null; order: PublicOrder | null; accessToken?: string };
+export type CheckoutState = {
+  attempt: Attempt | null;
+  order: PublicOrder | null;
+  accessToken?: string;
+  notice?: string;
+};
 
 const STORAGE_KEY = "falken.checkout.v1";
 const EMPTY: CheckoutState = { attempt: null, order: null };
@@ -13,9 +18,15 @@ let loaded = false;
 const listeners = new Set<() => void>();
 
 const isAttempt = (v: unknown): v is Attempt =>
-  !!v && typeof v === "object" && typeof (v as Attempt).key === "string" && typeof (v as Attempt).fingerprint === "string";
+  !!v &&
+  typeof v === "object" &&
+  typeof (v as Attempt).key === "string" &&
+  typeof (v as Attempt).fingerprint === "string";
 const isOrder = (v: unknown): v is PublicOrder =>
-  !!v && typeof v === "object" && typeof (v as PublicOrder).publicId === "string" && Number.isInteger((v as PublicOrder).totalSek);
+  !!v &&
+  typeof v === "object" &&
+  typeof (v as PublicOrder).publicId === "string" &&
+  Number.isInteger((v as PublicOrder).totalSek);
 
 function load() {
   if (loaded || typeof window === "undefined") return;
@@ -27,7 +38,8 @@ function load() {
     state = {
       attempt: isAttempt(p.attempt) ? p.attempt : null,
       order: isOrder(p.order) ? p.order : null,
-      accessToken: typeof p.accessToken === "string" ? p.accessToken : undefined,
+      accessToken:
+        typeof p.accessToken === "string" ? p.accessToken : undefined,
     };
   } catch {
     // Unreadable storage: begin fresh.
@@ -68,8 +80,18 @@ export const checkoutStore = {
     load();
     commit({ attempt: null, order, accessToken });
   },
+  /** A message about the payment of the current order (for example "payment is not available"). */
+  setNotice(notice: string | null) {
+    load();
+    commit({ ...state, notice: notice ?? undefined });
+  },
   dismissOrder() {
     load();
-    commit({ ...state, order: null, accessToken: undefined });
+    commit({
+      ...state,
+      order: null,
+      accessToken: undefined,
+      notice: undefined,
+    });
   },
 };

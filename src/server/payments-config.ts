@@ -11,6 +11,10 @@ const stripeSecret = z
   .optional();
 
 const schema = z.object({
+  /** Master switch. Off by default: no checkout session is created until the owner turns this on. */
+  PAYMENTS_ENABLED: z.enum(["true", "false"], { error: "PAYMENTS_ENABLED must be 'true' or 'false'" }).default("false"),
+  /** Public address of the site, used for the return links after paying. Falls back to the request's own origin. */
+  SITE_URL: z.url({ error: "SITE_URL must be a full URL such as https://example.com" }).optional(),
   PAYMENTS_MODE: z.literal("test", { error: "PAYMENTS_MODE must be 'test' in this phase" }).default("test"),
   STRIPE_SECRET_KEY: stripeSecret,
   STRIPE_WEBHOOK_SECRET: z.string().regex(/^whsec_[A-Za-z0-9]+$/, "STRIPE_WEBHOOK_SECRET must look like whsec_…").optional(),
@@ -22,6 +26,8 @@ const schema = z.object({
 
 export type PaymentsConfig = {
   mode: "test";
+  enabled: boolean;
+  siteUrl?: string;
   stripe: { secretKey: string; webhookSecret?: string } | null;
   paypal: { env: "sandbox"; baseUrl: string; clientId: string; clientSecret: string; webhookId?: string } | null;
 };
@@ -33,6 +39,8 @@ const LIVE_PATTERNS = [/(^|[^a-z])(sk|rk|pk)_live_/i, /api-m\.paypal\.com/i, /ap
 /** Parses payment settings. Errors name the variable that is wrong and never echo a secret value. */
 export function getPaymentsConfig(source: Record<string, string | undefined> = process.env): PaymentsConfig {
   const pick = {
+    PAYMENTS_ENABLED: source.PAYMENTS_ENABLED || undefined,
+    SITE_URL: source.SITE_URL || undefined,
     PAYMENTS_MODE: source.PAYMENTS_MODE || undefined,
     STRIPE_SECRET_KEY: source.STRIPE_SECRET_KEY || undefined,
     STRIPE_WEBHOOK_SECRET: source.STRIPE_WEBHOOK_SECRET || undefined,
@@ -62,6 +70,8 @@ export function getPaymentsConfig(source: Record<string, string | undefined> = p
 
   return {
     mode: "test",
+    enabled: c.PAYMENTS_ENABLED === "true",
+    siteUrl: c.SITE_URL?.replace(/\/+$/, ""),
     stripe: c.STRIPE_SECRET_KEY ? { secretKey: c.STRIPE_SECRET_KEY, webhookSecret: c.STRIPE_WEBHOOK_SECRET } : null,
     paypal:
       c.PAYPAL_CLIENT_ID && c.PAYPAL_CLIENT_SECRET
