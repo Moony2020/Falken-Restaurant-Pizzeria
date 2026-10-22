@@ -26,7 +26,7 @@ export function ProductCard({ product }: { product: PublicProduct }) {
   const orderable = isOrderable(product);
 
   return (
-    <li className="group relative flex gap-4 rounded-2xl border border-line bg-white p-3 shadow-card transition duration-200 hover:-translate-y-0.5 hover:border-gold">
+    <li className="group relative flex gap-4 rounded-2xl border border-line bg-white p-3 shadow-card transition duration-200 hover:border-gold">
       <div className="relative size-28 shrink-0 overflow-hidden rounded-xl sm:size-32">
         {product.image ? (
           <Image src={product.image} alt={product.name} fill sizes="128px" className="object-cover" />

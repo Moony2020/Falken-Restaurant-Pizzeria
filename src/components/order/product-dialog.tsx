@@ -47,7 +47,7 @@ export function ProductDialog() {
       open={!!product}
       onClose={closeProduct}
       label={product ? `Anpassa ${product.name}` : "Anpassa rätt"}
-      className="m-auto max-h-[92dvh] w-[calc(100%-1.5rem)] max-w-[600px] overflow-hidden rounded-2xl bg-ivory p-0 shadow-2xl open:flex open:animate-rise open:flex-col"
+      className="m-auto max-h-[92dvh] w-[calc(100%-1.5rem)] max-w-[600px] overflow-clip rounded-2xl bg-ivory p-0 shadow-2xl open:flex open:animate-rise open:flex-col"
     >
       {ready && product && (
         <ProductForm

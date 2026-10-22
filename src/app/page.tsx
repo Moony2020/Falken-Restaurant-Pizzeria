@@ -86,9 +86,9 @@ export default function HomePage() {
                 <li key={id}>
                   <Link
                     href={`/meny#${id}`}
-                    className="group relative block overflow-hidden rounded-2xl bg-ink text-ivory shadow-card"
+                    className="group relative block overflow-hidden rounded-2xl border-2 border-transparent bg-ink text-ivory shadow-card transition hover:border-gold"
                   >
-                    <DishArt category={id} seed={id.length + 2} className="aspect-[4/3] w-full transition duration-500 group-hover:scale-105" />
+                    <DishArt category={id} seed={id.length + 2} className="aspect-[4/3] w-full" />
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink via-ink/85 to-transparent p-4 pt-10">
                       <p className="font-display text-xl font-semibold">{c.name}</p>
                       <p className="text-xs text-gold">Se rätterna</p>

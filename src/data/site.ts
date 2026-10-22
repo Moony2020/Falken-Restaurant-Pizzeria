@@ -80,3 +80,6 @@ export const hoursDisplay: Record<Season, { days: string; time: string }[]> = {
 
 /** Path under /public of a real photo for the menu page banner (a round crop of a pizza works best). While null, an illustration is shown. */
 export const menuHeroImage: string | null = null;
+
+/** Path under /public of a real photo for the contact page banner. While null, an illustration is shown. */
+export const contactHeroImage: string | null = null;
