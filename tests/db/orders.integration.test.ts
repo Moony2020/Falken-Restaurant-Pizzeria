@@ -1,6 +1,7 @@
 import { after, before, beforeEach, describe, mock, test } from "node:test";
 import assert from "node:assert/strict";
 import mongoose from "mongoose";
+import { EXTRAS } from "../../src/data/extras.ts";
 import { POST as cartValidate } from "../../src/app/api/cart/validate/route.ts";
 import { POST as ordersPost } from "../../src/app/api/orders/route.ts";
 import { getPublicMenu } from "../../src/server/catalog-repo.ts";
@@ -271,19 +272,21 @@ describe("orders + pricing on a local test database", { skip: !uri ? "MONGODB_UR
       assert.ok(!JSON.stringify(menu).includes("reviewNote"));
       const vegetariana = menu.products.find((p) => p.slug === "vegetariana");
       assert.deepEqual(vegetariana?.variants.map((v) => [v.id, v.orderable]), [["normal", false], ["familj", true]]);
-      assert.deepEqual(menu.modifiers.map((m) => m.slug), ["glutenfri-deg"]);
+      assert.equal(menu.modifiers.length, 1 + EXTRAS.length);
+      assert.ok(menu.modifiers.some((m) => m.slug === "glutenfri-deg"));
+      assert.ok(menu.modifiers.every((m) => Object.values(m.priceByVariantSek).every(Number.isInteger)));
     });
 
     test("inactive products and unconfirmed extras stay off the menu", async () => {
       await ProductModel.updateOne({ slug: "disco" }, { $set: { active: false } });
-      await ModifierModel.updateOne({ slug: "glutenfri-deg" }, { $set: { priceStatus: "needs_review" } });
+      await ModifierModel.updateMany({}, { $set: { priceStatus: "needs_review" } });
       try {
         const menu = await getPublicMenu();
         assert.ok(!menu.products.some((p) => p.slug === "disco"));
         assert.equal(menu.modifiers.length, 0);
       } finally {
         await ProductModel.updateOne({ slug: "disco" }, { $set: { active: true } });
-        await ModifierModel.updateOne({ slug: "glutenfri-deg" }, { $set: { priceStatus: "confirmed" } });
+        await ModifierModel.updateMany({}, { $set: { priceStatus: "confirmed" } });
       }
     });
   });
@@ -319,6 +322,13 @@ describe("orders + pricing on a local test database", { skip: !uri ? "MONGODB_UR
       const refused = await post(cartValidate, "/api/cart/validate", { items: [item({ productSlug: "vegetariana" })] });
       assert.equal(refused.status, 422);
       assert.equal((await refused.json()).issues[0].code, "price_unconfirmed");
+    });
+
+    test("seeded extras are priced by the server on any pizza: Vesuvio + extra ost + bacon + champinjoner = 110 + 10 + 20 + 10", async () => {
+      const modifiers = ["extra-extra-ost", "extra-bacon", "extra-champinjoner"].map((slug) => ({ slug, quantity: 1 }));
+      const res = await post(cartValidate, "/api/cart/validate", { items: [item({ modifiers })] });
+      assert.equal(res.status, 200);
+      assert.equal((await res.json()).totalSek, 150);
     });
 
     test("cart validation ignores nothing: a client total is a 400", async () => {

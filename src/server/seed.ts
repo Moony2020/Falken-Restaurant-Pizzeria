@@ -1,3 +1,4 @@
+import { EXTRAS, extraSlug } from "../data/extras.ts";
 import { categories, products } from "../data/menu.ts";
 import { GLUTEN_FREE_SURCHARGE } from "../lib/pricing.ts";
 import { CategoryModel, ModifierModel, ProductModel } from "./models/catalog.ts";
@@ -63,9 +64,28 @@ export async function seedCatalog(): Promise<SeedResult> {
     };
   });
 
-  // The only extra the plan prices: gluten-free dough, +30 kr on pizza (plan §4).
-  // Paid extras such as extra cheese are deliberately NOT seeded: the owner sets those prices.
+  // Gluten-free dough, +30 kr on pizza (plan §4), plus the opening list of extras from src/data/extras.ts
+  // (provisional prices, editable in the database; the insert-only seed never overwrites an edit).
+  const extraOps = EXTRAS.map((e) => ({
+    updateOne: {
+      filter: { slug: extraSlug(e.label) },
+      update: {
+        $setOnInsert: {
+          slug: extraSlug(e.label),
+          labelSv: e.label,
+          groupSlug: e.group,
+          priceByVariantSek: { normal: e.priceSek, familj: e.priceSek },
+          maxQty: 1,
+          compatibleCategories: e.categories,
+          active: true,
+          priceStatus: "confirmed",
+        },
+      },
+      upsert: true,
+    },
+  }));
   const modifierOps = [
+    ...extraOps,
     {
       updateOne: {
         filter: { slug: "glutenfri-deg" },

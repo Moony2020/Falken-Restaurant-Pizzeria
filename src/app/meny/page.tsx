@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { MenuBrowser } from "@/components/order/menu-browser";
-import { PageBanner } from "@/components/page-banner";
 
 export const metadata: Metadata = {
   title: "Meny & Beställ",
@@ -9,15 +8,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/meny" },
 };
 
+// The banner is rendered by MenuBrowser because the search field lives in it.
 export default function MenyPage() {
-  return (
-    <>
-      <PageBanner
-        eyebrow="Avhämtning"
-        title="Meny & Beställ"
-        text="Välj din rätt, anpassa efter smak och hämta hos oss i Vintrosa. Alla priser anges i kronor."
-      />
-      <MenuBrowser />
-    </>
-  );
+  return <MenuBrowser />;
 }

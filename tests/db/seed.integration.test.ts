@@ -1,6 +1,7 @@
 import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
 import mongoose from "mongoose";
+import { EXTRAS } from "../../src/data/extras.ts";
 import { categories, products } from "../../src/data/menu.ts";
 import { CategoryModel, ModifierModel, ProductModel } from "../../src/server/models/catalog.ts";
 import { OrderModel } from "../../src/server/models/order.ts";
@@ -28,7 +29,7 @@ describe("seed + persistence (local test database)", { skip: !uri ? "MONGODB_URI
     const r = await seedCatalog();
     assert.equal(r.categories, categories.length);
     assert.equal(r.products, products.length);
-    assert.equal(r.modifiers, 1);
+    assert.equal(r.modifiers, 1 + EXTRAS.length);
     assert.equal(await ProductModel.countDocuments(), products.length);
   });
 
@@ -66,9 +67,20 @@ describe("seed + persistence (local test database)", { skip: !uri ? "MONGODB_URI
     for (const p of k3) assert.equal(p.variants.find((v) => v.id === "normal")?.priceStatus, "needs_review", p.slug);
   });
 
-  test("no paid extras are invented: only gluten-free dough is seeded", async () => {
+  test("the seeded extras are exactly the list in src/data/extras.ts, plus gluten-free dough", async () => {
     const mods = await ModifierModel.find().lean();
-    assert.deepEqual(mods.map((m) => m.slug), ["glutenfri-deg"]);
+    assert.equal(mods.length, 1 + EXTRAS.length);
+    assert.ok(mods.some((m) => m.slug === "glutenfri-deg"));
+    assert.equal(new Set(mods.map((m) => m.slug)).size, mods.length); // no duplicate slugs
+    for (const m of mods) assert.ok(m.compatibleCategories.length > 0 && m.groupSlug);
+  });
+
+  test("an owner's edit to an extra's price survives re-seeding", async () => {
+    await ModifierModel.updateOne({ slug: "extra-bacon" }, { $set: { "priceByVariantSek.normal": 25 } });
+    await seedCatalog();
+    const m = await ModifierModel.findOne({ slug: "extra-bacon" }).lean();
+    const prices = m?.priceByVariantSek as unknown as Map<string, number> | Record<string, number> | undefined;
+    assert.equal(prices instanceof Map ? prices.get("normal") : prices?.normal, 25);
   });
 
   test("slug uniqueness is enforced by the database", async () => {

@@ -1,12 +1,27 @@
 "use client";
 
 import { useMemo, useState, type ReactNode } from "react";
-import { IF_UNAVAILABLE, IF_UNAVAILABLE_LABELS_SV, type IfUnavailable } from "@/data/modifier-groups";
+import {
+  IF_UNAVAILABLE,
+  IF_UNAVAILABLE_LABELS_SV,
+  type IfUnavailable,
+} from "@/data/modifier-groups";
 import { site } from "@/data/site";
 import type { CategoryId } from "@/data/menu";
 import { cartStore, MAX_LINE_QUANTITY } from "@/lib/cart-store";
-import { firstOrderableVariant, groupsFor, modifierPrice, previewUnitPrice, toggleModifier, type ModifierGroupView } from "@/lib/menu-client";
-import type { PublicCategory, PublicMenu, PublicProduct } from "@/lib/menu-types";
+import {
+  firstOrderableVariant,
+  groupsFor,
+  modifierPrice,
+  previewUnitPrice,
+  toggleModifier,
+  type ModifierGroupView,
+} from "@/lib/menu-client";
+import type {
+  PublicCategory,
+  PublicMenu,
+  PublicProduct,
+} from "@/lib/menu-types";
 import { useMenu } from "@/lib/menu-store";
 import { kr } from "@/lib/pricing";
 import { DishArt } from "@/components/art";
@@ -18,8 +33,14 @@ export function ProductDialog() {
   const { activeProductId, closeProduct } = useOrder();
   const menu = useMenu();
   const ready = menu.status === "ready" ? menu.menu : null;
-  const product = ready && activeProductId ? ready.products.find((p) => p.slug === activeProductId) : undefined;
-  const category = ready && product ? ready.categories.find((c) => c.slug === product.category) : undefined;
+  const product =
+    ready && activeProductId
+      ? ready.products.find((p) => p.slug === activeProductId)
+      : undefined;
+  const category =
+    ready && product
+      ? ready.categories.find((c) => c.slug === product.category)
+      : undefined;
 
   return (
     <Modal
@@ -28,24 +49,64 @@ export function ProductDialog() {
       label={product ? `Anpassa ${product.name}` : "Anpassa rätt"}
       className="m-auto max-h-[92dvh] w-[calc(100%-1.5rem)] max-w-[600px] overflow-hidden rounded-2xl bg-ivory p-0 shadow-2xl open:flex open:animate-rise open:flex-col"
     >
-      {ready && product && <ProductForm key={product.slug} product={product} category={category} menu={ready} onClose={closeProduct} />}
+      {ready && product && (
+        <ProductForm
+          key={product.slug}
+          product={product}
+          category={category}
+          menu={ready}
+          onClose={closeProduct}
+        />
+      )}
     </Modal>
   );
 }
 
 /** One titled card of choices: a header (title, hint, "optional" badge) and rows below it. */
-function OptionCard({ title, hint, badge = "Valfritt", children }: { title: string; hint?: string; badge?: string; children: ReactNode }) {
+function OptionCard({
+  title,
+  hint,
+  badge = "Valfritt",
+  filler = false,
+  more,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  badge?: string;
+  /** True when the number of rows is odd, so the empty cell in the last row is filled in. */
+  filler?: boolean;
+  /** Full-width row after the grid, e.g. a "show more" button. */
+  more?: ReactNode;
+  children: ReactNode;
+}) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-line bg-white" aria-label={title}>
+    <section
+      className="overflow-hidden rounded-2xl border border-line bg-white"
+      aria-label={title}
+    >
       <header className="flex items-start justify-between gap-3 px-5 py-4">
         <div>
-          <h3 className="font-display text-xl font-semibold leading-tight">{title}</h3>
-          {hint && <p className="mt-0.5 text-xs leading-relaxed text-muted">{hint}</p>}
+          <h3 className="font-display text-xl font-semibold leading-tight">
+            {title}
+          </h3>
+          {hint && (
+            <p className="mt-0.5 text-xs leading-relaxed text-muted">{hint}</p>
+          )}
         </div>
-        <span className="shrink-0 rounded-full bg-cream px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted">{badge}</span>
+        <span className="shrink-0 rounded-full bg-cream px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted">
+          {badge}
+        </span>
       </header>
-      {/* Rows sit in a hairline grid: one column on phones, two from the "sm" breakpoint. */}
-      <ul className="grid bg-white sm:grid-cols-2">{children}</ul>
+      {/* Rows sit in a hairline grid: the list paints the lines, every cell is white, so all cells get identical
+          borders. One column on phones, two from the "sm" breakpoint. */}
+      <ul className="grid gap-px border-t border-line bg-line sm:grid-cols-2">
+        {children}
+        {filler && (
+          <li aria-hidden="true" className="hidden bg-white sm:block" />
+        )}
+        {more}
+      </ul>
     </section>
   );
 }
@@ -67,9 +128,17 @@ function CheckRow({
   onChange: () => void;
 }) {
   return (
-    <li className="border-t border-line sm:even:border-l">
-      <label className={`flex min-h-14 items-center gap-4 px-5 py-2 ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-cream/60"}`}>
-        <input type="checkbox" checked={checked} disabled={disabled} onChange={onChange} className="peer sr-only" />
+    <li className="bg-white">
+      <label
+        className={`flex min-h-14 items-center gap-4 px-5 py-2 ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-cream/60"}`}
+      >
+        <input
+          type="checkbox"
+          checked={checked}
+          disabled={disabled}
+          onChange={onChange}
+          className="peer sr-only"
+        />
         <span
           aria-hidden="true"
           className="grid size-6 shrink-0 place-items-center rounded-md border-2 border-line bg-white text-transparent transition peer-checked:border-ink peer-checked:bg-ink peer-checked:text-gold peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-gold"
@@ -80,7 +149,11 @@ function CheckRow({
           <span className="block text-[0.95rem] font-medium">{label}</span>
           {note && <span className="block text-xs text-muted">{note}</span>}
         </span>
-        {right && <span className="shrink-0 text-sm font-semibold tabular-nums text-gold-deep">{right}</span>}
+        {right && (
+          <span className="shrink-0 text-sm font-semibold tabular-nums text-gold-deep">
+            {right}
+          </span>
+        )}
       </label>
     </li>
   );
@@ -101,7 +174,9 @@ function ProductForm({
   const removable = !!category?.removable && product.ingredients.length > 0;
   const groups = useMemo(() => groupsFor(product, menu), [product, menu]);
 
-  const [variantId, setVariantId] = useState(firstOrderableVariant(product)?.id ?? product.variants[0].id);
+  const [variantId, setVariantId] = useState(
+    firstOrderableVariant(product)?.id ?? product.variants[0].id,
+  );
   const [removed, setRemoved] = useState<string[]>([]);
   const [chosen, setChosen] = useState<string[]>([]);
   const [note, setNote] = useState("");
@@ -125,23 +200,40 @@ function ProductForm({
     );
   };
 
-  const toggleRemoved = (name: string) => setRemoved((r) => (r.includes(name) ? r.filter((x) => x !== name) : [...r, name]));
+  const toggleRemoved = (name: string) =>
+    setRemoved((r) =>
+      r.includes(name) ? r.filter((x) => x !== name) : [...r, name],
+    );
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!canOrder) return;
-    cartStore.add({ productSlug: product.slug, variantId, removed, modifiers: selected, note: note.trim(), ifUnavailable, quantity });
+    cartStore.add({
+      productSlug: product.slug,
+      variantId,
+      removed,
+      modifiers: selected,
+      note: note.trim(),
+      ifUnavailable,
+      quantity,
+    });
     showNotice(`${product.name} lades i varukorgen`);
     onClose();
   };
 
   const REMOVE_COLLAPSE = 6;
-  const removeRows = expanded.__remove ? product.ingredients : product.ingredients.slice(0, REMOVE_COLLAPSE);
+  const removeRows = expanded.__remove
+    ? product.ingredients
+    : product.ingredients.slice(0, REMOVE_COLLAPSE);
 
   return (
     <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
       <div className="relative shrink-0">
-        <DishArt category={product.category as CategoryId} seed={product.menuNumber ?? 3} className="h-32 w-full sm:h-40" />
+        <DishArt
+          category={product.category as CategoryId}
+          seed={product.menuNumber ?? 3}
+          className="h-32 w-full sm:h-40"
+        />
         <button
           type="button"
           onClick={onClose}
@@ -158,18 +250,39 @@ function ProductForm({
             {product.menuNumber ? `Nr ${product.menuNumber}` : category?.name}
             {product.group && product.menuNumber ? ` · ${product.group}` : ""}
           </p>
-          <h2 className="mt-1 font-display text-3xl font-semibold leading-tight">{product.name}</h2>
-          {canOrder && <p className="mt-1 font-display text-2xl font-semibold text-gold-deep tabular-nums">{kr(unit)}</p>}
-          {product.ingredients.length > 0 && <p className="mt-2 text-sm leading-relaxed text-muted">{product.ingredients.join(", ")}.</p>}
-          {product.description && <p className="mt-2 text-sm leading-relaxed text-muted">{product.description}</p>}
+          <h2 className="mt-1 font-display text-3xl font-semibold leading-tight">
+            {product.name}
+          </h2>
+          {canOrder && (
+            <p className="mt-1 font-display text-2xl font-semibold text-gold-deep tabular-nums">
+              {kr(unit)}
+            </p>
+          )}
+          {product.ingredients.length > 0 && (
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              {product.ingredients.join(", ")}.
+            </p>
+          )}
+          {product.description && (
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              {product.description}
+            </p>
+          )}
         </header>
 
         {multiVariant && (
           <fieldset className="px-1">
-            <legend className="mb-2 font-display text-xl font-semibold">Storlek</legend>
+            <legend className="mb-2 font-display text-xl font-semibold">
+              Storlek
+            </legend>
             <div className="grid grid-cols-2 gap-3">
               {product.variants.map((v) => (
-                <label key={v.id} className={v.orderable ? "cursor-pointer" : "cursor-not-allowed"}>
+                <label
+                  key={v.id}
+                  className={
+                    v.orderable ? "cursor-pointer" : "cursor-not-allowed"
+                  }
+                >
                   <input
                     type="radio"
                     name="variant"
@@ -180,9 +293,19 @@ function ProductForm({
                     className="peer sr-only"
                   />
                   <span className="block rounded-xl border border-line bg-white px-4 py-3 text-center transition peer-checked:border-gold-deep peer-checked:bg-ink peer-checked:text-ivory peer-disabled:bg-cream peer-disabled:text-muted peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-gold">
-                    <span className="block text-sm font-semibold">{v.label}</span>
-                    <span className={`block text-sm ${v.orderable ? "opacity-80" : "line-through"}`}>{kr(v.priceSek)}</span>
-                    {!v.orderable && <span className="block text-[0.7rem] leading-tight">Pris bekräftas snart</span>}
+                    <span className="block text-sm font-semibold">
+                      {v.label}
+                    </span>
+                    <span
+                      className={`block text-sm ${v.orderable ? "opacity-80" : "line-through"}`}
+                    >
+                      {kr(v.priceSek)}
+                    </span>
+                    {!v.orderable && (
+                      <span className="block text-[0.7rem] leading-tight">
+                        Pris bekräftas snart
+                      </span>
+                    )}
                   </span>
                 </label>
               ))}
@@ -197,36 +320,57 @@ function ProductForm({
             variantId={variantId}
             chosen={chosen}
             expanded={!!expanded[view.def.slug]}
-            onExpand={() => setExpanded((e) => ({ ...e, [view.def.slug]: true }))}
+            onExpand={() =>
+              setExpanded((e) => ({ ...e, [view.def.slug]: true }))
+            }
             onToggle={(slug) => setChosen((c) => toggleModifier(c, slug, view))}
           />
         ))}
 
         {removable && (
-          <OptionCard title="Ta bort ingredienser" hint="Välj det du vill ta bort – det är gratis">
+          <OptionCard
+            title="Ta bort ingredienser"
+            hint="Välj det du vill ta bort – det är gratis"
+            filler={removeRows.length % 2 === 1}
+            more={
+              !expanded.__remove &&
+              product.ingredients.length > REMOVE_COLLAPSE ? (
+                <li className="bg-white sm:col-span-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpanded((e) => ({ ...e, __remove: true }))
+                    }
+                    className="flex min-h-12 w-full items-center justify-center text-xs font-semibold uppercase tracking-[0.14em] text-muted hover:text-ink"
+                  >
+                    Visa {product.ingredients.length - REMOVE_COLLAPSE} till
+                  </button>
+                </li>
+              ) : undefined
+            }
+          >
             {removeRows.map((name) => (
-              <CheckRow key={name} label={name} right="Gratis" checked={removed.includes(name)} onChange={() => toggleRemoved(name)} />
+              <CheckRow
+                key={name}
+                label={name}
+                right="Gratis"
+                checked={removed.includes(name)}
+                onChange={() => toggleRemoved(name)}
+              />
             ))}
-            {!expanded.__remove && product.ingredients.length > REMOVE_COLLAPSE && (
-              <li className="border-t border-line sm:col-span-2">
-                <button
-                  type="button"
-                  onClick={() => setExpanded((e) => ({ ...e, __remove: true }))}
-                  className="flex min-h-12 w-full items-center justify-center text-xs font-semibold uppercase tracking-[0.14em] text-muted hover:text-ink"
-                >
-                  Visa {product.ingredients.length - REMOVE_COLLAPSE} till
-                </button>
-              </li>
-            )}
           </OptionCard>
         )}
 
-        <section aria-label="Allergier och önskemål" className="rounded-2xl border border-line bg-white px-5 py-4">
+        <section
+          aria-label="Allergier och önskemål"
+          className="rounded-2xl border border-line bg-white px-5 py-4"
+        >
           <label htmlFor="note" className="font-display text-xl font-semibold">
             Allergier/önskemål
           </label>
           <p className="mt-0.5 text-xs leading-relaxed text-muted">
-            Var noga med att ange om du har en allergi eller bara vill undvika något. Vid allvarlig allergi, ring oss på{" "}
+            Var noga med att ange om du har en allergi eller bara vill undvika
+            något. Vid allvarlig allergi, ring oss på{" "}
             <a href={site.phoneHref} className="underline underline-offset-2">
               {site.phone}
             </a>
@@ -243,11 +387,19 @@ function ProductForm({
           />
         </section>
 
-        <section aria-label="Om något inte finns" className="rounded-2xl border border-line bg-white px-5 py-4">
-          <label htmlFor="if-unavailable" className="font-display text-xl font-semibold">
+        <section
+          aria-label="Om något inte finns"
+          className="rounded-2xl border border-line bg-white px-5 py-4"
+        >
+          <label
+            htmlFor="if-unavailable"
+            className="font-display text-xl font-semibold"
+          >
             Om något inte finns
           </label>
-          <p className="mt-0.5 text-xs leading-relaxed text-muted">Vad ska vi göra om en ingrediens i rätten är slut?</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted">
+            Vad ska vi göra om en ingrediens i rätten är slut?
+          </p>
           <select
             id="if-unavailable"
             value={ifUnavailable}
@@ -265,18 +417,32 @@ function ProductForm({
 
       <footer className="shrink-0 border-t border-line bg-white px-4 py-3 sm:px-6">
         {!canOrder ? (
-          <p role="status" className="mb-3 rounded-lg bg-cream px-3 py-2 text-xs leading-relaxed text-muted">
-            Den här storleken kan inte beställas online just nu. Välj en annan storlek eller ring oss på {site.phone}.
+          <p
+            role="status"
+            className="mb-3 rounded-lg bg-cream px-3 py-2 text-xs leading-relaxed text-muted"
+          >
+            Den här storleken kan inte beställas online just nu. Välj en annan
+            storlek eller ring oss på {site.phone}.
           </p>
         ) : (
           <p className="mb-3 text-xs text-muted" aria-live="polite">
-            Per rätt med dina val: <span className="font-semibold text-ink tabular-nums">{kr(unit)}</span>
+            Per rätt med dina val:{" "}
+            <span className="font-semibold text-ink tabular-nums">
+              {kr(unit)}
+            </span>
             <span aria-hidden="true"> · </span>
-            Totalt ({quantity} st): <span className="font-semibold text-ink tabular-nums">{kr(unit * quantity)}</span>
+            Totalt ({quantity} st):{" "}
+            <span className="font-semibold text-ink tabular-nums">
+              {kr(unit * quantity)}
+            </span>
           </p>
         )}
         <div className="flex items-center gap-3">
-          <div className="flex items-center rounded-full border border-line" role="group" aria-label="Antal">
+          <div
+            className="flex items-center rounded-full border border-line"
+            role="group"
+            aria-label="Antal"
+          >
             <button
               type="button"
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -286,12 +452,17 @@ function ProductForm({
             >
               <MinusIcon className="size-4" />
             </button>
-            <output aria-live="polite" className="w-7 text-center text-sm font-semibold tabular-nums">
+            <output
+              aria-live="polite"
+              className="w-7 text-center text-sm font-semibold tabular-nums"
+            >
               {quantity}
             </output>
             <button
               type="button"
-              onClick={() => setQuantity((q) => Math.min(MAX_LINE_QUANTITY, q + 1))}
+              onClick={() =>
+                setQuantity((q) => Math.min(MAX_LINE_QUANTITY, q + 1))
+              }
               disabled={quantity >= MAX_LINE_QUANTITY}
               aria-label="Öka antal"
               className="grid size-11 place-items-center rounded-full transition hover:bg-cream disabled:opacity-35"
@@ -308,7 +479,9 @@ function ProductForm({
               <span className="sm:hidden">Lägg till</span>
               <span className="hidden sm:inline">Lägg i varukorg</span>
             </span>
-            {unit !== null && <span className="tabular-nums">{kr(unit * quantity)}</span>}
+            {unit !== null && (
+              <span className="tabular-nums">{kr(unit * quantity)}</span>
+            )}
           </button>
         </div>
       </footer>
@@ -336,13 +509,34 @@ function ExtrasGroup({
   const full = def.kind === "multi" && pickedInGroup >= def.max;
   const limit = def.collapseAfter ?? items.length;
   // Anything already picked stays visible even when the list is collapsed.
-  const visible = expanded ? items : items.filter((m, i) => i < limit || chosen.includes(m.slug));
+  const visible = expanded
+    ? items
+    : items.filter((m, i) => i < limit || chosen.includes(m.slug));
   const hidden = items.length - visible.length;
   const hint =
-    def.kind === "single" ? "Välj upp till 1 (valfritt)" : `Välj upp till ${def.max} (valfritt)${def.hintSv ? ` · ${def.hintSv}` : ""}`;
+    def.kind === "single"
+      ? "Välj upp till 1 (valfritt)"
+      : `Välj upp till ${def.max} (valfritt)${def.hintSv ? ` · ${def.hintSv}` : ""}`;
 
   return (
-    <OptionCard title={def.titleSv} hint={hint}>
+    <OptionCard
+      title={def.titleSv}
+      hint={hint}
+      filler={visible.length % 2 === 1}
+      more={
+        hidden > 0 ? (
+          <li className="bg-white sm:col-span-2">
+            <button
+              type="button"
+              onClick={onExpand}
+              className="flex min-h-12 w-full items-center justify-center text-xs font-semibold uppercase tracking-[0.14em] text-muted hover:text-ink"
+            >
+              Visa {hidden} till
+            </button>
+          </li>
+        ) : undefined
+      }
+    >
       {visible.map((m) => {
         const price = modifierPrice(m, variantId);
         const checked = chosen.includes(m.slug);
@@ -351,24 +545,17 @@ function ExtrasGroup({
             key={m.slug}
             label={m.label}
             right={price !== undefined ? `+ ${kr(price)}` : undefined}
-            note={price === undefined ? "Finns inte för den här storleken" : undefined}
+            note={
+              price === undefined
+                ? "Finns inte för den här storleken"
+                : undefined
+            }
             checked={checked}
             disabled={price === undefined || (full && !checked)}
             onChange={() => onToggle(m.slug)}
           />
         );
       })}
-      {hidden > 0 && (
-        <li className="border-t border-line sm:col-span-2">
-          <button
-            type="button"
-            onClick={onExpand}
-            className="flex min-h-12 w-full items-center justify-center text-xs font-semibold uppercase tracking-[0.14em] text-muted hover:text-ink"
-          >
-            Visa {hidden} till
-          </button>
-        </li>
-      )}
     </OptionCard>
   );
 }

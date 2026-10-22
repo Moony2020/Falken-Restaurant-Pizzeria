@@ -1,11 +1,14 @@
 "use client";
 
 import { useMemo, useState, useSyncExternalStore } from "react";
-import { dagensLunch, site } from "@/data/site";
+import { dagensLunch, menuHeroImage, site } from "@/data/site";
 import type { MenuLoadFailure } from "@/lib/menu-client";
 import { reloadMenu, useMenu } from "@/lib/menu-store";
 import type { PublicCategory, PublicMenu, PublicProduct } from "@/lib/menu-types";
 import { kr } from "@/lib/pricing";
+import { PageBanner } from "@/components/page-banner";
+import Image from "next/image";
+import { HeroPizza } from "@/components/hero-pizza";
 import { ArrowIcon, CartIcon, ClockIcon, PhoneIcon, SearchIcon } from "@/components/icons";
 import { useOrder } from "./order-provider";
 import { ProductCard, ingredientText } from "./product-card";
@@ -74,6 +77,29 @@ export function MenuBrowser() {
 
   return (
     <>
+      <PageBanner
+        eyebrow="Avhämtning"
+        title="Meny & Beställ"
+        text="Välj din rätt, anpassa efter smak och hämta hos oss i Vintrosa. Alla priser anges i kronor."
+        aside={<BannerArt />}
+      >
+        <div className="relative mt-8 w-full max-w-xl">
+          <label htmlFor="menu-search" className="sr-only">
+            Sök i menyn
+          </label>
+          <SearchIcon className="pointer-events-none absolute left-5 top-1/2 z-10 size-5 -translate-y-1/2 text-gold" aria-hidden="true" />
+          <input
+            id="menu-search"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Sök rätt, ingrediens eller nummer"
+            disabled={!menu}
+            className="min-h-14 w-full rounded-full border border-ivory/20 bg-ivory/10 pl-13 pr-5 text-[0.95rem] text-ivory backdrop-blur transition placeholder:text-ivory/55 focus:border-gold focus:bg-ivory/15 disabled:opacity-60"
+          />
+        </div>
+      </PageBanner>
+
       <div className="sticky top-20 z-30 border-b border-line bg-ivory/95 backdrop-blur sm:top-24">
         <nav aria-label="Menykategorier" className="wrap py-3" aria-busy={state.status === "loading"}>
           <ul className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:px-0 lg:flex-wrap lg:overflow-visible lg:pb-0">
@@ -111,21 +137,6 @@ export function MenuBrowser() {
 
         {menu && (
           <>
-            <div className="relative mb-8 w-full sm:ml-auto sm:max-w-sm">
-              <label htmlFor="menu-search" className="sr-only">
-                Sök i menyn
-              </label>
-              <SearchIcon className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted" />
-              <input
-                id="menu-search"
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Sök rätt, ingrediens eller nummer"
-                className="min-h-12 w-full rounded-full border border-line bg-white pl-12 pr-4 text-sm placeholder:text-muted/70"
-              />
-            </div>
-
             {searching ? (
               <SearchResults items={results} query={query} onClear={() => setQuery("")} />
             ) : active ? (
@@ -161,11 +172,35 @@ export function MenuBrowser() {
   );
 }
 
+/**
+ * Background of the menu banner: a warm glow like a wood-fired oven, fine rings, and one whole pizza on a plate at the
+ * right. Still an illustration: set `menuHeroImage` in data/site.ts to use a real photo of the restaurant instead.
+ */
+function BannerArt() {
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_90%_at_82%_50%,rgb(184_112_38/0.38),transparent_70%),radial-gradient(ellipse_40%_60%_at_100%_100%,rgb(150_40_20/0.35),transparent_70%)]" />
+      <svg className="absolute right-[-6rem] top-1/2 hidden h-[44rem] w-[44rem] -translate-y-1/2 text-gold/20 lg:block" viewBox="0 0 400 400" fill="none">
+        {[190, 160, 130].map((r) => (
+          <circle key={r} cx="200" cy="200" r={r} stroke="currentColor" strokeWidth="1" />
+        ))}
+      </svg>
+      <div className="absolute right-[6%] top-1/2 hidden size-[20rem] -translate-y-1/2 rotate-[14deg] drop-shadow-[0_30px_40px_rgba(0,0,0,0.55)] lg:block xl:right-[9%] xl:size-[22rem]">
+        {menuHeroImage ? (
+          <Image src={menuHeroImage} alt="" fill sizes="416px" className="rounded-full object-cover" />
+        ) : (
+          <HeroPizza className="size-full" />
+        )}
+      </div>
+      <div className="absolute inset-0 bg-gradient-to-r from-ink-2 from-35% via-ink-2/30 to-transparent lg:from-45%" />
+    </div>
+  );
+}
+
 function MenuSkeleton() {
   return (
     <div role="status" aria-live="polite" aria-busy="true">
       <span className="sr-only">Laddar menyn…</span>
-      <div className="mb-8 h-12 w-full animate-pulse rounded-full bg-cream sm:ml-auto sm:max-w-sm" aria-hidden="true" />
       <div className="mb-3 h-12 w-64 animate-pulse rounded-lg bg-cream" aria-hidden="true" />
       <div className="mb-10 h-5 w-96 max-w-full animate-pulse rounded bg-cream" aria-hidden="true" />
       <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2" aria-hidden="true">

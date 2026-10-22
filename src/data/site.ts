@@ -77,3 +77,6 @@ export const hoursDisplay: Record<Season, { days: string; time: string }[]> = {
     { days: "Lördag–Söndag", time: "12:00–22:00" },
   ],
 };
+
+/** Path under /public of a real photo for the menu page banner (a round crop of a pizza works best). While null, an illustration is shown. */
+export const menuHeroImage: string | null = null;
