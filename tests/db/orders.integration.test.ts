@@ -289,6 +289,18 @@ describe("orders + pricing on a local test database", { skip: !uri ? "MONGODB_UR
   });
 
   describe("HTTP routes", () => {
+    // The orders route refuses to run without a token secret. Tests bring their own throwaway one so they never
+    // depend on a developer's .env.local or on CI secrets, and put the environment back afterwards.
+    const TEST_SECRET = "test-only-order-token-secret-0123456789";
+    let savedSecret: string | undefined;
+    before(() => {
+      savedSecret = process.env.ORDER_TOKEN_SECRET;
+      process.env.ORDER_TOKEN_SECRET = TEST_SECRET;
+    });
+    after(() => {
+      if (savedSecret === undefined) delete process.env.ORDER_TOKEN_SECRET;
+      else process.env.ORDER_TOKEN_SECRET = savedSecret;
+    });
     let ip = 0;
     const post = (handler: (r: Request) => Promise<Response>, url: string, payload: unknown, headers: Record<string, string> = {}) =>
       handler(
