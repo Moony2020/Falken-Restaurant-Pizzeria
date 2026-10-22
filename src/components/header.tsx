@@ -16,7 +16,7 @@ export function Header() {
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   return (
-    <header className="sticky top-0 z-40 bg-ink/95 text-ivory backdrop-blur">
+    <header className="sticky top-0 z-40 bg-ink-2 text-ivory">
       <div className="wrap flex h-20 items-center justify-between gap-4 sm:h-24">
         <Logo />
 

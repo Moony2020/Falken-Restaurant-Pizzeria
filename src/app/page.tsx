@@ -1,11 +1,13 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowIcon, ClockIcon, MailIcon, PhoneIcon, PinIcon } from "@/components/icons";
-import { DishArt, PizzaArt } from "@/components/art";
+import { DishArt } from "@/components/art";
+import { HeroPizza } from "@/components/hero-pizza";
 import { OpenStatus } from "@/components/open-status";
 import { FeaturedDishes } from "@/components/featured-dishes";
 import { buttonClass, eyebrow } from "@/components/ui";
 import { categories, type CategoryId } from "@/data/menu";
-import { CURRENT_SEASON, dagensLunch, hoursDisplay, mapsUrl, site } from "@/data/site";
+import { CURRENT_SEASON, dagensLunch, heroImage, hoursDisplay, mapsUrl, site } from "@/data/site";
 import { kr } from "@/lib/pricing";
 
 const tiles: CategoryId[] = ["pizza", "kebabpizza", "kebab", "hamburgare", "sallader", "alacarte", "barn", "lunch"];
@@ -20,19 +22,19 @@ const steps = [
 export default function HomePage() {
   return (
     <>
-      <section aria-labelledby="hero-title" className="bg-[linear-gradient(to_bottom,var(--color-ink)_0,var(--color-ink)_70%,var(--color-ivory)_70%)]">
-        <div className="wrap pb-2">
-          <div className="relative isolate grid min-h-[30rem] items-center overflow-hidden rounded-[1.75rem] bg-[radial-gradient(ellipse_at_85%_40%,#2b3038_0,var(--color-ink-2)_55%,#15171b_100%)] px-7 pb-0 pt-14 shadow-2xl ring-1 ring-white/5 sm:px-12 lg:min-h-[34rem] lg:grid-cols-[1.05fr_1fr] lg:px-16 lg:py-14">
-            <div className="relative z-10 max-w-xl animate-rise">
+      <section aria-labelledby="hero-title" className="bg-[linear-gradient(to_bottom,var(--color-ink-2)_0,var(--color-ink-2)_75%,var(--color-ivory)_75%)]">
+        <div className="wrap pb-2 pt-2 sm:pt-3">
+          <div className="hero-slate relative isolate grid items-center overflow-hidden rounded-[1.5rem] px-7 pt-10 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.6)] ring-1 ring-white/5 sm:px-12 lg:min-h-[21rem] lg:grid-cols-[1.15fr_1fr] lg:px-14 lg:py-10">
+            <div className="relative z-10 max-w-xl animate-rise lg:max-w-none">
               <OpenStatus />
-              <h1 id="hero-title" className="mt-5 text-[2.7rem] font-medium uppercase leading-[1.04] text-ivory sm:text-6xl lg:text-[4.3rem]">
+              <h1 id="hero-title" className="mt-4 text-[2.5rem] font-medium uppercase leading-[1.05] text-ivory sm:text-5xl lg:text-[3.1rem]">
                 Äkta smak i
                 <span className="block text-gold">hjärtat av Vintrosa</span>
               </h1>
-              <p className="mt-6 max-w-md text-base leading-relaxed text-ivory/80 sm:text-lg">
+              <p className="mt-4 max-w-md text-base leading-relaxed text-ivory/80">
                 Över 90 rätter – pizza, kebab, hamburgare och à la carte. Beställ för avhämtning eller slå dig ner hos oss.
               </p>
-              <div className="mt-9 flex flex-wrap gap-3">
+              <div className="mt-6 flex flex-wrap gap-3">
                 <Link href="/meny" className={buttonClass("gold")}>
                   Se menyn
                 </Link>
@@ -42,8 +44,15 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div aria-hidden="true" className="pointer-events-none -mb-28 mt-10 flex justify-center sm:-mb-40 lg:mb-0 lg:mt-0 lg:block">
-              <PizzaArt seed={7} className="size-72 sm:size-96 lg:ml-auto lg:size-[34rem] lg:max-w-none lg:translate-x-12 lg:rotate-[8deg]" />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none relative -mb-24 mt-8 flex justify-center sm:-mb-32 lg:absolute lg:-right-10 lg:top-1/2 lg:mb-0 lg:mt-0 lg:block lg:size-[29rem] lg:-translate-y-1/2"
+            >
+              {heroImage ? (
+                <Image src={heroImage} alt="" fill priority sizes="(min-width: 1024px) 464px, 100vw" className="object-cover object-center" />
+              ) : (
+                <HeroPizza className="size-72 sm:size-96 lg:size-full" />
+              )}
             </div>
           </div>
         </div>

@@ -3,7 +3,7 @@ import type { CategoryId } from "@/data/menu";
 // Illustrated stand-ins used until real photography is added (plan §9, phase 1).
 // Drop a file into /public/images and set `image` on the product or gallery item to replace them.
 
-function rng(seed: number) {
+export function rng(seed: number) {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;
