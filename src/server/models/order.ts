@@ -46,6 +46,8 @@ const orderSchema = new Schema(
     publicId: { type: String, required: true, unique: true, default: generatePublicId },
     /** Client-generated key; a retried checkout with the same key returns the same order instead of a second one. */
     idempotencyKey: { type: String, required: true, unique: true, minlength: 16, maxlength: 100 },
+    /** SHA-256 of the canonical request. Same key + different hash means the client reused a key for another order. */
+    requestHash: { type: String, required: true, match: /^[a-f0-9]{64}$/ },
     items: {
       type: [itemSchema],
       validate: { validator: (v: unknown[]) => v.length > 0, message: "An order needs at least one item" },
@@ -90,6 +92,7 @@ orderSchema.pre("validate", function () {
 export type OrderDoc = {
   publicId: string;
   idempotencyKey: string;
+  requestHash: string;
   items: {
     productSlug: string;
     productNameSnapshot: string;

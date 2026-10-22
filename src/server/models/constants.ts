@@ -19,3 +19,6 @@ export type PaymentStatus = (typeof PAYMENT_STATUS)[number];
 
 export const PAYMENT_PROVIDER = ["stripe", "paypal"] as const;
 export type PaymentProvider = (typeof PAYMENT_PROVIDER)[number];
+
+/** Slug of the gluten-free dough modifier seeded in the catalog. Only products with glutenFreeOption may use it. */
+export const GLUTEN_FREE_SLUG = "glutenfri-deg";

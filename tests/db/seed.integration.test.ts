@@ -14,7 +14,8 @@ const safe = !!uri && /^mongodb:\/\/(127\.0\.0\.1|localhost)(:\d+)?\/[\w-]*_test
 describe("seed + persistence (local test database)", { skip: !uri ? "MONGODB_URI_TEST not set" : false }, () => {
   before(async () => {
     assert.ok(safe, "MONGODB_URI_TEST must be a local mongodb:// URI whose database name ends in _test");
-    await mongoose.connect(uri as string, { serverSelectionTimeoutMS: 5000 });
+    // Each integration file gets its own database: node runs test files in parallel.
+    await mongoose.connect(uri as string, { dbName: "falken_seed_test", serverSelectionTimeoutMS: 5000 });
     await mongoose.connection.dropDatabase();
     await Promise.all([CategoryModel.init(), ProductModel.init(), ModifierModel.init(), OrderModel.init()]);
   });
@@ -82,6 +83,7 @@ describe("seed + persistence (local test database)", { skip: !uri ? "MONGODB_URI
 
   const orderInput = (key: string) => ({
     idempotencyKey: key,
+    requestHash: "b".repeat(64),
     items: [
       {
         productSlug: "vesuvio",

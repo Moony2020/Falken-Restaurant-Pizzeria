@@ -38,6 +38,9 @@ export type { Season };
 export const PREP_MINUTES = 25;
 export const LAST_PICKUP_BEFORE_CLOSE = 15;
 export const SLOT_STEP_MINUTES = 15;
+/** Clock-drift slack and furthest-ahead pickup the server accepts. */
+export const PICKUP_GRACE_MINUTES = 5;
+export const PICKUP_MAX_AHEAD_HOURS = 24;
 
 export const dagensLunch = {
   price: 115,

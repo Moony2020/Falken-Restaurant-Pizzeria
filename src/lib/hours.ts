@@ -83,3 +83,23 @@ export function getPickupSlots(date: Date, season: Season, opts: SlotOptions): s
   for (let m = first; m <= last; m += opts.step) slots.push(formatMinutes(m));
   return slots;
 }
+
+export type PickupRules = SlotOptions & {
+  /** Slack for clock drift between the browser that picked the slot and the server, in minutes. */
+  graceMinutes: number;
+  maxAheadHours: number;
+};
+
+/** Server-side check of a requested pickup time. The browser's idea of "available" is never trusted. */
+export function isValidPickupTime(pickup: Date, now: Date, season: Season, rules: PickupRules): boolean {
+  const lead = pickup.getTime() - now.getTime();
+  if (Number.isNaN(lead)) return false;
+  if (lead < (rules.prepMinutes - rules.graceMinutes) * 60_000) return false;
+  if (lead > rules.maxAheadHours * 3_600_000) return false;
+  if (pickup.getUTCSeconds() !== 0 || pickup.getUTCMilliseconds() !== 0) return false;
+
+  const { weekday, minutes } = stockholmNow(pickup);
+  if (minutes % rules.step !== 0) return false;
+  const day = HOURS[season][weekday];
+  return minutes >= day.open * 60 && minutes <= day.close * 60 - rules.lastBeforeClose;
+}

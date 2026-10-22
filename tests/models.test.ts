@@ -51,6 +51,7 @@ const line = (over: object = {}) => ({
 const order = (over: object = {}) =>
   new OrderModel({
     idempotencyKey: "0123456789abcdef",
+    requestHash: "a".repeat(64),
     items: [line()],
     subtotalSek: 280,
     totalSek: 280,

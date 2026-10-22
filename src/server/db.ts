@@ -8,6 +8,8 @@ const g = globalThis as typeof globalThis & { __falkenMongo?: Cache };
 const cache: Cache = (g.__falkenMongo ??= { promise: null });
 
 export async function connectDb(): Promise<typeof mongoose> {
+  // Reuse a connection somebody already opened (integration tests open one to a local database).
+  if (mongoose.connection.readyState === 1) return mongoose;
   if (!cache.promise) {
     const env = getEnv();
     cache.promise = mongoose
