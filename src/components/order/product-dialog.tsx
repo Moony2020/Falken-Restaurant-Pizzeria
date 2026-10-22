@@ -6,7 +6,9 @@ import {
   IF_UNAVAILABLE_LABELS_SV,
   type IfUnavailable,
 } from "@/data/modifier-groups";
-import { site } from "@/data/site";
+import { CURRENT_SEASON, site } from "@/data/site";
+import { getOpenStatus } from "@/lib/hours";
+import { useNow } from "@/lib/use-now";
 import type { CategoryId } from "@/data/menu";
 import { cartStore, MAX_LINE_QUANTITY } from "@/lib/cart-store";
 import {
@@ -47,7 +49,7 @@ export function ProductDialog() {
       open={!!product}
       onClose={closeProduct}
       label={product ? `Anpassa ${product.name}` : "Anpassa rätt"}
-      className="m-auto max-h-[92dvh] w-[calc(100%-1.5rem)] max-w-[600px] overflow-clip rounded-2xl bg-ivory p-0 shadow-2xl open:flex open:animate-rise open:flex-col"
+      className="m-auto max-h-[92dvh] w-[calc(100%-1.5rem)] max-w-[600px] overflow-clip rounded-2xl bg-ink p-0 shadow-2xl open:flex open:animate-rise open:flex-col"
     >
       {ready && product && (
         <ProductForm
@@ -171,6 +173,11 @@ function ProductForm({
   onClose: () => void;
 }) {
   const { showNotice } = useOrder();
+  // While the restaurant is closed nothing can be added: the customer is told why instead of getting a dead order.
+  const now = useNow();
+  const closedStatus =
+    now === null ? null : getOpenStatus(new Date(now), CURRENT_SEASON);
+  const closed = !!closedStatus && !closedStatus.isOpen;
   const removable = !!category?.removable && product.ingredients.length > 0;
   const groups = useMemo(() => groupsFor(product, menu), [product, menu]);
 
@@ -186,7 +193,7 @@ function ProductForm({
 
   const selected = chosen.map((slug) => ({ slug, quantity: 1 }));
   const unit = previewUnitPrice(product, variantId, selected, menu);
-  const canOrder = unit !== null;
+  const canOrder = unit !== null && !closed;
   const multiVariant = product.variants.length > 1;
 
   const changeVariant = (id: string) => {
@@ -244,7 +251,7 @@ function ProductForm({
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-5 sm:px-6">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto bg-ivory px-4 py-5 sm:px-6">
         <header className="px-1">
           <p className="text-xs font-medium uppercase tracking-[0.2em] text-gold-deep">
             {product.menuNumber ? `Nr ${product.menuNumber}` : category?.name}
@@ -255,7 +262,7 @@ function ProductForm({
           </h2>
           {canOrder && (
             <p className="mt-1 font-display text-2xl font-semibold text-gold-deep tabular-nums">
-              {kr(unit)}
+              {kr(unit ?? 0)}
             </p>
           )}
           {product.ingredients.length > 0 && (
@@ -404,7 +411,7 @@ function ProductForm({
             id="if-unavailable"
             value={ifUnavailable}
             onChange={(e) => setIfUnavailable(e.target.value as IfUnavailable)}
-            className="mt-3 min-h-12 w-full rounded-xl border border-line bg-ivory px-4 text-sm"
+            className="select-chevron mt-3 min-h-12 w-full rounded-xl border border-line bg-ivory pl-4 text-sm"
           >
             {IF_UNAVAILABLE.map((v) => (
               <option key={v} value={v}>
@@ -416,7 +423,16 @@ function ProductForm({
       </div>
 
       <footer className="shrink-0 border-t border-line bg-white px-4 py-3 sm:px-6">
-        {!canOrder ? (
+        {closed ? (
+          <p
+            role="status"
+            className="mb-3 rounded-lg bg-cream px-3 py-2 text-xs leading-relaxed text-muted"
+          >
+            Vi har stängt just nu ({closedStatus?.label.toLowerCase().replace(/^stängt\s*·\s*/, "")}), så du
+            kan inte lägga till rätter i varukorgen. Välkommen tillbaka när vi
+            öppnar!
+          </p>
+        ) : unit === null ? (
           <p
             role="status"
             className="mb-3 rounded-lg bg-cream px-3 py-2 text-xs leading-relaxed text-muted"
@@ -428,12 +444,12 @@ function ProductForm({
           <p className="mb-3 text-xs text-muted" aria-live="polite">
             Per rätt med dina val:{" "}
             <span className="font-semibold text-ink tabular-nums">
-              {kr(unit)}
+              {kr(unit ?? 0)}
             </span>
             <span aria-hidden="true"> · </span>
             Totalt ({quantity} st):{" "}
             <span className="font-semibold text-ink tabular-nums">
-              {kr(unit * quantity)}
+              {kr((unit ?? 0) * quantity)}
             </span>
           </p>
         )}
@@ -480,7 +496,7 @@ function ProductForm({
               <span className="hidden sm:inline">Lägg i varukorg</span>
             </span>
             {unit !== null && (
-              <span className="tabular-nums">{kr(unit * quantity)}</span>
+              <span className="tabular-nums">{kr((unit ?? 0) * quantity)}</span>
             )}
           </button>
         </div>

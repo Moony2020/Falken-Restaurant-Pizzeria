@@ -409,7 +409,7 @@ function Details({ lines, totalSek, onBack }: { lines: CartLine[]; totalSek: num
             value={selectedPickup}
             onChange={(e) => setPickup(e.target.value)}
             disabled={slots === null || slots.length === 0}
-            className={`${field} border-line font-normal`}
+            className={`${field} select-chevron border-line font-normal`}
           >
             {slots === null && <option>Laddar tider…</option>}
             {slots?.map((s, i) => (

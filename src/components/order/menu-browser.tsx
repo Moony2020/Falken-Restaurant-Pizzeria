@@ -10,6 +10,7 @@ import type {
   PublicProduct,
 } from "@/lib/menu-types";
 import { kr } from "@/lib/pricing";
+import { OpenStatus } from "@/components/open-status";
 import { PageBanner } from "@/components/page-banner";
 import { BannerArt } from "@/components/banner-art";
 import {
@@ -119,6 +120,9 @@ export function MenuBrowser() {
             disabled={!menu}
             className="min-h-14 w-full rounded-full border border-ivory/20 bg-ivory/10 pl-13 pr-5 text-[0.95rem] text-ivory backdrop-blur transition placeholder:text-ivory/55 focus:border-gold focus:bg-ivory/15 disabled:opacity-60"
           />
+        </div>
+        <div className="mt-4">
+          <OpenStatus />
         </div>
       </PageBanner>
 

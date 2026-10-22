@@ -17,7 +17,7 @@ export const EXTRAS: ExtraSeed[] = [
   ...row("extra", 20, PIZZAS, ["Bacon", "Köttfärs", "Skinka", "Räkor", "Tonfisk", "Pepperoni", "Kebabkött", "Pommes", "Pizzasallad"]),
   ...row("gronsaker", 10, PIZZAS, ["Champinjoner", "Lök", "Paprika", "Oliver", "Ananas", "Banan", "Tomat", "Ruccola"]),
   ...row("gronsaker", 15, PIZZAS, ["Fetaost"]),
-  ...row("saser", 10, [...PIZZAS, "kebab", "hamburgare"], ["Bearnaisesås", "Vitlökssås", "Mild sås", "Kebabsås", "Stark sås", "Ketchup"]),
+  ...row("saser", 10, [...PIZZAS, "kebab", "hamburgare", "sallader", "alacarte", "barn"], ["Bearnaisesås", "Vitlökssås", "Mild sås", "Kebabsås", "Stark sås", "Ketchup"]),
 ];
 
 export const extraSlug = (label: string) =>
