@@ -42,6 +42,20 @@ const itemSchema = new Schema(
   { _id: false },
 );
 
+// Every status change is appended here in the SAME atomic update that changes the status, so the history can
+// never disagree with the order (no transactions needed, which also works on a standalone local MongoDB).
+const statusHistorySchema = new Schema(
+  {
+    at: { type: Date, required: true },
+    from: { type: String, enum: FULFILLMENT_STATUS },
+    to: { type: String, enum: FULFILLMENT_STATUS, required: true },
+    actorType: { type: String, enum: ["payment", "staff", "system", "customer"], required: true },
+    actorId: { type: String, maxlength: 100 },
+    reason: { type: String, maxlength: 200 },
+  },
+  { _id: false },
+);
+
 const orderSchema = new Schema(
   {
     publicId: { type: String, required: true, unique: true, default: generatePublicId },
@@ -65,6 +79,19 @@ const orderSchema = new Schema(
     paymentProvider: { type: String, enum: PAYMENT_PROVIDER },
     paymentStatus: { type: String, enum: PAYMENT_STATUS, default: "pending", index: true },
     fulfillmentStatus: { type: String, enum: FULFILLMENT_STATUS, default: "PENDING_PAYMENT", index: true },
+    /** After this moment an order that is still unpaid may be cancelled (after the provider has been asked). */
+    paymentExpiresAt: { type: Date, index: true },
+    /** The Payment that paid this order. Written in the same atomic update as the PAID transition. */
+    paymentId: { type: Schema.Types.ObjectId, ref: "Payment" },
+    paidAt: { type: Date },
+    cancelledAt: { type: Date },
+    statusHistory: { type: [statusHistorySchema], default: [] },
+    /** Something needs a person: a late payment, an amount mismatch, a double payment. Never cleared automatically. */
+    needsReview: {
+      reason: { type: String, maxlength: 100 },
+      detail: { type: String, maxlength: 300 },
+      at: { type: Date },
+    },
   },
   { timestamps: true },
 );
@@ -116,6 +143,19 @@ export type OrderDoc = {
   paymentProvider?: PaymentProvider;
   paymentStatus: PaymentStatus;
   fulfillmentStatus: FulfillmentStatus;
+  paymentExpiresAt?: Date;
+  paymentId?: Types.ObjectId;
+  paidAt?: Date;
+  cancelledAt?: Date;
+  statusHistory: {
+    at: Date;
+    from?: FulfillmentStatus;
+    to: FulfillmentStatus;
+    actorType: "payment" | "staff" | "system" | "customer";
+    actorId?: string;
+    reason?: string;
+  }[];
+  needsReview?: { reason?: string; detail?: string; at?: Date };
 };
 
 export const OrderModel = (models.Order as Model<OrderDoc> | undefined) ?? model<OrderDoc>("Order", orderSchema);
@@ -134,6 +174,8 @@ const paymentSchema = new Schema(
     status: { type: String, enum: PAYMENT_STATUS, default: "pending" },
     /** Webhook event ids already applied. A replayed event is recognised here and ignored. */
     processedEventIds: { type: [String], default: [] },
+    /** What the provider says it received, in whole SEK. May differ from amountSek (that is flagged, never ignored). */
+    receivedSek: { type: Number, min: 0, validate: Number.isInteger },
     refundedSek: { ...sek, default: 0 },
   },
   { timestamps: true },
@@ -150,6 +192,7 @@ export type PaymentDoc = {
   currency: "SEK";
   status: PaymentStatus;
   processedEventIds: string[];
+  receivedSek?: number;
   refundedSek: number;
 };
 

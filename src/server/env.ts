@@ -22,3 +22,15 @@ export function getEnv(source: Record<string, string | undefined> = process.env)
   }
   return parsed.data;
 }
+
+/**
+ * Secret used to derive order access tokens (see order-access.ts). Kept out of getEnv() so existing callers
+ * that only need the database are unaffected; the orders route asks for it explicitly.
+ */
+export function getOrderTokenSecret(source: Record<string, string | undefined> = process.env): string {
+  const secret = source.ORDER_TOKEN_SECRET ?? "";
+  if (secret.length < 32) {
+    throw new Error("Invalid server environment: ORDER_TOKEN_SECRET must be set to at least 32 characters (see .env.example)");
+  }
+  return secret;
+}

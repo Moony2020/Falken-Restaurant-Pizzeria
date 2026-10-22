@@ -13,7 +13,7 @@ export type PublicOrder = {
 };
 
 export type OrderResult =
-  | { kind: "created" | "replayed"; order: PublicOrder }
+  | { kind: "created" | "replayed"; order: PublicOrder; accessToken?: string }
   | { kind: "price_changed"; expectedSek: number; actualSek: number }
   | { kind: "issues"; issues: CartIssue[] }
   | { kind: "pickup_unavailable" }
@@ -76,7 +76,10 @@ async function send(body: OrderBody, fetchImpl: typeof fetch): Promise<OrderResu
 
   if (res.status === 201 || res.status === 200) {
     const order = data.order as PublicOrder | undefined;
-    return order && typeof order.publicId === "string" ? { kind: res.status === 201 ? "created" : "replayed", order } : { kind: "unavailable" };
+    const accessToken = typeof data.accessToken === "string" ? data.accessToken : undefined;
+    return order && typeof order.publicId === "string"
+      ? { kind: res.status === 201 ? "created" : "replayed", order, accessToken }
+      : { kind: "unavailable" };
   }
   if (res.status === 429) return { kind: "rate_limited", retryAfterSec: Number(res.headers.get("retry-after")) || 30 };
   if (res.status === 409 && data.error === "price_changed") {

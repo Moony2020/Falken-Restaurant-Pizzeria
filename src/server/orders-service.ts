@@ -4,6 +4,8 @@ import { isValidPickupTime } from "../lib/hours.ts";
 import { orderRequestSchema, type CartInput, type OrderRequest } from "./cart-schema.ts";
 import { loadCatalogForCart } from "./catalog-repo.ts";
 import { OrderModel, type OrderDoc } from "./models/order.ts";
+import { deriveAccessToken } from "./order-access.ts";
+import { ORDER_EXPIRY_MINUTES } from "./payments-config.ts";
 import { priceCart, type PricedLine, type PricingIssue } from "./pricing-engine.ts";
 
 type OrderErrorCode = "invalid_request" | "pricing" | "pickup_unavailable" | "idempotency_conflict" | "price_changed";
@@ -79,7 +81,10 @@ export function toPublicOrder(o: OrderDoc): PublicOrder {
   };
 }
 
-export type CreateOrderResult = { replayed: boolean; order: PublicOrder };
+/** `accessToken` is only present when a token secret was supplied. It is derived, never stored, so a retry gets it back too. */
+export type CreateOrderResult = { replayed: boolean; order: PublicOrder; accessToken?: string };
+
+export type CreateOrderOptions = { tokenSecret?: string };
 
 const isDuplicateKey = (err: unknown) => typeof err === "object" && err !== null && (err as { code?: number }).code === 11000;
 
@@ -88,7 +93,12 @@ const isDuplicateKey = (err: unknown) => typeof err === "object" && err !== null
  * status fields are fixed here and are not part of the accepted request. Only a verified payment
  * webhook (a later phase) may move an order forward.
  */
-export async function createOrder(body: unknown, now: Date = new Date()): Promise<CreateOrderResult> {
+export async function createOrder(body: unknown, now: Date = new Date(), options: CreateOrderOptions = {}): Promise<CreateOrderResult> {
+  const withToken = (order: PublicOrder, replayed: boolean): CreateOrderResult => ({
+    replayed,
+    order,
+    accessToken: options.tokenSecret ? deriveAccessToken(order.publicId, options.tokenSecret) : undefined,
+  });
   const parsed = orderRequestSchema.safeParse(body);
   if (!parsed.success) {
     throw new OrderError("invalid_request", 400, "The order request is invalid", parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })));
@@ -103,7 +113,7 @@ export async function createOrder(body: unknown, now: Date = new Date()): Promis
     if (existing.requestHash !== requestHash) {
       throw new OrderError("idempotency_conflict", 409, "This idempotency key was already used for a different order");
     }
-    return { replayed: true, order: toPublicOrder(existing) };
+    return withToken(toPublicOrder(existing), true);
   };
   const already = await replay();
   if (already) return already;
@@ -142,8 +152,10 @@ export async function createOrder(body: unknown, now: Date = new Date()): Promis
       contact: { name: req.contact.name, phone: req.contact.phone },
       paymentStatus: "pending",
       fulfillmentStatus: "PENDING_PAYMENT",
+      paymentExpiresAt: new Date(now.getTime() + ORDER_EXPIRY_MINUTES * 60_000),
+      statusHistory: [{ at: now, to: "PENDING_PAYMENT", actorType: "customer", reason: "order_created" }],
     });
-    return { replayed: false, order: toPublicOrder(created.toObject()) };
+    return withToken(toPublicOrder(created.toObject()), false);
   } catch (err) {
     // Two identical requests raced: the unique index let one win; return that order to the other.
     if (isDuplicateKey(err)) {

@@ -3,7 +3,8 @@ import type { Attempt, PublicOrder } from "./checkout.ts";
 // Remembers (1) the idempotency key of the current checkout attempt and (2) the last order created,
 // so a page reload shows the order that exists instead of inviting a second one.
 
-export type CheckoutState = { attempt: Attempt | null; order: PublicOrder | null };
+/** `accessToken` proves to the server that this browser created the order; later pay/cancel calls send it. */
+export type CheckoutState = { attempt: Attempt | null; order: PublicOrder | null; accessToken?: string };
 
 const STORAGE_KEY = "falken.checkout.v1";
 const EMPTY: CheckoutState = { attempt: null, order: null };
@@ -23,7 +24,11 @@ function load() {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
     const p = JSON.parse(raw) as Partial<CheckoutState>;
-    state = { attempt: isAttempt(p.attempt) ? p.attempt : null, order: isOrder(p.order) ? p.order : null };
+    state = {
+      attempt: isAttempt(p.attempt) ? p.attempt : null,
+      order: isOrder(p.order) ? p.order : null,
+      accessToken: typeof p.accessToken === "string" ? p.accessToken : undefined,
+    };
   } catch {
     // Unreadable storage: begin fresh.
   }
@@ -59,12 +64,12 @@ export const checkoutStore = {
     commit({ ...state, attempt });
   },
   /** An order exists: the attempt is finished, so the next order gets a new key. */
-  setOrder(order: PublicOrder) {
+  setOrder(order: PublicOrder, accessToken?: string) {
     load();
-    commit({ attempt: null, order });
+    commit({ attempt: null, order, accessToken });
   },
   dismissOrder() {
     load();
-    commit({ ...state, order: null });
+    commit({ ...state, order: null, accessToken: undefined });
   },
 };

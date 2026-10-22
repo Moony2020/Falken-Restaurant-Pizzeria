@@ -338,7 +338,7 @@ function Details({ lines, totalSek, onBack }: { lines: CartLine[]; totalSek: num
 
     if (result.kind === "created" || result.kind === "replayed") {
       cartStore.clear();
-      checkoutStore.setOrder(result.order);
+      checkoutStore.setOrder(result.order, result.accessToken);
       return;
     }
     if (result.kind === "price_changed" || result.kind === "issues") {
