@@ -83,3 +83,6 @@ export const menuHeroImage: string | null = null;
 
 /** Path under /public of a real photo for the contact page banner. While null, an illustration is shown. */
 export const contactHeroImage: string | null = null;
+
+/** Path under /public of a real photo for the gallery banner. While null, an illustration is shown. */
+export const galleryHeroImage: string | null = null;
