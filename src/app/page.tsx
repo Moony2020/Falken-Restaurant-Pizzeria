@@ -22,12 +22,12 @@ const steps = [
 export default function HomePage() {
   return (
     <>
-      <section aria-labelledby="hero-title" className="bg-[linear-gradient(to_bottom,var(--color-ink-2)_0,var(--color-ink-2)_75%,var(--color-ivory)_75%)]">
-        <div className="wrap pb-2 pt-2 sm:pt-3">
-          <div className="hero-slate relative isolate grid items-center overflow-hidden rounded-[1.5rem] px-7 pt-10 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.6)] ring-1 ring-white/5 sm:px-12 lg:min-h-[21rem] lg:grid-cols-[1.15fr_1fr] lg:px-14 lg:py-10">
+      <section aria-labelledby="hero-title" className="bg-[linear-gradient(to_bottom,var(--color-ink-2)_0,var(--color-ink-2)_88%,var(--color-ivory)_88%)]">
+        <div className="mx-auto w-full max-w-[1760px] px-3 pb-2 pt-2 sm:px-5 sm:pt-3 lg:px-7">
+          <div className="hero-slate relative isolate grid items-center overflow-hidden rounded-[1.5rem] px-7 pt-10 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.6)] ring-1 ring-white/5 sm:px-12 lg:min-h-[22rem] lg:grid-cols-[1.15fr_1fr] lg:px-12 lg:py-10 xl:min-h-[25rem] xl:px-16 xl:py-12">
             <div className="relative z-10 max-w-xl animate-rise lg:max-w-none">
               <OpenStatus />
-              <h1 id="hero-title" className="mt-4 text-[2.5rem] font-medium uppercase leading-[1.05] text-ivory sm:text-5xl lg:text-[3.1rem]">
+              <h1 id="hero-title" className="mt-4 text-[2.5rem] font-medium uppercase leading-[1.05] text-ivory sm:text-5xl lg:text-[2.8rem] xl:text-[3.6rem]">
                 Äkta smak i
                 <span className="block text-gold">hjärtat av Vintrosa</span>
               </h1>
@@ -46,7 +46,7 @@ export default function HomePage() {
 
             <div
               aria-hidden="true"
-              className="pointer-events-none relative -mb-24 mt-8 flex justify-center sm:-mb-32 lg:absolute lg:-right-10 lg:top-1/2 lg:mb-0 lg:mt-0 lg:block lg:size-[29rem] lg:-translate-y-1/2"
+              className="pointer-events-none relative -mb-24 mt-8 flex justify-center sm:-mb-32 lg:absolute lg:-right-10 lg:top-1/2 lg:mb-0 lg:mt-0 lg:block lg:size-[26rem] lg:-translate-y-1/2 xl:-right-12 xl:size-[34rem]"
             >
               {heroImage ? (
                 <Image src={heroImage} alt="" fill priority sizes="(min-width: 1024px) 464px, 100vw" className="object-cover object-center" />

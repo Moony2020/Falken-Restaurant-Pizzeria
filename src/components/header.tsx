@@ -17,7 +17,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 bg-ink-2 text-ivory">
-      <div className="wrap flex h-20 items-center justify-between gap-4 sm:h-24">
+      <div className="mx-auto flex h-20 w-full max-w-[1760px] items-center justify-between gap-4 px-5 sm:h-24 sm:px-8 lg:px-12">
         <Logo />
 
         <nav aria-label="Huvudmeny" className="hidden md:block">

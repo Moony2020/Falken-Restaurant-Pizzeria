@@ -5,10 +5,10 @@ export function Logo({ tone = "light" }: { tone?: "light" | "dark" }) {
   const sub = tone === "light" ? "text-gold" : "text-gold-deep";
   return (
     <Link href="/" className="group inline-flex flex-col items-center leading-none" aria-label="Falken – startsidan">
-      <span className={`font-display text-[2rem] font-medium tracking-[0.12em] sm:text-[2.4rem] ${main}`}>
+      <span className={`font-display text-[2rem] font-medium tracking-[0.16em] sm:text-[2.6rem] ${main}`}>
         FALKEN
       </span>
-      <span className={`mt-1 text-[0.58rem] font-medium uppercase tracking-[0.42em] ${sub}`}>
+      <span className={`mt-1.5 text-[0.6rem] font-medium uppercase tracking-[0.5em] sm:text-[0.64rem] ${sub}`}>
         Restaurang &amp; Pizzeria
       </span>
     </Link>
