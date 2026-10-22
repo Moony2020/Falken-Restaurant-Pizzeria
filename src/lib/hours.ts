@@ -103,3 +103,16 @@ export function isValidPickupTime(pickup: Date, now: Date, season: Season, rules
   const day = HOURS[season][weekday];
   return minutes >= day.open * 60 && minutes <= day.close * 60 - rules.lastBeforeClose;
 }
+
+/**
+ * Pickup slots as real instants, for sending to the server. `label` is the Stockholm wall-clock time shown
+ * to the customer. Whole minutes are enough: the opening-hours table has no daylight-saving change inside a day.
+ */
+export function getPickupSlotInstants(date: Date, season: Season, opts: SlotOptions): { label: string; iso: string }[] {
+  const { minutes: nowMinutes } = stockholmNow(date);
+  const baseMs = Math.floor(date.getTime() / 60_000) * 60_000;
+  return getPickupSlots(date, season, opts).map((label) => {
+    const [h, m] = label.split(":").map(Number);
+    return { label, iso: new Date(baseMs + (h * 60 + m - nowMinutes) * 60_000).toISOString() };
+  });
+}

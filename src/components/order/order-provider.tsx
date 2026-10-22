@@ -10,14 +10,11 @@ import {
   useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { getProduct } from "@/data/menu";
 import { cartStore, type CartLine } from "@/lib/cart-store";
-import { lineTotal } from "@/lib/pricing";
 
 type OrderContextValue = {
   lines: CartLine[];
   count: number;
-  subtotal: number;
   activeProductId: string | null;
   cartOpen: boolean;
   openProduct: (productId: string) => void;
@@ -35,17 +32,8 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const [activeProductId, setActiveProductId] = useState<string | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
 
-  const { count, subtotal } = useMemo(() => {
-    let count = 0;
-    let subtotal = 0;
-    for (const l of lines) {
-      const product = getProduct(l.productId);
-      if (!product) continue;
-      count += l.quantity;
-      subtotal += lineTotal(product, { variantId: l.variantId, glutenFree: l.glutenFree, quantity: l.quantity });
-    }
-    return { count, subtotal };
-  }, [lines]);
+  // Only a count is derived here. Prices come from the server (see cart-pricing-store).
+  const count = useMemo(() => lines.reduce((sum, l) => sum + l.quantity, 0), [lines]);
 
   const openProduct = useCallback((id: string) => {
     setCartOpen(false);
@@ -70,7 +58,6 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     () => ({
       lines,
       count,
-      subtotal,
       activeProductId,
       cartOpen,
       openProduct,
@@ -80,7 +67,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       notice,
       showNotice,
     }),
-    [lines, count, subtotal, activeProductId, cartOpen, openProduct, closeProduct, openCart, closeCart, notice, showNotice],
+    [lines, count, activeProductId, cartOpen, openProduct, closeProduct, openCart, closeCart, notice, showNotice],
   );
 
   return <OrderContext.Provider value={value}>{children}</OrderContext.Provider>;

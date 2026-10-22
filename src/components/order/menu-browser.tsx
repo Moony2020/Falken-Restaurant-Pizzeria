@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo, useState, useSyncExternalStore } from "react";
-import { categories, productsIn, products, type Category, type CategoryId, type Product } from "@/data/menu";
 import { dagensLunch, site } from "@/data/site";
+import type { MenuLoadFailure } from "@/lib/menu-client";
+import { reloadMenu, useMenu } from "@/lib/menu-store";
+import type { PublicCategory, PublicMenu, PublicProduct } from "@/lib/menu-types";
 import { kr } from "@/lib/pricing";
 import { ArrowIcon, CartIcon, ClockIcon, PhoneIcon, SearchIcon } from "@/components/icons";
 import { useOrder } from "./order-provider";
@@ -21,8 +23,8 @@ function setHash(id: string) {
   window.dispatchEvent(new HashChangeEvent("hashchange"));
 }
 
-function groupProducts(items: Product[]): { name?: string; items: Product[] }[] {
-  const groups: { name?: string; items: Product[] }[] = [];
+function groupProducts(items: PublicProduct[]): { name?: string; items: PublicProduct[] }[] {
+  const groups: { name?: string; items: PublicProduct[] }[] = [];
   for (const p of items) {
     const last = groups[groups.length - 1];
     if (last && last.name === p.group) last.items.push(p);
@@ -31,32 +33,36 @@ function groupProducts(items: Product[]): { name?: string; items: Product[] }[] 
   return groups;
 }
 
-function groupPrice(items: Product[]): string | null {
+/** A shared price line is only printed when every size of every dish in the group is confirmed and orderable. */
+function groupPrice(items: PublicProduct[]): string | null {
   const first = items[0];
   if (first.variants.length < 2) return null;
-  const same = items.every((p) => p.variants.every((v, i) => v.price === first.variants[i].price));
-  if (!same) return null;
-  return first.variants.map((v) => `${v.label} ${kr(v.price)}`).join("  ·  ");
+  if (!items.every((p) => p.variants.every((v) => v.orderable))) return null;
+  const same = items.every((p) => p.variants.every((v, i) => v.priceSek === first.variants[i]?.priceSek));
+  return same ? first.variants.map((v) => `${v.label} ${kr(v.priceSek)}`).join("  ·  ") : null;
 }
 
 export function MenuBrowser() {
+  const state = useMenu();
   const hash = useSyncExternalStore(subscribeHash, getHash, getServerHash);
-  const active: CategoryId = categories.some((c) => c.id === hash) ? (hash as CategoryId) : "pizza";
   const [query, setQuery] = useState("");
-  const { count, subtotal, openCart } = useOrder();
+  const { count, openCart } = useOrder();
+
+  const menu = state.status === "ready" ? state.menu : null;
+  const active = menu ? (menu.categories.find((c) => c.slug === hash) ?? menu.categories[0]) : undefined;
 
   const q = query.trim().toLowerCase();
-  const searching = q.length >= 2;
+  const searching = q.length >= 2 && !!menu;
 
   const results = useMemo(() => {
-    if (!searching) return [];
-    return products.filter(
+    if (!menu || q.length < 2) return [];
+    return menu.products.filter(
       (p) =>
         p.name.toLowerCase().includes(q) ||
         ingredientText(p).toLowerCase().includes(q) ||
-        (p.number !== undefined && `${p.number}` === q.replace("#", "")),
+        (p.menuNumber !== undefined && `${p.menuNumber}` === q.replace("#", "")),
     );
-  }, [q, searching]);
+  }, [menu, q]);
 
   const selectTab = (e: React.MouseEvent, id: string) => {
     e.preventDefault();
@@ -66,55 +72,68 @@ export function MenuBrowser() {
     if (panel && panel.getBoundingClientRect().top < 150) panel.scrollIntoView({ block: "start" });
   };
 
-  const category = categories.find((c) => c.id === active) as Category;
-
   return (
     <>
       <div className="sticky top-20 z-30 border-b border-line bg-ivory/95 backdrop-blur sm:top-24">
-        <nav aria-label="Menykategorier" className="wrap py-3">
+        <nav aria-label="Menykategorier" className="wrap py-3" aria-busy={state.status === "loading"}>
           <ul className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:px-0 lg:flex-wrap lg:overflow-visible lg:pb-0">
-            {categories.map((c) => {
-              const current = !searching && c.id === active;
-              return (
-                <li key={c.id} className="shrink-0">
-                  <a
-                    href={`#${c.id}`}
-                    onClick={(e) => selectTab(e, c.id)}
-                    aria-current={current ? "true" : undefined}
-                    className={`inline-flex min-h-11 items-center rounded-full border px-4 text-[0.75rem] font-semibold uppercase tracking-[0.06em] transition ${
-                      current
-                        ? "border-ink bg-ink text-ivory"
-                        : "border-line bg-white text-ink hover:border-gold-deep"
-                    }`}
-                  >
-                    {c.name}
-                  </a>
-                </li>
-              );
-            })}
+            {menu
+              ? menu.categories.map((c) => {
+                  const current = !searching && c.slug === active?.slug;
+                  return (
+                    <li key={c.slug} className="shrink-0">
+                      <a
+                        href={`#${c.slug}`}
+                        onClick={(e) => selectTab(e, c.slug)}
+                        aria-current={current ? "true" : undefined}
+                        className={`inline-flex min-h-11 items-center rounded-full border px-4 text-[0.75rem] font-semibold uppercase tracking-[0.06em] transition ${
+                          current ? "border-ink bg-ink text-ivory" : "border-line bg-white text-ink hover:border-gold-deep"
+                        }`}
+                      >
+                        {c.name}
+                      </a>
+                    </li>
+                  );
+                })
+              : state.status === "loading" &&
+                Array.from({ length: 6 }, (_, i) => (
+                  <li key={i} className="shrink-0" aria-hidden="true">
+                    <span className="block h-11 w-24 animate-pulse rounded-full bg-cream" />
+                  </li>
+                ))}
           </ul>
         </nav>
       </div>
 
       <div id="menu-panel" className="wrap scroll-mt-44 py-10 sm:py-14">
-        <div className="relative mb-8 w-full sm:ml-auto sm:max-w-sm">
-          <label htmlFor="menu-search" className="sr-only">
-            Sök i menyn
-          </label>
-          <SearchIcon className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted" />
-          <input
-            id="menu-search"
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Sök rätt, ingrediens eller nummer"
-            className="min-h-12 w-full rounded-full border border-line bg-white pl-12 pr-4 text-sm placeholder:text-muted/70"
-          />
-        </div>
-        {searching ? (
-          <SearchResults items={results} query={query} onClear={() => setQuery("")} />
-        ) : (
-          <CategoryPanel category={category} onSelect={(id) => setHash(id)} />
+        {state.status === "loading" && <MenuSkeleton />}
+        {state.status === "error" && <MenuError reason={state.reason} />}
+
+        {menu && (
+          <>
+            <div className="relative mb-8 w-full sm:ml-auto sm:max-w-sm">
+              <label htmlFor="menu-search" className="sr-only">
+                Sök i menyn
+              </label>
+              <SearchIcon className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted" />
+              <input
+                id="menu-search"
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Sök rätt, ingrediens eller nummer"
+                className="min-h-12 w-full rounded-full border border-line bg-white pl-12 pr-4 text-sm placeholder:text-muted/70"
+              />
+            </div>
+
+            {searching ? (
+              <SearchResults items={results} query={query} onClear={() => setQuery("")} />
+            ) : active ? (
+              <CategoryPanel category={active} menu={menu} onSelect={setHash} />
+            ) : (
+              <EmptyMenu />
+            )}
+          </>
         )}
       </div>
 
@@ -134,7 +153,7 @@ export function MenuBrowser() {
               </span>
               Visa varukorg
             </span>
-            <span className="font-semibold tabular-nums text-gold">{kr(subtotal)}</span>
+            <ArrowIcon className="size-4 text-gold" />
           </button>
         </div>
       )}
@@ -142,8 +161,76 @@ export function MenuBrowser() {
   );
 }
 
-function CategoryPanel({ category, onSelect }: { category: Category; onSelect: (id: CategoryId) => void }) {
-  const items = productsIn(category.id);
+function MenuSkeleton() {
+  return (
+    <div role="status" aria-live="polite" aria-busy="true">
+      <span className="sr-only">Laddar menyn…</span>
+      <div className="mb-8 h-12 w-full animate-pulse rounded-full bg-cream sm:ml-auto sm:max-w-sm" aria-hidden="true" />
+      <div className="mb-3 h-12 w-64 animate-pulse rounded-lg bg-cream" aria-hidden="true" />
+      <div className="mb-10 h-5 w-96 max-w-full animate-pulse rounded bg-cream" aria-hidden="true" />
+      <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2" aria-hidden="true">
+        {Array.from({ length: 6 }, (_, i) => (
+          <li key={i} className="flex gap-4 rounded-2xl border border-line bg-white p-3">
+            <span className="size-28 shrink-0 animate-pulse rounded-xl bg-cream sm:size-32" />
+            <span className="flex flex-1 flex-col gap-3 py-1">
+              <span className="h-6 w-2/3 animate-pulse rounded bg-cream" />
+              <span className="h-4 w-full animate-pulse rounded bg-cream" />
+              <span className="h-4 w-1/2 animate-pulse rounded bg-cream" />
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+const errorText: Record<MenuLoadFailure, string> = {
+  network: "Vi fick ingen kontakt med servern. Kontrollera din uppkoppling och försök igen.",
+  server: "Vi har tekniska problem just nu och kan inte visa menyn.",
+  invalid: "Menyn kunde inte läsas in korrekt.",
+};
+
+function MenuError({ reason }: { reason: MenuLoadFailure }) {
+  return (
+    <div role="alert" className="mx-auto max-w-xl rounded-2xl border border-line bg-white px-6 py-14 text-center shadow-card">
+      <p className="font-display text-3xl font-semibold">Menyn kunde inte laddas</p>
+      <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted">{errorText[reason]}</p>
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+        <button
+          type="button"
+          onClick={reloadMenu}
+          className="inline-flex min-h-12 items-center rounded-full bg-gold px-7 text-sm font-semibold text-ink transition hover:bg-gold-light"
+        >
+          Försök igen
+        </button>
+        <a
+          href={site.phoneHref}
+          className="inline-flex min-h-12 items-center gap-2 rounded-full border border-ink/25 px-7 text-sm font-semibold transition hover:bg-ink hover:text-ivory"
+        >
+          <PhoneIcon className="size-4" /> Ring {site.phone}
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function EmptyMenu() {
+  return (
+    <div className="rounded-2xl border border-dashed border-line bg-white px-6 py-14 text-center">
+      <p className="font-display text-2xl font-semibold">Menyn är tom just nu</p>
+      <p className="mx-auto mt-2 max-w-md text-sm text-muted">
+        Vi uppdaterar menyn. Ring oss på{" "}
+        <a href={site.phoneHref} className="font-semibold text-ink underline underline-offset-2">
+          {site.phone}
+        </a>{" "}
+        så hjälper vi dig.
+      </p>
+    </div>
+  );
+}
+
+function CategoryPanel({ category, menu, onSelect }: { category: PublicCategory; menu: PublicMenu; onSelect: (id: string) => void }) {
+  const items = menu.products.filter((p) => p.category === category.slug);
 
   return (
     <section aria-labelledby="panel-title" className="animate-fade">
@@ -152,43 +239,44 @@ function CategoryPanel({ category, onSelect }: { category: Category; onSelect: (
           {category.name}
         </h2>
         <p className="mt-2 text-[0.95rem] leading-relaxed text-muted">{category.blurb}</p>
-        {category.id === "pizza" && (
+        {category.slug === "pizza" && menu.modifiers.some((m) => m.slug === "glutenfri-deg") && (
           <p className="mt-3 inline-block rounded-full bg-cream px-4 py-1.5 text-xs text-muted">
-            Glutenfri deg +30 kr · Allergi? Meddela oss när du beställer
+            Glutenfri deg finns som tillval · Allergi? Meddela oss när du beställer
           </p>
         )}
       </header>
 
-      {category.id === "lunch" ? (
+      {category.slug === "lunch" ? (
         <LunchPanel onSelect={onSelect} />
       ) : items.length === 0 ? (
         <EmptyCategory category={category} />
       ) : (
         <div className="space-y-12">
-          {groupProducts(items).map((group) => (
-            <div key={group.name ?? "all"}>
-              {group.name && (
-                <div className="mb-4 flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-line pb-2">
-                  <h3 className="font-display text-2xl font-semibold text-gold-deep">{group.name}</h3>
-                  {groupPrice(group.items) && (
-                    <p className="text-sm font-medium tabular-nums text-muted">{groupPrice(group.items)}</p>
-                  )}
-                </div>
-              )}
-              <ul className="grid gap-4 lg:grid-cols-2">
-                {group.items.map((p) => (
-                  <ProductCard key={p.id} product={p} />
-                ))}
-              </ul>
-            </div>
-          ))}
+          {groupProducts(items).map((group) => {
+            const price = groupPrice(group.items);
+            return (
+              <div key={group.name ?? "all"}>
+                {group.name && (
+                  <div className="mb-4 flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-line pb-2">
+                    <h3 className="font-display text-2xl font-semibold text-gold-deep">{group.name}</h3>
+                    {price && <p className="text-sm font-medium tabular-nums text-muted">{price}</p>}
+                  </div>
+                )}
+                <ul className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  {group.items.map((p) => (
+                    <ProductCard key={p.slug} product={p} />
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </div>
       )}
     </section>
   );
 }
 
-function SearchResults({ items, query, onClear }: { items: Product[]; query: string; onClear: () => void }) {
+function SearchResults({ items, query, onClear }: { items: PublicProduct[]; query: string; onClear: () => void }) {
   return (
     <section aria-live="polite">
       <h2 className="font-display text-3xl font-semibold">
@@ -206,9 +294,9 @@ function SearchResults({ items, query, onClear }: { items: Product[]; query: str
           </button>
         </div>
       ) : (
-        <ul className="mt-8 grid gap-4 lg:grid-cols-2">
+        <ul className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
           {items.map((p) => (
-            <ProductCard key={p.id} product={p} />
+            <ProductCard key={p.slug} product={p} />
           ))}
         </ul>
       )}
@@ -216,12 +304,12 @@ function SearchResults({ items, query, onClear }: { items: Product[]; query: str
   );
 }
 
-function EmptyCategory({ category }: { category: Category }) {
+function EmptyCategory({ category }: { category: PublicCategory }) {
   return (
     <div className="rounded-2xl border border-dashed border-line bg-white px-6 py-14 text-center">
       <p className="font-display text-2xl font-semibold">{category.name} uppdateras snart</p>
       <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-        Vi lägger upp vårt dryckesutbud här inom kort. Fråga gärna när du hämtar eller ring oss på{" "}
+        Vi lägger upp utbudet här inom kort. Fråga gärna när du hämtar eller ring oss på{" "}
         <a href={site.phoneHref} className="font-semibold text-ink underline underline-offset-2">
           {site.phone}
         </a>
@@ -231,7 +319,7 @@ function EmptyCategory({ category }: { category: Category }) {
   );
 }
 
-function LunchPanel({ onSelect }: { onSelect: (id: CategoryId) => void }) {
+function LunchPanel({ onSelect }: { onSelect: (id: string) => void }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
       <div className="rounded-2xl bg-ink p-8 text-ivory">

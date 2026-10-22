@@ -177,6 +177,47 @@ describe("orders + pricing on a local test database", { skip: !uri ? "MONGODB_UR
     });
   });
 
+  describe("the total the customer approved", () => {
+    const priceChanged = async (promise: Promise<unknown>, expectedSek: number, actualSek: number) => {
+      await assert.rejects(promise, (e: unknown) => {
+        const d = e instanceof OrderError ? (e.details as { expectedSek: number; actualSek: number }) : null;
+        return e instanceof OrderError && e.code === "price_changed" && e.status === 409 && d?.expectedSek === expectedSek && d?.actualSek === actualSek;
+      });
+    };
+
+    test("an order whose approved total matches the server total is created", async () => {
+      const { order } = await createOrder(body([item()], { expectedTotalSek: 110 }), NOW);
+      assert.equal(order.totalSek, 110);
+    });
+
+    test("a wrong total is refused with both amounts and nothing is stored", async () => {
+      const b = body([item()], { expectedTotalSek: 1 });
+      await priceChanged(createOrder(b, NOW), 1, 110);
+      assert.equal(await OrderModel.countDocuments({ idempotencyKey: b.idempotencyKey }), 0);
+    });
+
+    test("a menu price change after the customer approved is caught, never charged silently", async () => {
+      await ProductModel.updateOne({ slug: "vesuvio", "variants.id": "normal" }, { $set: { "variants.$.priceSek": 115 } });
+      try {
+        await priceChanged(createOrder(body([item()], { expectedTotalSek: 110 }), NOW), 110, 115);
+        const { order } = await createOrder(body([item()], { expectedTotalSek: 115 }), NOW);
+        assert.equal(order.totalSek, 115);
+      } finally {
+        await ProductModel.updateOne({ slug: "vesuvio", "variants.id": "normal" }, { $set: { "variants.$.priceSek": 110 } });
+      }
+    });
+
+    test("the approved total is only a guard: it can't lower the price", async () => {
+      await priceChanged(createOrder(body([item({ quantity: 2 })], { expectedTotalSek: 50 }), NOW), 50, 220);
+    });
+
+    test("malformed approved totals are refused as invalid", async () => {
+      for (const expectedTotalSek of [-1, 1.5, "110", null]) {
+        await rejects(createOrder(body([item()], { expectedTotalSek }), NOW), "invalid_request", 400);
+      }
+    });
+  });
+
   describe("idempotency", () => {
     test("the same key and request returns the same order, once", async () => {
       const b = body();
@@ -284,6 +325,19 @@ describe("orders + pricing on a local test database", { skip: !uri ? "MONGODB_UR
         const retry = await post(ordersPost, "/api/orders", b);
         assert.equal(retry.status, 200);
         assert.equal((await retry.json()).order.publicId, order.publicId);
+      } finally {
+        mock.timers.reset();
+      }
+    });
+
+    test("POST /api/orders answers 409 price_changed when the approved total is stale", async () => {
+      mock.timers.enable({ apis: ["Date"], now: NOW });
+      try {
+        const res = await post(ordersPost, "/api/orders", body([item()], { expectedTotalSek: 100 }));
+        assert.equal(res.status, 409);
+        const json = await res.json();
+        assert.equal(json.error, "price_changed");
+        assert.deepEqual(json.details, { expectedSek: 100, actualSek: 110 });
       } finally {
         mock.timers.reset();
       }

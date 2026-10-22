@@ -6,7 +6,7 @@ import { loadCatalogForCart } from "./catalog-repo.ts";
 import { OrderModel, type OrderDoc } from "./models/order.ts";
 import { priceCart, type PricedLine, type PricingIssue } from "./pricing-engine.ts";
 
-type OrderErrorCode = "invalid_request" | "pricing" | "pickup_unavailable" | "idempotency_conflict";
+type OrderErrorCode = "invalid_request" | "pricing" | "pickup_unavailable" | "idempotency_conflict" | "price_changed";
 
 export class OrderError extends Error {
   // Explicit fields (not constructor parameter properties): plain Node runs this file with type stripping.
@@ -111,6 +111,13 @@ export async function createOrder(body: unknown, now: Date = new Date()): Promis
   const priced = await priceCartFromDb({ items: req.items });
   if (!priced.ok) {
     throw new OrderError("pricing", 422, "Some items can't be ordered", priced.issues satisfies PricingIssue[]);
+  }
+
+  if (req.expectedTotalSek !== undefined && req.expectedTotalSek !== priced.totalSek) {
+    throw new OrderError("price_changed", 409, "The total has changed since you reviewed your order", {
+      expectedSek: req.expectedTotalSek,
+      actualSek: priced.totalSek,
+    });
   }
 
   const pickupAt = new Date(req.pickupAt);

@@ -30,6 +30,11 @@ export const orderRequestSchema = z.strictObject({
     phone: z.string().trim().min(6).max(20).regex(/^[+0-9][0-9 ()-]*$/, "invalid phone number"),
   }),
   pickupAt: z.iso.datetime({ offset: true }),
+  /**
+   * The total the customer saw and approved. It is never used as a price: the server recomputes everything
+   * and refuses the order with 409 if its own total differs, so a stale cart can't be charged a new amount.
+   */
+  expectedTotalSek: z.number().int().min(0).optional(),
 });
 
 export type CartItemInput = z.infer<typeof cartItemSchema>;

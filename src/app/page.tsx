@@ -2,14 +2,11 @@ import Link from "next/link";
 import { ArrowIcon, ClockIcon, MailIcon, PhoneIcon, PinIcon } from "@/components/icons";
 import { DishArt, PizzaArt } from "@/components/art";
 import { OpenStatus } from "@/components/open-status";
-import { ProductCard } from "@/components/order/product-card";
+import { FeaturedDishes } from "@/components/featured-dishes";
 import { buttonClass, eyebrow } from "@/components/ui";
-import { categories, getProduct, productsIn, type CategoryId } from "@/data/menu";
+import { categories, type CategoryId } from "@/data/menu";
 import { CURRENT_SEASON, dagensLunch, hoursDisplay, mapsUrl, site } from "@/data/site";
 import { kr } from "@/lib/pricing";
-
-const featuredIds = ["falken-special", "quattro-formaggi", "pollo-a-la-falken"];
-const featured = featuredIds.map((id) => getProduct(id)).filter((p) => p !== undefined);
 
 const tiles: CategoryId[] = ["pizza", "kebabpizza", "kebab", "hamburgare", "sallader", "alacarte", "barn", "lunch"];
 
@@ -64,11 +61,7 @@ export default function HomePage() {
             Hela menyn <ArrowIcon className="size-4" />
           </Link>
         </div>
-        <ul className="mt-8 grid gap-4 lg:grid-cols-3">
-          {featured.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </ul>
+        <FeaturedDishes />
       </section>
 
       <section aria-labelledby="categories-title" className="bg-cream py-16 sm:py-20">
@@ -80,7 +73,6 @@ export default function HomePage() {
           <ul className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
             {tiles.map((id) => {
               const c = categories.find((x) => x.id === id)!;
-              const n = productsIn(id).length;
               return (
                 <li key={id}>
                   <Link
@@ -90,7 +82,7 @@ export default function HomePage() {
                     <DishArt category={id} seed={id.length + 2} className="aspect-[4/3] w-full transition duration-500 group-hover:scale-105" />
                     <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink via-ink/85 to-transparent p-4 pt-10">
                       <p className="font-display text-xl font-semibold">{c.name}</p>
-                      <p className="text-xs text-gold">{n > 0 ? `${n} rätter` : "Se mer"}</p>
+                      <p className="text-xs text-gold">Se rätterna</p>
                     </div>
                   </Link>
                 </li>

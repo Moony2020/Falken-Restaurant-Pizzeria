@@ -1,4 +1,5 @@
 import { CategoryModel, ModifierModel, ProductModel } from "./models/catalog.ts";
+import type { PublicMenu } from "../lib/menu-types.ts";
 import type { Catalog, CatalogCategory, CatalogModifier, CatalogProduct } from "./pricing-engine.ts";
 
 // Reads the catalog from MongoDB. Two shapes: a narrow one for pricing a cart, and a public one for the menu API.
@@ -35,33 +36,7 @@ export async function loadCatalogForCart(productSlugs: string[], modifierSlugs: 
   };
 }
 
-export type PublicVariant = { id: string; label: string; priceSek: number; orderable: boolean };
-
-export type PublicMenu = {
-  categories: { slug: string; name: string; blurb: string; removable: boolean }[];
-  products: {
-    slug: string;
-    menuNumber?: number;
-    name: string;
-    category: string;
-    group?: string;
-    ingredients: string[];
-    description?: string;
-    choiceHint?: string;
-    variants: PublicVariant[];
-    glutenFreeOption: boolean;
-    featured: boolean;
-    image?: string;
-    modifierSlugs: string[];
-  }[];
-  modifiers: {
-    slug: string;
-    label: string;
-    priceByVariantSek: Record<string, number>;
-    maxQty: number;
-    compatibleCategories: string[];
-  }[];
-};
+export type { PublicMenu, PublicVariant } from "../lib/menu-types.ts";
 
 /** Everything a customer-facing menu needs. Internal fields (review notes, status flags) never leave the server. */
 export async function getPublicMenu(): Promise<PublicMenu> {
