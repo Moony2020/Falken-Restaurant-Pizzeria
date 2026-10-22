@@ -104,3 +104,21 @@ describe("order access tokens", () => {
     assert.equal(getOrderTokenSecret({ ORDER_TOKEN_SECRET: secret }), secret);
   });
 });
+
+describe("order token secret handling", () => {
+  test("a weak secret is refused without repeating it in the error", () => {
+    const weak = "weak-secret-value";
+    try {
+      getOrderTokenSecret({ ORDER_TOKEN_SECRET: weak });
+      assert.fail("should have thrown");
+    } catch (e) {
+      assert.ok(e instanceof Error && !e.message.includes(weak));
+    }
+    try {
+      deriveAccessToken("ABCDEFGHJK", weak);
+      assert.fail("should have thrown");
+    } catch (e) {
+      assert.ok(e instanceof Error && !e.message.includes(weak));
+    }
+  });
+});

@@ -103,3 +103,11 @@ test("menu data: every unconfirmed variant id exists on its product", () => {
     }
   }
 });
+
+test("only Calzone and Calzone Special lose the family size; every other pizza keeps it", () => {
+  const calzones = products.filter((p) => /^calzone/.test(p.id));
+  assert.deepEqual(calzones.map((p) => p.id).sort(), ["calzone", "calzone-special"]);
+  for (const p of calzones) assert.deepEqual(p.variants.map((v) => v.id), ["normal"]);
+  const others = products.filter((p) => p.category === "pizza" && !/^calzone/.test(p.id) && p.variants.some((v) => v.id === "familj"));
+  assert.ok(others.length > 50);
+});

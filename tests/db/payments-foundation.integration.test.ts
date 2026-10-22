@@ -231,6 +231,35 @@ describe("payment foundation on a local test database", { skip: !uri ? "MONGODB_
       assert.equal((await PaymentModel.findById(p._id).lean())?.status, "paid");
     });
 
+    test("a crash after a late payment was recorded but before the order was flagged is repaired on retry", async () => {
+      const o = await makeOrder();
+      const p = await makePayment(o._id, { status: "paid", receivedSek: 110 }); // the half-finished state: money recorded, no flag yet
+      await transitionOrder({ orderId: o._id, to: "CANCELLED", actor: { type: "system" }, now: NOW });
+      assert.equal((await status(o._id)).needsReview?.reason, undefined);
+      assert.equal((await applyVerifiedPayment(verified(p.providerSessionId), min(1))).outcome, "late_payment");
+      const after = await status(o._id);
+      assert.equal(after.needsReview?.reason, "late_payment");
+      assert.equal(after.fulfillmentStatus, "CANCELLED");
+    });
+
+    test("a failing audit-log write never blocks or undoes a payment: the order's own history is the record", async () => {
+      const o = await makeOrder();
+      const p = await makePayment(o._id);
+      const original = AuditLogModel.create;
+      const quiet = console.error;
+      console.error = () => {};
+      (AuditLogModel as unknown as { create: () => Promise<never> }).create = () => Promise.reject(new Error("audit store down"));
+      try {
+        assert.equal((await applyVerifiedPayment(verified(p.providerSessionId), NOW)).outcome, "paid");
+      } finally {
+        (AuditLogModel as unknown as { create: unknown }).create = original;
+        console.error = quiet;
+      }
+      const after = await status(o._id);
+      assert.equal(after.fulfillmentStatus, "PAID");
+      assert.equal(after.statusHistory.at(-1)?.to, "PAID");
+    });
+
     test("a wrong amount never pays the order: it is flagged and the received amount is recorded", async () => {
       const o = await makeOrder();
       const p = await makePayment(o._id);
