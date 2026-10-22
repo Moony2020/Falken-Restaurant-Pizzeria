@@ -1,0 +1,41 @@
+name: CI
+
+# Verification only. There is deliberately no deploy job: production stays off until the owner approves it.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+    env:
+      # Throwaway database inside the job container. Real secrets are never needed for CI.
+      MONGODB_URI_TEST: mongodb://127.0.0.1:27017/falken_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Dependency audit (production packages, report only)
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: true

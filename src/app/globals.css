@@ -1,0 +1,125 @@
+@import "tailwindcss";
+
+/* Falken design tokens: charcoal + ivory + gold, matching the approved reference. */
+@theme {
+  --color-ink: #14161a;
+  --color-ink-2: #1c1f24;
+  --color-ink-3: #272b32;
+  --color-ivory: #faf8f3;
+  --color-cream: #f2eee4;
+  --color-line: #e4dece;
+  --color-gold: #c9a961;
+  --color-gold-light: #e0c98d;
+  --color-gold-deep: #8a6d2b; /* gold for text on ivory (4.7:1) */
+  --color-ember: #a8362b;
+  --color-muted: #5f636b; /* secondary text on ivory (5.9:1) */
+  --color-muted-dark: #a9adb5; /* secondary text on ink */
+
+  --font-display: var(--font-cormorant), "Times New Roman", serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+
+  --shadow-card: 0 1px 2px rgb(20 22 26 / 0.04), 0 8px 24px -12px rgb(20 22 26 / 0.14);
+  --animate-rise: rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-fade: fade 0.25s ease both;
+}
+
+/* Keyframes live outside @theme so plain CSS (dialog backdrops) can use them too. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
+  }
+}
+
+@utility wrap {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 1240px;
+  padding-inline: 1.25rem;
+  @media (min-width: 40rem) {
+    padding-inline: 2rem;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 8.5rem;
+}
+
+body {
+  background: var(--color-ivory);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: var(--color-gold);
+  color: var(--color-ink);
+}
+
+/* Native <dialog> styling shared by the product sheet, cart drawer and gallery lightbox. */
+dialog {
+  color: var(--color-ink);
+}
+dialog::backdrop {
+  background: rgb(10 11 13 / 0.68);
+  backdrop-filter: blur(3px);
+  animation: fade 0.2s ease both;
+}
+html:has(dialog[open]) {
+  overflow: hidden;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
