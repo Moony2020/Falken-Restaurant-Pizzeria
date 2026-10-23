@@ -90,6 +90,8 @@ describe("Stripe Checkout (test mode, local fake)", { skip: !uri ? "MONGODB_URI_
       assert.deepEqual(session.input.lines.map((l) => l.unitAmountOre), [11000, 4000]);
       assert.equal(session.input.expiresAt, Math.floor(NOW.getTime() / 1000) + 30 * 60, "30 minute session");
       assert.equal(session.input.successUrl, `https://falken.test/bestallning/${o.publicId}`);
+      assert.equal(session.input.cancelUrl, `https://falken.test/bestallning/${o.publicId}?avbruten=1`);
+      for (const url of [session.input.successUrl, session.input.cancelUrl]) assert.ok(!url.includes(o.token), "the access token never travels in a URL");
       const ps = await payments(o.id);
       assert.deepEqual([ps.length, ps[0].status, ps[0].amountSek, ps[0].provider], [1, "pending", 150, "stripe"]);
       assert.equal((await status(o.id)).fulfillmentStatus, "PENDING_PAYMENT", "creating a page never pays the order");
