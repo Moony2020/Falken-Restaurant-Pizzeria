@@ -36,7 +36,7 @@ import {
   ClockIcon,
   VisaBadge,
   MastercardBadge,
-  PayPalLogo,
+  SwishLogo,
 } from "@/components/icons";
 import { useOrder } from "./order-provider";
 
@@ -602,19 +602,19 @@ function CheckoutForm({
             </div>
           </label>
 
-          {/* Option 3: PayPal (coming soon) */}
+          {/* Option 3: Swish (coming soon) */}
           <div className="relative flex cursor-not-allowed items-center justify-between rounded-xl border border-line/60 bg-cream/30 p-4 opacity-75">
             <div className="flex items-center gap-3.5">
               <input
                 type="radio"
                 name="payment_method"
-                value="paypal"
+                value="swish"
                 disabled
                 className="size-4"
               />
               <div className="flex items-center gap-3">
-                <PayPalLogo className="h-6 w-auto" />
-                <span className="hidden sm:inline text-xs text-muted">• Snabbt och säkert via PayPal</span>
+                <SwishLogo className="h-6 w-auto" />
+                <span className="hidden sm:inline text-xs text-muted">• Betala enkelt med Swish</span>
               </div>
             </div>
             <span className="rounded-full bg-cream px-2.5 py-0.5 text-[11px] font-medium text-muted border border-line shrink-0">

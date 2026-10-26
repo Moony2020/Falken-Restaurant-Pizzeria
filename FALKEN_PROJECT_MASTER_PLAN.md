@@ -15,7 +15,7 @@
 **مسارات تشغيلية تقنية لا تُحسب صفحات تسويقية:** `/order/success?session_id=...`، `/order/[publicId]` لتتبع حالة الطلب، `/admin/*` محمية.
 
 ## 3. مسار الطلب
-العميل يختار صنفاً → يختار عادية `Normal` أو عائلية `Familj` حيث تتوفر → يراجع المكونات → يحذف/يضيف إضافات → يختار العدد والملاحظات → سلة تعرض إجمالي لحظي → يحدد اسمه وهاتفه ووقت الاستلام المتاح → يدفع بـ Stripe (بطاقة) أو PayPal → يعود إلى تأكيد برقم الطلب → لوحة المطبخ تستقبل الطلب بعد تأكيد الدفع بخادم آمن → الحالات `PAID → ACCEPTED → PREPARING → READY_FOR_PICKUP → PICKED_UP`، مع `CANCELLED / REFUNDED` المسموح بها. يمنع تسجيل طلب مدفوع اعتماداً على صفحة النجاح فقط؛ استخدم Webhooks والتحقق من توقيعها وidempotency.
+العميل يختار صنفاً → يختار عادية `Normal` أو عائلية `Familj` حيث تتوفر → يراجع المكونات → يحذف/يضيف إضافات → يختار العدد والملاحظات → سلة تعرض إجمالي لحظي → يحدد اسمه وهاتفه ووقت الاستلام المتاح → يدفع بـ Stripe (بطاقة) → يعود إلى تأكيد برقم الطلب → لوحة المطبخ تستقبل الطلب بعد تأكيد الدفع بخادم آمن → الحالات `PAID → ACCEPTED → PREPARING → READY_FOR_PICKUP → PICKED_UP`، مع `CANCELLED / REFUNDED` المسموح بها. يمنع تسجيل طلب مدفوع اعتماداً على صفحة النجاح فقط؛ استخدم Webhooks والتحقق من توقيعها وidempotency.
 
 ## 4. المنيو: بيانات مستخرجة من الصور
 **مفتاح:** السعر بالأرقام هو **SEK**. `N/F` = عادية/عائلية. حيث ورد في المنيو «Tomatsås, ost ingår i alla pizzor» تضاف صلصة الطماطم والجبن تلقائياً للبيتزا التقليدية؛ الأصناف الحديثة التي تذكر `Husets tomatsås, mozzarella` تُحفظ بهذه الصيغة. يوجد تعارض في صور القوائم لبعض الأسعار، خصوصاً المجموعة 3؛ لا ننشر قبل اعتماد نسخة واحدة.
@@ -183,7 +183,7 @@ Dashboard (sales / orders / average ticket)؛ Live Orders مع رنين وطبا
 - **Frontend & backend:** Next.js (App Router) + TypeScript + Tailwind CSS؛ API Route Handlers / Server Actions لمعظم وظائف التطبيق، لا حاجة لExpress منفصل في MVP إلا لسبب تشغيلي واضح.
 - **DB:** MongoDB Atlas عبر Mongoose؛ Collections: `categories`, `products`, `modifierGroups`, `orders`, `payments`, `openingHours`, `specialClosures`, `pickupSlots`, `admins`, `galleryImages`, `auditLogs`, `siteSettings`, `promotions`.
 - **Auth:** حسابات موظفين محمية؛ العميل يطلب كضيف (guest checkout) أولاً.
-- **Payments:** Stripe Checkout/Card + PayPal Orders API؛ حفظ transaction IDs، تحقق Webhooks، Refund workflow؛ لا تُخزن بيانات البطاقة محلياً.
+- **Payments:** Stripe Checkout/Card؛ حفظ transaction IDs، تحقق Webhooks، Refund workflow؛ لا تُخزن بيانات البطاقة محلياً.
 - **Assets:** Cloudinary أو تخزين صور محسن؛ Next/Image وresponsive WebP/AVIF.
 - **Infrastructure:** Vercel أو Render للويب، Atlas للبيانات، مراقبة أخطاء وسجلات ونسخ احتياطية وSecrets منفصلة لكل بيئة.
 - **Quality/Security:** Zod، rate limiting، input sanitization، CSRF where applicable، webhook signature verification، audit logging، GDPR privacy policy/cookies حسب الاستخدام، اختبارات basket/tax/checkout/time windows/idempotency.
@@ -201,14 +201,14 @@ Order { publicId, items:[{productId, productNameSnapshot, variantId, variantName
 2. **UX/UI:** تصميم سطح المكتب والموبايل: Homepage / Menu+Customizer / Cart+Checkout / Gallery / Kontakt / Admin؛ اعتماد هوية وألوان وصور.
 3. **Foundation:** Repo, Next.js+TS, Atlas, schemas, env, roles, deploy staging, import menu data.
 4. **Catalog & Order:** menu filtering, variants, modifiers, cart, pickup slots, guest checkout, server-side price calculation.
-5. **Payments:** Stripe test + PayPal sandbox + signed webhooks + refunds + acceptance tests.
+5. **Payments:** Stripe test + signed webhooks + refunds + acceptance tests. يظهر Swish كخيار واجهة معطّل فقط إلى أن يُعتمد تكامله لاحقاً.
 6. **Admin & Kitchen:** order queue, product availability, schedules, pricing, media, manual reconciliation.
 7. **Security & QA:** e2e desktop/mobile, accessibility, Swedish text, SEO LocalBusiness, performance, GDPR, staging payment and timeout tests.
 8. **Launch:** owner sign-off, DNS, production secrets, backups, live payment test, 2-week stabilization and monitoring.
 
 ### معايير القبول قبل الإطلاق
 - جميع الأصناف الـ91 + Nachos + À la carte + Lunch + Drinks المعتمدة موجودة ويمكن تصفحها وتصفيتها.
-- نفس السعر يظهر في البطاقة، النافذة، السلة، Stripe/PayPal، والإيصال بعد حساب الإضافات.
+- نفس السعر يظهر في البطاقة، النافذة، السلة، Stripe، والإيصال بعد حساب الإضافات.
 - لا ينجح دفع مزيف، ولا يكرر webhook الطلب، ولا تتاح أوقات استلام خارج الخدمة أو بعد انتهاء فترة إعداد الطعام.
 - يعمل زر «Beställ nu» خلال ≤3 نقرات لفتح خيار الأكل، مع تجربة موبايل واضحة، وعدم الحاجة لإنشاء حساب.
 - يمكن لموظف إيقاف الطلبات، تعديل الأسعار، وتحديث حالة الطلب دون مطوّر.

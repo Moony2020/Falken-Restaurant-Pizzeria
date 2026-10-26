@@ -166,7 +166,7 @@ const paymentSchema = new Schema(
   {
     orderId: { type: Schema.Types.ObjectId, ref: "Order", required: true, index: true },
     provider: { type: String, enum: PAYMENT_PROVIDER, required: true },
-    /** Stripe Checkout Session id / PayPal order id. */
+    /** Stripe Checkout Session id. */
     providerSessionId: { type: String, required: true },
     providerPaymentId: { type: String },
     amountSek: sek,

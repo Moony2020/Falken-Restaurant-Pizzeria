@@ -22,7 +22,7 @@ const throwsWithout = (fn: () => unknown, secret: string) => {
 describe("payments configuration (test mode only)", () => {
   test("empty configuration is valid: nothing connected yet", () => {
     const c = getPaymentsConfig({});
-    assert.deepEqual(c, { mode: "test", enabled: false, siteUrl: undefined, stripe: null, paypal: null });
+    assert.deepEqual(c, { mode: "test", enabled: false, siteUrl: undefined, stripe: null });
   });
 
   test("Stripe TEST keys are accepted", () => {
@@ -59,20 +59,9 @@ describe("payments configuration (test mode only)", () => {
     assert.throws(() => getPaymentsConfig({ SITE_URL: "not a url" }), /SITE_URL/);
   });
 
-  test("only PAYMENTS_MODE=test and PAYPAL_ENV=sandbox exist", () => {
-    assert.deepEqual(getPaymentsConfig({ PAYMENTS_MODE: "test", PAYPAL_ENV: "sandbox" }).mode, "test");
+  test("only PAYMENTS_MODE=test exists", () => {
+    assert.deepEqual(getPaymentsConfig({ PAYMENTS_MODE: "test" }).mode, "test");
     assert.throws(() => getPaymentsConfig({ PAYMENTS_MODE: "live" }), /PAYMENTS_MODE/);
-    assert.throws(() => getPaymentsConfig({ PAYPAL_ENV: "live" }), /PAYPAL_ENV/);
-  });
-
-  test("PayPal credentials point at the sandbox host and must come as a pair", () => {
-    const c = getPaymentsConfig({ PAYPAL_CLIENT_ID: "client-id-1234567", PAYPAL_CLIENT_SECRET: "client-secret-1234567" });
-    assert.equal(c.paypal?.baseUrl, "https://api-m.sandbox.paypal.com");
-    assert.throws(() => getPaymentsConfig({ PAYPAL_CLIENT_ID: "client-id-1234567" }), /together/);
-  });
-
-  test("a live PayPal host is refused", () => {
-    assert.throws(() => getPaymentsConfig({ PAYPAL_CLIENT_ID: "https://api-m.paypal.com/x" }), /LIVE credential/);
   });
 
   test("the agreed timings: 30 minute payment session, 45 minute order window", () => {

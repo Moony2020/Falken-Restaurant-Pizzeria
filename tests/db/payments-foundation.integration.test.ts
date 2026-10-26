@@ -165,9 +165,9 @@ describe("payment foundation on a local test database", { skip: !uri ? "MONGODB_
       assert.equal(await WebhookEventModel.countDocuments({ eventId: "evt_5" }), 1);
     });
 
-    test("the same event id from two providers is two different events", async () => {
-      assert.equal((await claimWebhookEvent({ provider: "stripe", eventId: "shared", type: "x", now: NOW })).kind, "claimed");
-      assert.equal((await claimWebhookEvent({ provider: "paypal", eventId: "shared", type: "x", now: NOW })).kind, "claimed");
+    test("different event ids are separate events", async () => {
+      assert.equal((await claimWebhookEvent({ provider: "stripe", eventId: "shared-1", type: "x", now: NOW })).kind, "claimed");
+      assert.equal((await claimWebhookEvent({ provider: "stripe", eventId: "shared-2", type: "x", now: NOW })).kind, "claimed");
     });
 
     test("error messages are scrubbed of keys and connection strings before they are stored", async () => {
@@ -311,9 +311,9 @@ describe("payment foundation on a local test database", { skip: !uri ? "MONGODB_
     test("a second, different payment for an already paid order is flagged as a duplicate", async () => {
       const o = await makeOrder();
       const p1 = await makePayment(o._id);
-      const p2 = await makePayment(o._id, { provider: "paypal" });
+      const p2 = await makePayment(o._id, { providerSessionId: "cs_test_second_payment" });
       await applyVerifiedPayment(verified(p1.providerSessionId), NOW);
-      const r = await applyVerifiedPayment({ ...verified(p2.providerSessionId, { provider: "paypal" }) }, min(1));
+      const r = await applyVerifiedPayment(verified(p2.providerSessionId), min(1));
       assert.equal(r.outcome, "duplicate_payment");
       const after = await status(o._id);
       assert.equal(String(after.paymentId), String(p1._id)); // the first payment stays the one that paid

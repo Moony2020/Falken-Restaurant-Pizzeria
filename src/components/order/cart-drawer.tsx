@@ -45,8 +45,7 @@ import {
   PhoneIcon,
   PlusIcon,
   TrashIcon,
-  PayPalLogo,
-  PayPalBadge,
+  SwishLogo,
   VisaBadge,
   MastercardBadge,
 } from "@/components/icons";
@@ -193,7 +192,6 @@ function CartContents() {
               <span className="text-[11px]">Säker betalning:</span>
               <VisaBadge className="h-5 w-auto" />
               <MastercardBadge className="h-5 w-auto" />
-              <PayPalBadge className="h-5 w-auto" />
             </div>
             <button
               type="button"
@@ -806,7 +804,7 @@ function Details({
         >
           {submitting ? "Går till betalning…" : "Betala med kort"}
         </button>
-        <PayPalButton />
+        <SwishButton />
         <p
           id="payment-note"
           className="flex items-start gap-2 rounded-lg bg-cream px-3 py-2 text-xs leading-relaxed text-muted"
@@ -831,18 +829,18 @@ function Details({
   );
 }
 
-/** PayPal is not connected yet (a later phase): shown so customers know it is coming, but it cannot be pressed. */
-function PayPalButton() {
+/** Swish is intentionally shown as a future option and cannot start a payment yet. */
+function SwishButton() {
   return (
     <button
       type="button"
       disabled
       aria-disabled="true"
-      title="PayPal (kommer snart)"
-      className="flex min-h-12 w-full cursor-not-allowed items-center justify-center gap-2.5 rounded-full border border-[#E0AC30] bg-[#FFC439] px-4 py-2 text-sm font-semibold shadow-xs disabled:opacity-90 transition"
+      title="Swish (kommer snart)"
+      className="flex min-h-12 w-full cursor-not-allowed items-center justify-center gap-2.5 rounded-full border border-[#5ED5C8] bg-[#E8FAF7] px-4 py-2 text-sm font-semibold shadow-xs disabled:opacity-90 transition"
     >
-      <PayPalLogo className="h-6 w-auto" />
-      <span className="rounded-full bg-[#003087]/12 px-2 py-0.5 text-[11px] font-semibold text-[#003087]">
+      <SwishLogo className="h-6 w-auto" />
+      <span className="rounded-full bg-[#1B5FEA]/10 px-2 py-0.5 text-[11px] font-semibold text-[#1B5FEA]">
         kommer snart
       </span>
     </button>
@@ -985,7 +983,7 @@ function OrderCreated({
             ? "Går till betalning…"
             : `Betala ${kr(order.totalSek)} med kort`}
         </button>
-        <PayPalButton />
+        <SwishButton />
         <button
           type="button"
           onClick={() => checkoutStore.dismissOrder()}
