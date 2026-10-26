@@ -478,7 +478,7 @@ describe("payment foundation on a local test database", { skip: !uri ? "MONGODB_
       assert.equal((await OrderModel.findOne({ publicId: r.order.publicId }).lean())?.fulfillmentStatus, "PENDING_PAYMENT");
     });
 
-    test("POST /api/orders returns the access token with the order (needs the secret to be configured)", async () => {
+    test("POST /api/orders keeps the access token in an HttpOnly cookie, not JSON", async () => {
       process.env.ORDER_TOKEN_SECRET = secret;
       mock.timers.enable({ apis: ["Date"], now: NOW });
       try {
@@ -491,7 +491,10 @@ describe("payment foundation on a local test database", { skip: !uri ? "MONGODB_
         );
         assert.equal(res.status, 201);
         const json = await res.json();
-        assert.ok(verifyAccessToken(json.order.publicId, json.accessToken, secret));
+        assert.equal("accessToken" in json, false);
+        const cookie = res.headers.get("set-cookie") ?? "";
+        assert.match(cookie, new RegExp(`falken_order_${json.order.publicId}=`));
+        assert.match(cookie, /HttpOnly; SameSite=Lax/);
       } finally {
         mock.timers.reset();
         delete process.env.ORDER_TOKEN_SECRET;

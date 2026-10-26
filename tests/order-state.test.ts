@@ -18,6 +18,12 @@ describe("order state machine", () => {
     for (const [from, to, actor] of path) assert.deepEqual(canTransition(from, to, as(actor)), { ok: true }, `${from}→${to}`);
   });
 
+  test("a pay-on-pickup order is confirmed without becoming paid, then enters the kitchen flow", () => {
+    assert.deepEqual(canTransition("CONFIRMED", "PREPARING", as("staff")), { ok: true });
+    assert.deepEqual(canTransition("CONFIRMED", "PAID", as("payment")), { ok: false, reason: "unknown_transition" });
+    assert.ok(!isPaidStatus("CONFIRMED"));
+  });
+
   test("only the payment layer can mark an order PAID, and only from PENDING_PAYMENT", () => {
     for (const actor of ACTORS) {
       const r = canTransition("PENDING_PAYMENT", "PAID", as(actor));
@@ -80,6 +86,7 @@ describe("order state machine", () => {
     const pairs = allTransitions().map((t) => `${t.from}>${t.to}`).sort();
     assert.deepEqual(pairs, [
       "ACCEPTED>PREPARING", "ACCEPTED>REFUNDED",
+      "CONFIRMED>CANCELLED", "CONFIRMED>PREPARING",
       "PAID>ACCEPTED", "PAID>REFUNDED",
       "PENDING_PAYMENT>CANCELLED", "PENDING_PAYMENT>PAID",
       "PICKED_UP>REFUNDED",
@@ -88,10 +95,10 @@ describe("order state machine", () => {
     ].sort());
   });
 
-  test("the kitchen never sees unpaid, cancelled, refunded or finished orders", () => {
-    assert.deepEqual([...KITCHEN_STATUSES], ["PAID", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP"]);
+  test("the kitchen only sees paid online orders or explicitly confirmed pay-on-pickup orders", () => {
+    assert.deepEqual([...KITCHEN_STATUSES], ["PAID", "CONFIRMED", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP"]);
     for (const s of ["PENDING_PAYMENT", "CANCELLED", "REFUNDED", "PICKED_UP"] as const) assert.ok(!KITCHEN_STATUSES.includes(s), s);
-    for (const s of KITCHEN_STATUSES) assert.ok(isPaidStatus(s));
+    for (const s of KITCHEN_STATUSES.filter((s) => s !== "CONFIRMED")) assert.ok(isPaidStatus(s));
     assert.ok(!isPaidStatus("PENDING_PAYMENT") && !isPaidStatus("CANCELLED"));
   });
 });

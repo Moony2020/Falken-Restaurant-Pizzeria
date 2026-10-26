@@ -20,59 +20,68 @@ export function ProductCard({ product, featured = false }: { product: PublicProd
   const orderable = isOrderable(product);
 
   return (
-    <li className={`group relative overflow-hidden rounded-2xl border border-line bg-white shadow-card transition duration-200 hover:border-gold ${featured ? "grid grid-cols-[6.5rem_minmax(0,1fr)] gap-3 p-3 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:gap-4 sm:p-4" : "flex gap-2.5 p-2.5 sm:gap-4 sm:p-3.5"}`}>
-      <div className={featured ? "flex min-w-0 flex-col" : "relative size-20 shrink-0 overflow-hidden rounded-xl sm:size-28 md:size-32"}>
-        <div className={`relative overflow-hidden rounded-xl ${featured ? "aspect-square w-full" : "size-full"}`}>
+    <li
+      className={`group relative overflow-hidden rounded-2xl border border-line bg-white shadow-card transition duration-200 hover:border-gold ${
+        featured
+          ? "flex w-[82vw] max-w-[21rem] shrink-0 snap-start gap-3.5 p-3.5 sm:gap-4 sm:p-4 lg:w-auto lg:max-w-none"
+          : "flex gap-2.5 p-2.5 sm:gap-4 sm:p-3.5"
+      }`}
+    >
+      <div className={featured ? "flex flex-col shrink-0 w-24 sm:w-28 md:w-32" : "relative size-20 shrink-0 overflow-hidden rounded-xl sm:size-28 md:size-32"}>
+        <div className="relative aspect-square w-full overflow-hidden rounded-xl">
           {product.image ? (
-            <Image src={product.image} alt={product.name} fill sizes={featured ? "(max-width: 640px) 104px, 136px" : "(max-width: 640px) 80px, 128px"} className="object-cover" />
+            <Image
+              src={product.image}
+              alt={product.name}
+              fill
+              sizes="(max-width: 640px) 96px, 128px"
+              className="object-cover"
+            />
           ) : (
             <DishArt category={product.category as CategoryId} seed={product.menuNumber ?? 3} className="size-full" />
           )}
         </div>
-        {featured && <VariantPrices product={product} multi={multi} orderable={orderable} className="mt-2" />}
+        {featured && (
+          <VariantPrices product={product} multi={multi} orderable={orderable} className="mt-2" />
+        )}
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col justify-between">
         <div>
           <div className="flex items-baseline gap-1.5 sm:gap-2">
-            {product.menuNumber && <span className="text-xs font-semibold tabular-nums text-gold-deep shrink-0">{product.menuNumber}.</span>}
-            <h3 className="font-display text-[1.05rem] font-semibold leading-tight min-[360px]:text-lg sm:text-xl md:text-[1.35rem]">{product.name}</h3>
+            {product.menuNumber && (
+              <span className="text-xs font-semibold tabular-nums text-gold-deep shrink-0">
+                {product.menuNumber}.
+              </span>
+            )}
+            <h3 className="font-display text-[1.05rem] font-semibold leading-tight min-[360px]:text-lg sm:text-xl">
+              {product.name}
+            </h3>
           </div>
-          <p className="mt-1 text-[0.76rem] leading-snug text-muted sm:text-[0.83rem] sm:leading-relaxed">{ingredientText(product)}</p>
+          <p className="mt-1 text-[0.76rem] leading-snug text-muted sm:text-[0.83rem] sm:leading-relaxed">
+            {ingredientText(product)}
+          </p>
         </div>
 
-        <div className={`mt-2 flex flex-wrap items-end justify-between gap-x-2 gap-y-1.5 pt-1.5 ${featured ? "sm:hidden" : "sm:mt-auto sm:pt-3"}`}>
+        <div className={`mt-2.5 flex items-end ${featured ? "justify-end pt-1" : "justify-between gap-x-2 gap-y-1.5 pt-1.5 sm:mt-auto sm:pt-2.5"}`}>
           {!featured && <VariantPrices product={product} multi={multi} orderable={orderable} />}
 
-          {!featured && (orderable ? (
+          {orderable ? (
             <button
               type="button"
               onClick={() => openProduct(product.slug)}
               aria-label={`Beställ ${product.name}`}
-              className="inline-flex min-h-8 items-center justify-center rounded-full border border-gold-deep/60 px-3 text-[0.7rem] font-semibold uppercase tracking-[0.06em] text-ink transition after:absolute after:inset-0 after:rounded-2xl after:content-[''] group-hover:border-gold group-hover:bg-gold shrink-0 self-end ml-auto min-[360px]:min-h-9 min-[360px]:px-3.5 min-[360px]:ml-0 sm:min-h-11 sm:px-5 sm:text-xs sm:tracking-[0.12em]"
+              className="inline-flex min-h-8 items-center justify-center rounded-full border border-gold-deep/60 px-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-ink transition after:absolute after:inset-0 after:rounded-2xl after:content-[''] group-hover:border-gold group-hover:bg-gold shrink-0 sm:min-h-9 sm:px-4 sm:text-xs sm:tracking-[0.1em]"
             >
               Beställ
             </button>
           ) : (
-            <p className="max-w-[8.5rem] text-right text-[0.7rem] leading-snug text-muted sm:text-xs">Pris bekräftas snart – kan inte beställas online än</p>
-          ))}
+            <p className="max-w-[8.5rem] text-right text-[0.7rem] leading-snug text-muted sm:text-xs">
+              Pris bekräftas snart – kan inte beställas online än
+            </p>
+          )}
         </div>
       </div>
-
-      {featured && (orderable ? (
-        <button
-          type="button"
-          onClick={() => openProduct(product.slug)}
-          aria-label={`Beställ ${product.name}`}
-          className="absolute bottom-3 right-3 inline-flex min-h-9 items-center justify-center rounded-full border border-gold-deep/60 px-3.5 text-[0.7rem] font-semibold uppercase tracking-[0.06em] text-ink transition after:absolute after:inset-0 after:rounded-2xl after:content-[''] group-hover:border-gold group-hover:bg-gold sm:bottom-4 sm:right-4 sm:min-h-11 sm:px-5 sm:text-xs sm:tracking-[0.12em]"
-        >
-          Beställ
-        </button>
-      ) : (
-        <p className="absolute bottom-3 right-3 max-w-[8.5rem] text-right text-[0.7rem] leading-snug text-muted sm:bottom-4 sm:right-4 sm:text-xs">
-          Pris bekräftas snart – kan inte beställas online än
-        </p>
-      ))}
     </li>
   );
 }

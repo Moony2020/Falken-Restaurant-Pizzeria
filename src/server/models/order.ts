@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import mongoose, { type Model, type Types } from "mongoose";
-import { FULFILLMENT_STATUS, PAYMENT_PROVIDER, PAYMENT_STATUS, type FulfillmentStatus, type PaymentProvider, type PaymentStatus } from "./constants.ts";
+import { FULFILLMENT_STATUS, PAYMENT_METHOD, PAYMENT_PROVIDER, PAYMENT_STATUS, type FulfillmentStatus, type PaymentMethod, type PaymentProvider, type PaymentStatus } from "./constants.ts";
 
 // mongoose is CommonJS: destructure the default export so this also loads under plain Node ESM.
 const { model, models, Schema } = mongoose;
@@ -77,6 +77,7 @@ const orderSchema = new Schema(
       phone: { type: String, required: true, trim: true, maxlength: 30 },
     },
     paymentProvider: { type: String, enum: PAYMENT_PROVIDER },
+    paymentMethod: { type: String, enum: PAYMENT_METHOD, default: "card", required: true, index: true },
     paymentStatus: { type: String, enum: PAYMENT_STATUS, default: "pending", index: true },
     fulfillmentStatus: { type: String, enum: FULFILLMENT_STATUS, default: "PENDING_PAYMENT", index: true },
     /** After this moment an order that is still unpaid may be cancelled (after the provider has been asked). */
@@ -141,6 +142,7 @@ export type OrderDoc = {
   pickupAt: Date;
   contact: { name: string; phone: string };
   paymentProvider?: PaymentProvider;
+  paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   fulfillmentStatus: FulfillmentStatus;
   paymentExpiresAt?: Date;

@@ -204,10 +204,19 @@ export type OrderStatusResult =
         publicId: string;
         status: string;
         paymentStatus: string;
+        paymentMethod: "card" | "pay_on_pickup";
         totalSek: number;
         pickupAt: string;
         paidAt: string | null;
-        items: { productNameSnapshot: string; variantNameSnapshot: string; quantity: number; lineTotalSek: number }[];
+        items: {
+          productNameSnapshot: string;
+          variantNameSnapshot: string;
+          quantity: number;
+          lineTotalSek: number;
+          modifiersSnapshot: { labelSv: string; priceSek: number; quantity: number }[];
+          removedIngredients: string[];
+          note: string;
+        }[];
       };
     }
   | { kind: "not_found" };
@@ -223,6 +232,7 @@ export async function getOrderStatus(args: { publicId: string; token: string | n
       publicId: o.publicId,
       status: o.fulfillmentStatus,
       paymentStatus: o.paymentStatus,
+      paymentMethod: o.paymentMethod ?? "card",
       totalSek: o.totalSek,
       pickupAt: o.pickupAt.toISOString(),
       paidAt: o.paidAt ? o.paidAt.toISOString() : null,
@@ -231,6 +241,13 @@ export async function getOrderStatus(args: { publicId: string; token: string | n
         variantNameSnapshot: i.variantNameSnapshot,
         quantity: i.quantity,
         lineTotalSek: i.lineTotalSek,
+        modifiersSnapshot: i.modifiersSnapshot.map((modifier) => ({
+          labelSv: modifier.labelSv,
+          priceSek: modifier.priceSek,
+          quantity: modifier.quantity,
+        })),
+        removedIngredients: i.removedIngredients,
+        note: i.note,
       })),
     },
   };

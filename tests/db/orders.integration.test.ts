@@ -5,6 +5,7 @@ import { EXTRAS } from "../../src/data/extras.ts";
 import { POST as cartValidate } from "../../src/app/api/cart/validate/route.ts";
 import { POST as ordersPost } from "../../src/app/api/orders/route.ts";
 import { getPublicMenu } from "../../src/server/catalog-repo.ts";
+import { listKitchenOrders } from "../../src/server/kitchen.ts";
 import { CategoryModel, ModifierModel, ProductModel } from "../../src/server/models/catalog.ts";
 import { OrderModel, PaymentModel } from "../../src/server/models/order.ts";
 import { createOrder, OrderError } from "../../src/server/orders-service.ts";
@@ -87,6 +88,18 @@ describe("orders + pricing on a local test database", { skip: !uri ? "MONGODB_UR
     test("creating orders never creates payments", async () => {
       await createOrder(body(), NOW);
       assert.equal(await PaymentModel.countDocuments(), 0);
+    });
+
+    test("pay-on-pickup is confirmed, remains unpaid, never expires, and reaches the kitchen", async () => {
+      const { order } = await createOrder(body([item()], { paymentMethod: "pay_on_pickup" }), NOW);
+      assert.equal(order.status, "CONFIRMED");
+      assert.equal(order.paymentStatus, "unpaid");
+      assert.equal(order.paymentMethod, "pay_on_pickup");
+
+      const stored = await OrderModel.findOne({ publicId: order.publicId }).lean();
+      assert.equal(stored?.paymentExpiresAt, undefined);
+      assert.equal(await PaymentModel.countDocuments({ orderId: stored?._id }), 0);
+      assert.ok((await listKitchenOrders()).some((k) => k.publicId === order.publicId));
     });
 
     test("an order keeps its snapshot when the menu price changes later", async () => {

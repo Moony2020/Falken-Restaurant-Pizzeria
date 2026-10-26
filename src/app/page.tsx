@@ -62,7 +62,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section aria-labelledby="featured-title" className="wrap py-16 sm:py-20">
+      <section aria-labelledby="featured-title" className="mx-auto w-full max-w-[1760px] px-3 py-16 sm:px-5 sm:py-20 lg:px-7">
         <div className="flex items-end justify-between gap-6">
           <div>
             <p className={eyebrow}>Från köket</p>

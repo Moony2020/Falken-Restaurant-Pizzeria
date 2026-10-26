@@ -59,6 +59,7 @@ export type OrderStatusView = {
   publicId: string;
   status: string;
   paymentStatus: string;
+  paymentMethod: "card" | "pay_on_pickup";
   totalSek: number;
   pickupAt: string;
   paidAt: string | null;
@@ -67,6 +68,13 @@ export type OrderStatusView = {
     variantNameSnapshot: string;
     quantity: number;
     lineTotalSek: number;
+    modifiersSnapshot: {
+      labelSv: string;
+      priceSek: number;
+      quantity: number;
+    }[];
+    removedIngredients: string[];
+    note: string;
   }[];
 };
 

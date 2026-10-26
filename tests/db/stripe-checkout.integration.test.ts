@@ -355,7 +355,7 @@ describe("Stripe Checkout (test mode, local fake)", { skip: !uri ? "MONGODB_URI_
       await OrderModel.updateOne({ _id: o.id }, { $set: { "needsReview.reason": "x" } });
       const after = await getOrderStatus({ publicId: o.publicId, token: o.token, tokenSecret: SECRET });
       assert.ok(after.kind === "ok" && after.order.status === "PAID" && after.order.paidAt);
-      assert.deepEqual(Object.keys(after.order).sort(), ["items", "paidAt", "paymentStatus", "pickupAt", "publicId", "status", "totalSek"]);
+      assert.deepEqual(Object.keys(after.order).sort(), ["items", "paidAt", "paymentMethod", "paymentStatus", "pickupAt", "publicId", "status", "totalSek"]);
     });
 
     test("coming back from Stripe proves nothing: a customer who closes the tab without paying stays unpaid", async () => {

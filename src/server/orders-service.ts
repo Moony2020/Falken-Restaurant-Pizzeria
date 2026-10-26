@@ -44,7 +44,7 @@ function canonical(value: unknown): string {
 /** Fingerprint of what the customer asked for. The idempotency key itself is not part of it. */
 export function hashRequest(req: OrderRequest): string {
   return createHash("sha256")
-    .update(canonical({ items: req.items, contact: req.contact, pickupAt: new Date(req.pickupAt).toISOString() }))
+    .update(canonical({ items: req.items, contact: req.contact, pickupAt: new Date(req.pickupAt).toISOString(), paymentMethod: req.paymentMethod }))
     .digest("hex");
 }
 
@@ -52,6 +52,7 @@ export type PublicOrder = {
   publicId: string;
   status: OrderDoc["fulfillmentStatus"];
   paymentStatus: OrderDoc["paymentStatus"];
+  paymentMethod: OrderDoc["paymentMethod"];
   subtotalSek: number;
   totalSek: number;
   currency: "SEK";
@@ -65,6 +66,7 @@ export function toPublicOrder(o: OrderDoc): PublicOrder {
     publicId: o.publicId,
     status: o.fulfillmentStatus,
     paymentStatus: o.paymentStatus,
+    paymentMethod: o.paymentMethod ?? "card",
     subtotalSek: o.subtotalSek,
     totalSek: o.totalSek,
     currency: o.currency,
@@ -89,9 +91,8 @@ export type CreateOrderOptions = { tokenSecret?: string };
 const isDuplicateKey = (err: unknown) => typeof err === "object" && err !== null && (err as { code?: number }).code === 11000;
 
 /**
- * Creates an order in PENDING_PAYMENT. This function can never produce a paid or confirmed order:
- * status fields are fixed here and are not part of the accepted request. Only a verified payment
- * webhook (a later phase) may move an order forward.
+ * A card order starts in PENDING_PAYMENT. A pay-on-pickup order is confirmed immediately, but remains
+ * unpaid; the payment method is accepted, whereas all status and price fields remain server controlled.
  */
 export async function createOrder(body: unknown, now: Date = new Date(), options: CreateOrderOptions = {}): Promise<CreateOrderResult> {
   const withToken = (order: PublicOrder, replayed: boolean): CreateOrderResult => ({
@@ -141,6 +142,8 @@ export async function createOrder(body: unknown, now: Date = new Date(), options
   if (!pickupOk) throw new OrderError("pickup_unavailable", 422, "The chosen pickup time is not available");
 
   try {
+    const isPayOnPickup = req.paymentMethod === "pay_on_pickup";
+    const fulfillmentStatus = isPayOnPickup ? "CONFIRMED" : "PENDING_PAYMENT";
     const created = await OrderModel.create({
       idempotencyKey: req.idempotencyKey,
       requestHash,
@@ -150,10 +153,11 @@ export async function createOrder(body: unknown, now: Date = new Date(), options
       totalSek: priced.totalSek,
       pickupAt,
       contact: { name: req.contact.name, phone: req.contact.phone },
-      paymentStatus: "pending",
-      fulfillmentStatus: "PENDING_PAYMENT",
-      paymentExpiresAt: new Date(now.getTime() + ORDER_EXPIRY_MINUTES * 60_000),
-      statusHistory: [{ at: now, to: "PENDING_PAYMENT", actorType: "customer", reason: "order_created" }],
+      paymentMethod: req.paymentMethod,
+      paymentStatus: isPayOnPickup ? "unpaid" : "pending",
+      fulfillmentStatus,
+      ...(isPayOnPickup ? {} : { paymentExpiresAt: new Date(now.getTime() + ORDER_EXPIRY_MINUTES * 60_000) }),
+      statusHistory: [{ at: now, to: fulfillmentStatus, actorType: "customer", reason: isPayOnPickup ? "order_confirmed_pay_on_pickup" : "order_created" }],
     });
     return withToken(toPublicOrder(created.toObject()), false);
   } catch (err) {

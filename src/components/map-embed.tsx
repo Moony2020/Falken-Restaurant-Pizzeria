@@ -1,5 +1,4 @@
-import { PinIcon } from "@/components/icons";
-import { mapsUrl, site } from "@/data/site";
+import { site } from "@/data/site";
 
 /**
  * Google map of the restaurant, shown straight away (lazy-loaded when it scrolls into view) with a small address card
@@ -17,22 +16,6 @@ export function MapEmbed() {
         referrerPolicy="no-referrer-when-downgrade"
         className="absolute inset-0 size-full border-0"
       />
-      <a
-        href={mapsUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="absolute bottom-4 left-4 flex max-w-[calc(100%-2rem)] items-center gap-3 rounded-xl bg-ink px-4 py-3 text-ivory shadow-2xl transition hover:bg-ink-3"
-      >
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-gold/15 text-gold">
-          <PinIcon className="size-5" />
-        </span>
-        <span className="min-w-0 leading-tight">
-          <span className="block text-xs font-semibold uppercase tracking-[0.14em]">Pizzeria Falken</span>
-          <span className="block text-sm text-ivory/80">
-            {site.address.street}, {site.address.zip} {site.address.city}
-          </span>
-        </span>
-      </a>
     </div>
   );
 }

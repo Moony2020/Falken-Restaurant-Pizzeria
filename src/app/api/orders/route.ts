@@ -5,8 +5,7 @@ import { guardWrite, json, readJsonBody, serverError, setOrderAccessCookie } fro
 import { createOrder, OrderError } from "../../../server/orders-service.ts";
 
 /**
- * Creates an order for pickup. The order is stored as PENDING_PAYMENT and stays that way:
- * nothing in this endpoint takes money or confirms an order. A verified payment webhook does that later.
+ * Creates an order for pickup. Card orders wait for Stripe; pay-on-pickup orders are confirmed but stay unpaid.
  */
 export async function POST(request: Request) {
   const refused = guardWrite(request, "orders", 10);
@@ -26,7 +25,8 @@ export async function POST(request: Request) {
     // The access token proves later that a request comes from whoever created the order. It is what pay/cancel
     // endpoints will require; the public order number alone is not enough.
     const { replayed, order, accessToken } = await createOrder(body.value, new Date(), { tokenSecret: getOrderTokenSecret() });
-    const response = json({ order, accessToken }, replayed ? 200 : 201);
+    // The access proof stays in the HttpOnly cookie. Never expose it to JavaScript, URLs or local storage.
+    const response = json({ order }, replayed ? 200 : 201);
     if (accessToken) setOrderAccessCookie(response, request, order.publicId, accessToken);
     return response;
   } catch (err) {

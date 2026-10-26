@@ -54,9 +54,9 @@ export function FeaturedDishes() {
   }
 
   return (
-    <ul className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-3">
+    <ul className="mt-8 flex gap-4 overflow-x-auto snap-x snap-mandatory pb-3 [scrollbar-width:thin] lg:grid lg:grid-cols-3 lg:gap-4 lg:overflow-visible lg:pb-0">
       {featured.map((p) => (
-        <ProductCard key={p.slug} product={p} />
+        <ProductCard key={p.slug} product={p} featured />
       ))}
     </ul>
   );

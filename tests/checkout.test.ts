@@ -9,9 +9,10 @@ const body = (key: string): OrderBody => ({
   contact: { name: "Anna", phone: "070-123 45 67" },
   pickupAt: "2026-10-22T11:00:00.000Z",
   expectedTotalSek: 110,
+  paymentMethod: "card",
 });
 
-const order = { publicId: "ABCDEFGHJK", status: "PENDING_PAYMENT", paymentStatus: "pending", totalSek: 110, pickupAt: "2026-10-22T11:00:00.000Z", items: [] };
+const order = { publicId: "ABCDEFGHJK", status: "PENDING_PAYMENT", paymentStatus: "pending", paymentMethod: "card" as const, totalSek: 110, pickupAt: "2026-10-22T11:00:00.000Z", items: [] };
 const reply = (status: number, data: unknown, headers: Record<string, string> = {}) => new Response(JSON.stringify(data), { status, headers });
 
 const fake = (handler: (init: RequestInit) => Response | Promise<Response>) => {
@@ -64,6 +65,7 @@ describe("creating an order", () => {
     const sent = calls[0].body;
     assert.equal(sent.idempotencyKey, "k-shape-000000000001");
     assert.equal(sent.expectedTotalSek, 110);
+    assert.equal(sent.paymentMethod, "card");
     assert.ok(!/priceSek|lineTotal|subtotal|status|paymentStatus/i.test(JSON.stringify(sent.items)));
   });
 

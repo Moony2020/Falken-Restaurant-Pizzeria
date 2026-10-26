@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { OrderStatus } from "@/components/order/order-status";
-import { PageBanner } from "@/components/page-banner";
 
 export const metadata: Metadata = {
   title: "Din beställning",
@@ -15,13 +14,12 @@ export function generateStaticParams() {
 
 export default function BestallningPage() {
   return (
-    <>
-      <PageBanner eyebrow="Avhämtning" title="Din beställning" text="Här ser du om din betalning är bekräftad." />
-      <div className="wrap max-w-2xl py-12 sm:py-16">
+    <main className="bg-ivory">
+      <div className="wrap max-w-4xl py-8 sm:py-12">
         <Suspense fallback={<p role="status" className="text-muted">Hämtar din beställning…</p>}>
           <OrderStatus />
         </Suspense>
       </div>
-    </>
+    </main>
   );
 }

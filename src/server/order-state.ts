@@ -4,6 +4,7 @@ import type { FulfillmentStatus } from "./models/constants.ts";
 // Every status change in the system goes through canTransition(), so the rules live in one place.
 //
 //   PENDING_PAYMENT ──payment──▶ PAID ──staff──▶ ACCEPTED ──▶ PREPARING ──▶ READY_FOR_PICKUP ──▶ PICKED_UP
+//   CONFIRMED (pay on pickup) ──staff──▶ PREPARING ──▶ READY_FOR_PICKUP ──▶ PICKED_UP
 //        │                         └──────────── payment (a confirmed refund) ──▶ REFUNDED ◀─────────┘
 //        └──system / customer──▶ CANCELLED
 //
@@ -20,6 +21,7 @@ export type Actor = { type: ActorType; id?: string };
 const RULES: Partial<Record<FulfillmentStatus, Partial<Record<FulfillmentStatus, ActorType[]>>>> = {
   PENDING_PAYMENT: { PAID: ["payment"], CANCELLED: ["system", "customer"] },
   PAID: { ACCEPTED: ["staff"], REFUNDED: ["payment"] },
+  CONFIRMED: { PREPARING: ["staff"], CANCELLED: ["system", "customer"] },
   ACCEPTED: { PREPARING: ["staff"], REFUNDED: ["payment"] },
   PREPARING: { READY_FOR_PICKUP: ["staff"], REFUNDED: ["payment"] },
   READY_FOR_PICKUP: { PICKED_UP: ["staff"], REFUNDED: ["payment"] },
@@ -38,8 +40,8 @@ export function canTransition(from: FulfillmentStatus, to: FulfillmentStatus, ac
 /** Statuses from which the order has been paid for. */
 export const PAID_STATUSES: FulfillmentStatus[] = ["PAID", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP", "PICKED_UP"];
 
-/** Statuses a kitchen screen may show: paid and still to be made or handed over. Never PENDING_PAYMENT. */
-export const KITCHEN_STATUSES: FulfillmentStatus[] = ["PAID", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP"];
+/** Statuses a kitchen screen may show. CONFIRMED is only visible for pay-on-pickup orders. */
+export const KITCHEN_STATUSES: FulfillmentStatus[] = ["PAID", "CONFIRMED", "ACCEPTED", "PREPARING", "READY_FOR_PICKUP"];
 
 export const isFinal = (s: FulfillmentStatus) => !RULES[s];
 export const isPaidStatus = (s: FulfillmentStatus) => PAID_STATUSES.includes(s);

@@ -59,8 +59,8 @@ const restaurantJsonLd = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="sv" data-scroll-behavior="smooth" className={`${display.variable} ${sans.variable}`}>
-      <body className="flex min-h-dvh flex-col">
+    <html lang="sv" suppressHydrationWarning data-scroll-behavior="smooth" className={`${display.variable} ${sans.variable}`}>
+      <body suppressHydrationWarning className="flex min-h-dvh flex-col">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(restaurantJsonLd).replace(/</g, "\\u003c") }}

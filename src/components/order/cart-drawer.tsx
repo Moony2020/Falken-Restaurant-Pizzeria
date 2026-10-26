@@ -634,7 +634,7 @@ function Details({
     // Same cart, contact and time reuse the same key, so a retry after a dropped connection can't create a second order.
     const attempt = resolveAttempt(
       checkout.attempt,
-      fingerprintOf({ items, contact, pickupAt: selectedPickup, totalSek }),
+      fingerprintOf({ items, contact, pickupAt: selectedPickup, totalSek, paymentMethod: "card" }),
       () => crypto.randomUUID(),
     );
     if (attempt !== checkout.attempt) checkoutStore.setAttempt(attempt);
@@ -645,16 +645,15 @@ function Details({
       contact,
       pickupAt: selectedPickup,
       expectedTotalSek: totalSek,
+      paymentMethod: "card",
     });
 
     if (result.kind === "created" || result.kind === "replayed") {
       cartStore.clear();
-      checkoutStore.setOrder(result.order, result.accessToken);
+      checkoutStore.setOrder(result.order);
       // The order is saved (unpaid). Straight on to the card payment page; if that can't start, the next screen
       // explains why and offers to try again.
-      const pay = result.accessToken
-        ? await startCardPayment(result.order.publicId, result.accessToken)
-        : ({ kind: "unavailable" } as const);
+      const pay = await startCardPayment(result.order.publicId);
       if (pay.kind === "redirect") {
         window.location.assign(pay.url); // keeps the button busy while the browser leaves
         return;

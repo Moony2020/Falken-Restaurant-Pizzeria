@@ -328,6 +328,7 @@ function CheckoutForm({
   onPaymentMethodChange: (m: "cash" | "card") => void;
   onBack: () => void;
 }) {
+  const router = useRouter();
   const now = useNow();
   const checkout = useSyncExternalStore(
     checkoutStore.subscribe,
@@ -384,7 +385,7 @@ function CheckoutForm({
     const items = toPayloadItems(lines);
     const attempt = resolveAttempt(
       checkout.attempt,
-      fingerprintOf({ items, contact, pickupAt: selectedPickup, totalSek }),
+      fingerprintOf({ items, contact, pickupAt: selectedPickup, totalSek, paymentMethod }),
       () => crypto.randomUUID(),
     );
     if (attempt !== checkout.attempt) checkoutStore.setAttempt(attempt);
@@ -395,17 +396,16 @@ function CheckoutForm({
       contact,
       pickupAt: selectedPickup,
       expectedTotalSek: totalSek,
+      paymentMethod: paymentMethod === "cash" ? "pay_on_pickup" : "card",
     });
 
     if (result.kind === "created" || result.kind === "replayed") {
       clearDraft();
       cartStore.clear();
-      checkoutStore.setOrder(result.order, result.accessToken, paymentMethod);
+      checkoutStore.setOrder(result.order, undefined, paymentMethod);
 
       if (paymentMethod === "card") {
-        const pay = result.accessToken
-          ? await startCardPayment(result.order.publicId, result.accessToken)
-          : ({ kind: "unavailable" } as const);
+        const pay = await startCardPayment(result.order.publicId);
         if (pay.kind === "redirect") {
           window.location.assign(pay.url);
           return;
@@ -416,9 +416,8 @@ function CheckoutForm({
         return;
       }
 
-      // Cash payment on pickup: order created directly without redirecting
-      sending.current = false;
-      setSubmitting(false);
+      // A confirmed pay-on-pickup order belongs on its own receipt page, not inside /kassa.
+      router.replace(`/bestallning/${encodeURIComponent(result.order.publicId)}`);
       return;
     }
 

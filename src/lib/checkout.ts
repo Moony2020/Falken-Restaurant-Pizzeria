@@ -1,19 +1,19 @@
 import type { CartIssue } from "./cart-api.ts";
 
-// Creating an order from the browser. An order made here is always unpaid: the server stores it as
-// PENDING_PAYMENT and nothing in this file can change that.
+// The browser selects a payment route, while the server remains solely responsible for prices and statuses.
 
 export type PublicOrder = {
   publicId: string;
   status: string;
   paymentStatus: string;
+  paymentMethod: "card" | "pay_on_pickup";
   totalSek: number;
   pickupAt: string;
   items: { productNameSnapshot: string; variantNameSnapshot: string; quantity: number; lineTotalSek: number }[];
 };
 
 export type OrderResult =
-  | { kind: "created" | "replayed"; order: PublicOrder; accessToken?: string }
+  | { kind: "created" | "replayed"; order: PublicOrder }
   | { kind: "price_changed"; expectedSek: number; actualSek: number }
   | { kind: "issues"; issues: CartIssue[] }
   | { kind: "pickup_unavailable" }
@@ -38,6 +38,7 @@ export type OrderBody = {
   contact: { name: string; phone: string };
   pickupAt: string;
   expectedTotalSek: number;
+  paymentMethod: "card" | "pay_on_pickup";
 };
 
 const inflight = new Map<string, Promise<OrderResult>>();
@@ -76,9 +77,8 @@ async function send(body: OrderBody, fetchImpl: typeof fetch): Promise<OrderResu
 
   if (res.status === 201 || res.status === 200) {
     const order = data.order as PublicOrder | undefined;
-    const accessToken = typeof data.accessToken === "string" ? data.accessToken : undefined;
     return order && typeof order.publicId === "string"
-      ? { kind: res.status === 201 ? "created" : "replayed", order, accessToken }
+      ? { kind: res.status === 201 ? "created" : "replayed", order }
       : { kind: "unavailable" };
   }
   if (res.status === 429) return { kind: "rate_limited", retryAfterSec: Number(res.headers.get("retry-after")) || 30 };
