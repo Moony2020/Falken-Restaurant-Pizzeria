@@ -49,9 +49,30 @@ const contacts = [
 ];
 
 const quick = [
-  { icon: PinIcon, label: "Adress", value: site.address.street },
-  { icon: PhoneIcon, label: "Telefon", value: site.phone },
-  { icon: ClockIcon, label: "Avhämtning", value: `ca ${PREP_MINUTES} min` },
+  {
+    icon: PinIcon,
+    label: "Adress",
+    value: `${site.address.street}, ${site.address.zip} ${site.address.city}`,
+    href: mapsUrl,
+    external: true,
+    ariaLabel: `Adress: ${site.address.street}, ${site.address.zip} ${site.address.city} (öppna vägbeskrivning i Google Maps)`,
+  },
+  {
+    icon: PhoneIcon,
+    label: "Telefon",
+    value: site.phone,
+    href: site.phoneHref,
+    external: false,
+    ariaLabel: `Telefon: ${site.phone} (ring restaurangen)`,
+  },
+  {
+    icon: ClockIcon,
+    label: "Avhämtning",
+    value: `ca ${PREP_MINUTES} min`,
+    href: "/meny",
+    external: false,
+    ariaLabel: `Avhämtning ca ${PREP_MINUTES} minuter (öppna menyn och beställ)`,
+  },
 ];
 
 const faqs = [
@@ -94,23 +115,27 @@ export default function KontaktPage() {
         <div className="mt-6">
           <OpenStatus />
         </div>
-        <ul className="mt-6 grid max-w-xl gap-3 sm:grid-cols-3 lg:max-w-lg">
-          {quick.map(({ icon: Icon, label, value }) => (
-            <li
-              key={label}
-              className="flex items-center gap-3 rounded-2xl border border-ivory/15 bg-ivory/5 p-3.5 backdrop-blur"
-            >
-              <span className="grid size-10 shrink-0 place-items-center rounded-full bg-gold/15 text-gold">
-                <Icon className="size-5" />
-              </span>
-              <span className="min-w-0 leading-tight">
-                <span className="block text-[0.65rem] uppercase tracking-[0.18em] text-ivory/60">
-                  {label}
+        <ul className="mt-6 grid max-w-xl gap-3 sm:grid-cols-3 lg:max-w-2xl">
+          {quick.map(({ icon: Icon, label, value, href, external, ariaLabel }) => (
+            <li key={label}>
+              <a
+                href={href}
+                {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                aria-label={ariaLabel}
+                className="group flex h-full items-center gap-3 rounded-2xl border border-ivory/15 bg-ivory/5 p-3.5 backdrop-blur transition duration-200 hover:border-gold hover:bg-ivory/10 hover:shadow-md cursor-pointer"
+              >
+                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-gold/15 text-gold transition duration-200 group-hover:bg-gold group-hover:text-ink">
+                  <Icon className="size-5" />
                 </span>
-                <span className="block whitespace-nowrap text-sm font-semibold">
-                  {value}
+                <span className="min-w-0 leading-tight">
+                  <span className="block text-[0.65rem] uppercase tracking-[0.18em] text-ivory/60">
+                    {label}
+                  </span>
+                  <span className="block text-xs font-semibold sm:text-[0.82rem] leading-snug text-ivory group-hover:text-gold transition">
+                    {value}
+                  </span>
                 </span>
-              </span>
+              </a>
             </li>
           ))}
         </ul>
