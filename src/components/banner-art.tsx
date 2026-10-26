@@ -16,6 +16,7 @@ export function BannerArt({ image }: { image?: string | null }) {
             src={photoSrc}
             alt=""
             fill
+            priority
             sizes="(min-width: 1536px) 448px, (min-width: 1280px) 416px, (min-width: 900px) 304px, 384px"
             className="object-cover"
           />
