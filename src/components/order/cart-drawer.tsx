@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, useSyncExternalStore } from "react";
@@ -433,11 +434,23 @@ function CartItem({
 
   return (
     <li className={`flex items-start gap-3 py-3.5 ${issue ? "rounded-lg bg-ember/5" : ""}`}>
-      <DishArt
-        category={(product?.category ?? "pizza") as CategoryId}
-        seed={product?.menuNumber ?? 3}
-        className="size-16 sm:size-[72px] shrink-0 rounded-xl"
-      />
+      <div className="relative size-16 sm:size-[72px] shrink-0 overflow-hidden rounded-xl">
+        {product?.image ? (
+          <Image
+            src={product.image}
+            alt={name}
+            fill
+            sizes="72px"
+            className="object-cover"
+          />
+        ) : (
+          <DishArt
+            category={(product?.category ?? "pizza") as CategoryId}
+            seed={product?.menuNumber ?? 3}
+            className="size-full"
+          />
+        )}
+      </div>
       <div className="min-w-0 flex-1 flex items-start justify-between gap-2.5">
         {/* Left column: Name, Variant, Modifiers, Notes */}
         <div className="min-w-0 flex-1">

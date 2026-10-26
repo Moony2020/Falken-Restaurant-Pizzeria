@@ -140,12 +140,92 @@ const TIERS = {
 
 type Tier = keyof typeof TIERS;
 
+function getDishImage(category: CategoryId, slugId: string, name: string, ingredients: string): string | undefined {
+  const s = slugId.toLowerCase();
+  const ing = ingredients.toLowerCase();
+
+  if (category === "pizza") {
+    if (s.includes("falken-special")) return "/images/dishes/pizza/falken-special.webp";
+    if (s.includes("calzone")) return "/images/dishes/pizza/calzone.webp";
+    if (s.includes("margherita")) return "/images/dishes/pizza/margherita.webp";
+    if (s.includes("cacciatora") || ing.includes("salami") || ing.includes("pepperoni")) {
+      return "/images/dishes/pizza/cacciatora.webp";
+    }
+    if (s.includes("hawaii") || ing.includes("ananas") || ing.includes("banan")) {
+      return "/images/dishes/pizza/hawaii.webp";
+    }
+    if (
+      s.includes("quattro-stagioni") ||
+      ing.includes("räkor") ||
+      ing.includes("musslor") ||
+      ing.includes("tonfisk") ||
+      ing.includes("scampi")
+    ) {
+      return "/images/dishes/pizza/quattro-stagioni.webp";
+    }
+    if (
+      ing.includes("oxfilé") ||
+      ing.includes("fläskfilé") ||
+      ing.includes("bacon") ||
+      ing.includes("bearnaisesås")
+    ) {
+      return "/images/dishes/pizza/oxfilepizza.webp";
+    }
+    if (
+      s.includes("vegetariana") ||
+      s.includes("quattro-formaggi") ||
+      s.includes("grekisk") ||
+      ing.includes("mozzarella") ||
+      ing.includes("fetaost")
+    ) {
+      return "/images/dishes/pizza/margherita.webp";
+    }
+    return "/images/dishes/pizza/vesuvio.webp";
+  }
+
+  if (category === "kebabpizza") {
+    return "/images/dishes/kebab/kebabpizza.webp";
+  }
+
+  if (category === "kebab") {
+    if (s.includes("rulle") || s.includes("brod") || s.includes("bröd")) {
+      return "/images/dishes/kebab/kebabrulle.webp";
+    }
+    return "/images/dishes/kebab/kebabtallrik.webp";
+  }
+
+  if (category === "hamburgare") {
+    return "/images/dishes/burgers/hamburgare.webp";
+  }
+
+  if (category === "sallader") {
+    if (s.includes("rak") || ing.includes("räkor") || s.includes("tonfisk") || ing.includes("tonfisk")) {
+      return "/images/dishes/salads/raksallad.webp";
+    }
+    return "/images/dishes/salads/grekisk-sallad.webp";
+  }
+
+  if (category === "barn") {
+    if (s.includes("pannkaka")) return "/images/dishes/alacarte/pannkaka.webp";
+    return "/images/dishes/alacarte/oxfile-planka.webp";
+  }
+
+  if (category === "alacarte") {
+    if (s.includes("schnitzel") || s.includes("rodspatta") || s.includes("spätta") || s.includes("salmone") || s.includes("lax")) {
+      return "/images/dishes/alacarte/schnitzel.webp";
+    }
+    return "/images/dishes/alacarte/oxfile-planka.webp";
+  }
+
+  return undefined;
+}
+
 function pizza(
   number: number,
   name: string,
   ing: string,
   tier: Tier,
-  opts: { noBase?: boolean; review?: string; featured?: boolean; unconfirmed?: string[]; singleSize?: boolean } = {},
+  opts: { noBase?: boolean; review?: string; featured?: boolean; unconfirmed?: string[]; singleSize?: boolean; image?: string } = {},
 ): Product {
   const [group, normal, familj] = TIERS[tier];
   const unconfirmed = new Set(opts.unconfirmed);
@@ -154,8 +234,9 @@ function pizza(
   if (opts.review === closedReview && !opts.singleSize) unconfirmed.add("familj");
   const own = list(ing);
   const house = own[0].toLowerCase().startsWith("husets tomatsås");
+  const id = slug(name);
   return {
-    id: slug(name),
+    id,
     number,
     name,
     category: "pizza",
@@ -164,6 +245,7 @@ function pizza(
     variants: opts.singleSize ? sizes(normal, familj).slice(0, 1) : sizes(normal, familj),
     glutenFreeOption: true,
     featured: opts.featured,
+    image: opts.image ?? getDishImage("pizza", id, name, ing),
     review: opts.review,
     unconfirmedVariants: unconfirmed.size > 0 ? [...unconfirmed] : undefined,
   };
@@ -296,14 +378,16 @@ const pizzas: Product[] = [
 // ---- Kebabpizza ------------------------------------------------------------
 
 function kebabpizza(number: number, name: string, ing: string, normal: number, familj: number): Product {
+  const id = slug(name);
   return {
-    id: slug(name),
+    id,
     number,
     name,
     category: "kebabpizza",
     ingredients: ["Tomatsås", "Ost", ...list(ing)],
     variants: sizes(normal, familj),
     glutenFreeOption: true,
+    image: getDishImage("kebabpizza", id, name, ing),
   };
 }
 
@@ -328,14 +412,16 @@ function kebabItem(
   review?: string,
   unconfirmedVariants?: string[],
 ): Product {
+  const id = slug(name);
   return {
-    id: slug(name),
+    id,
     number,
     name,
     category: "kebab",
     group: "Kebab, gyros & kyckling",
     ingredients: list(ing),
     variants: single(price),
+    image: getDishImage("kebab", id, name, ing),
     review,
     unconfirmedVariants,
   };
@@ -359,20 +445,23 @@ const kebabs: Product[] = [
     group: "Nachos",
     ingredients: list("majschipsgratäng, tacokött, ost, sallad, crème fraîche"),
     variants: single(130),
+    image: "/images/dishes/kebab/kebabtallrik.webp",
   },
 ];
 
 // ---- Hamburgare ------------------------------------------------------------
 
 function burger(number: number, name: string, description: string, price: number): Product {
+  const id = slug(name);
   return {
-    id: slug(name),
+    id,
     number,
     name,
     category: "hamburgare",
     ingredients: [],
     description,
     variants: single(price),
+    image: getDishImage("hamburgare", id, name, description),
   };
 }
 
@@ -388,13 +477,15 @@ const burgers: Product[] = [
 const saladBase = "isbergssallad, tomat, gurka, bröd, majs, dressing";
 
 function salad(number: number, name: string, ing: string): Product {
+  const id = slug(name);
   return {
-    id: slug(name),
+    id,
     number,
     name,
     category: "sallader",
     ingredients: list(`${ing}, ${saladBase}`),
     variants: single(125),
+    image: getDishImage("sallader", id, name, ing),
   };
 }
 
@@ -411,7 +502,16 @@ const salads: Product[] = [
 // ---- Barnmeny --------------------------------------------------------------
 
 function kids(number: number, name: string, ing: string): Product {
-  return { id: slug(name), number, name, category: "barn", ingredients: list(ing), variants: single(90) };
+  const id = slug(name);
+  return {
+    id,
+    number,
+    name,
+    category: "barn",
+    ingredients: list(ing),
+    variants: single(90),
+    image: getDishImage("barn", id, name, ing),
+  };
 }
 
 const kidsMenu: Product[] = [
@@ -428,12 +528,14 @@ function carte(
   ing: string,
   extra: { choiceHint?: string; featured?: boolean } = {},
 ): Product {
+  const id = slug(name);
   return {
-    id: slug(name),
+    id,
     name,
     category: "alacarte",
     ingredients: list(ing),
     variants: single(price),
+    image: getDishImage("alacarte", id, name, ing),
     ...extra,
   };
 }

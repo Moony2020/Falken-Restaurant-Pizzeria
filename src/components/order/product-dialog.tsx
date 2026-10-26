@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState, type ReactNode } from "react";
 import {
   IF_UNAVAILABLE,
@@ -235,17 +236,28 @@ function ProductForm({
 
   return (
     <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
-      <div className="relative shrink-0">
-        <DishArt
-          category={product.category as CategoryId}
-          seed={product.menuNumber ?? 3}
-          className="h-32 w-full sm:h-40"
-        />
+      <div className="relative shrink-0 h-36 w-full overflow-hidden sm:h-44">
+        {product.image ? (
+          <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            sizes="(max-width: 640px) 100vw, 560px"
+            className="object-cover"
+          />
+        ) : (
+          <DishArt
+            category={product.category as CategoryId}
+            seed={product.menuNumber ?? 3}
+            className="size-full"
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/20 pointer-events-none" />
         <button
           type="button"
           onClick={onClose}
           aria-label="Stäng"
-          className="absolute right-3 top-3 grid size-11 place-items-center rounded-full bg-ink/70 text-ivory backdrop-blur transition hover:bg-ink"
+          className="absolute right-3 top-3 z-10 grid size-11 place-items-center rounded-full bg-ink/70 text-ivory backdrop-blur transition hover:bg-ink"
         >
           <CloseIcon className="size-5" />
         </button>

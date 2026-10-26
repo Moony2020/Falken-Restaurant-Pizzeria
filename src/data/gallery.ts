@@ -35,7 +35,7 @@ export const gallery: GalleryItem[] = [
     seed: 37,
     size: "big",
     caption: "Pizza bakad på beställning.",
-    src: "/images/gallery/falken-special.jpg",
+    src: "/images/dishes/pizza/falken-special.webp",
   },
   {
     id: "matsalen",
@@ -55,7 +55,7 @@ export const gallery: GalleryItem[] = [
     seed: 2,
     size: "normal",
     caption: "Gyros eller nötkött.",
-    src: "/images/gallery/kebabtallrik.jpg",
+    src: "/images/dishes/kebab/kebabtallrik.webp",
   },
   {
     id: "pollo",
@@ -65,6 +65,7 @@ export const gallery: GalleryItem[] = [
     seed: 3,
     size: "normal",
     caption: "À la carte.",
+    src: "/images/dishes/alacarte/schnitzel.webp",
   },
   {
     id: "quattro-formaggi",
@@ -74,6 +75,7 @@ export const gallery: GalleryItem[] = [
     seed: 50,
     size: "tall",
     caption: "Fyra sorters ost.",
+    src: "/images/dishes/pizza/margherita.webp",
   },
   {
     id: "hawaii",
@@ -83,6 +85,7 @@ export const gallery: GalleryItem[] = [
     seed: 13,
     size: "wide",
     caption: "Skinka och ananas.",
+    src: "/images/dishes/pizza/hawaii.webp",
   },
   {
     id: "grekisksallad",
@@ -92,7 +95,7 @@ export const gallery: GalleryItem[] = [
     seed: 7,
     size: "tall",
     caption: "Fräsch och mättande.",
-    src: "/images/gallery/grekisksallad.jpg",
+    src: "/images/dishes/salads/grekisk-sallad.webp",
   },
   {
     id: "hamburgare",
@@ -102,7 +105,7 @@ export const gallery: GalleryItem[] = [
     seed: 5,
     size: "normal",
     caption: "Med eller utan pommes.",
-    src: "/images/gallery/hamburgare.jpg",
+    src: "/images/dishes/burgers/hamburgare.webp",
   },
   {
     id: "disken",
@@ -112,6 +115,7 @@ export const gallery: GalleryItem[] = [
     seed: 4,
     size: "normal",
     caption: "Hämta din beställning här.",
+    src: "/images/gallery/disken.webp",
   },
   {
     id: "kebabpizza",
@@ -121,7 +125,7 @@ export const gallery: GalleryItem[] = [
     seed: 59,
     size: "big",
     caption: "Kebabpizza.",
-    src: "/images/gallery/kebabpizza.jpg",
+    src: "/images/dishes/kebab/kebabpizza.webp",
   },
   {
     id: "utsidan",
@@ -131,6 +135,7 @@ export const gallery: GalleryItem[] = [
     seed: 6,
     size: "wide",
     caption: "Skolgatan 4, Vintrosa.",
+    src: "/images/gallery/utsidan.webp",
   },
   {
     id: "filemignon",
@@ -140,5 +145,6 @@ export const gallery: GalleryItem[] = [
     seed: 8,
     size: "wide",
     caption: "À la carte.",
+    src: "/images/dishes/alacarte/oxfile-planka.webp",
   },
 ];

@@ -174,7 +174,7 @@ describe("orders + pricing on a local test database", { skip: !uri ? "MONGODB_UR
     });
 
     test("pickup times the kitchen can't serve are refused", async () => {
-      for (const pickupAt of ["2026-10-22T10:10:00.000Z", "2026-10-22T19:30:00.000Z", "2026-10-22T11:07:00.000Z", "2026-10-21T11:00:00.000Z"]) {
+      for (const pickupAt of ["2026-10-22T10:05:00.000Z", "2026-10-22T19:30:00.000Z", "2026-10-22T11:07:00.000Z", "2026-10-21T11:00:00.000Z"]) {
         await rejects(createOrder(body([item()], { pickupAt }), NOW), "pickup_unavailable", 422);
       }
     });
