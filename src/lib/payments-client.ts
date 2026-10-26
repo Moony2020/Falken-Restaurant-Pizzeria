@@ -12,11 +12,12 @@ export type StartPaymentResult =
   | { kind: "network" }
   | { kind: "error" };
 
-const authHeader = (token: string) => ({ "x-order-token": token });
+const authHeader = (token?: string): Record<string, string> =>
+  token ? { "x-order-token": token } : {};
 
 export async function startCardPayment(
   publicId: string,
-  token: string,
+  token?: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<StartPaymentResult> {
   let res: Response;
@@ -77,7 +78,7 @@ export type StatusResult =
 
 export async function fetchOrderStatus(
   publicId: string,
-  token: string,
+  token?: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<StatusResult> {
   try {
@@ -102,7 +103,7 @@ export function startPaymentFailureSv(result: StartPaymentResult): string {
     case "expired":
       return "Tiden för att betala den här beställningen har gått ut. Gör en ny beställning.";
     case "not_payable":
-      return "Den här beställningen kan inte betalas längre.";
+      return "Betalningen kunde inte startas för den här beställningen. Påbörja en ny beställning eller ring oss så hjälper vi dig.";
     case "rate_limited":
       return "För många försök på kort tid. Vänta en stund och försök igen.";
     case "network":

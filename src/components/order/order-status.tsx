@@ -61,7 +61,7 @@ export function OrderStatus() {
   const [paying, setPaying] = useState(false);
 
   useEffect(() => {
-    if (!token) return;
+    // The HttpOnly order cookie is available after Stripe returns even if browser storage was cleared.
     let stop = false;
     const startedAt = Date.now();
     let timer: ReturnType<typeof setTimeout>;
@@ -99,7 +99,7 @@ export function OrderStatus() {
     setPaying(false);
   }, [publicId, token, paying]);
 
-  if (!token || view.kind === "denied") {
+  if (view.kind === "denied") {
     return (
       <Card tone="neutral" title="Vi kan inte visa den här beställningen">
         <p>

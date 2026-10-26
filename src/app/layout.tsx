@@ -59,7 +59,7 @@ const restaurantJsonLd = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="sv" className={`${display.variable} ${sans.variable}`}>
+    <html lang="sv" data-scroll-behavior="smooth" className={`${display.variable} ${sans.variable}`}>
       <body className="flex min-h-dvh flex-col">
         <script
           type="application/ld+json"

@@ -1,6 +1,6 @@
 import { connectDb } from "../../../../../server/db.ts";
 import { getOrderTokenSecret } from "../../../../../server/env.ts";
-import { clientIp, json, serverError } from "../../../../../server/http.ts";
+import { clientIp, json, orderAccessToken, serverError } from "../../../../../server/http.ts";
 import { getOrderStatus } from "../../../../../server/payments-service.ts";
 import { rateLimit } from "../../../../../server/rate-limit.ts";
 
@@ -12,7 +12,7 @@ export async function GET(request: Request, ctx: RouteContext<"/api/orders/[publ
   const { publicId } = await ctx.params;
   try {
     await connectDb();
-    const result = await getOrderStatus({ publicId, token: request.headers.get("x-order-token"), tokenSecret: getOrderTokenSecret() });
+    const result = await getOrderStatus({ publicId, token: orderAccessToken(request, publicId), tokenSecret: getOrderTokenSecret() });
     return result.kind === "ok" ? json({ order: result.order }) : json({ error: "not_found" }, 404);
   } catch (err) {
     return serverError(err);

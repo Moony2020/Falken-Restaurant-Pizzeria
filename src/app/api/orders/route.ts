@@ -1,7 +1,7 @@
 import { orderRequestSchema } from "../../../server/cart-schema.ts";
 import { connectDb } from "../../../server/db.ts";
 import { getOrderTokenSecret } from "../../../server/env.ts";
-import { guardWrite, json, readJsonBody, serverError } from "../../../server/http.ts";
+import { guardWrite, json, readJsonBody, serverError, setOrderAccessCookie } from "../../../server/http.ts";
 import { createOrder, OrderError } from "../../../server/orders-service.ts";
 
 /**
@@ -26,7 +26,9 @@ export async function POST(request: Request) {
     // The access token proves later that a request comes from whoever created the order. It is what pay/cancel
     // endpoints will require; the public order number alone is not enough.
     const { replayed, order, accessToken } = await createOrder(body.value, new Date(), { tokenSecret: getOrderTokenSecret() });
-    return json({ order, accessToken }, replayed ? 200 : 201);
+    const response = json({ order, accessToken }, replayed ? 200 : 201);
+    if (accessToken) setOrderAccessCookie(response, request, order.publicId, accessToken);
+    return response;
   } catch (err) {
     if (err instanceof OrderError) {
       return json({ error: err.code, message: err.message, details: err.details }, err.status);

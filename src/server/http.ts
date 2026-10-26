@@ -7,6 +7,23 @@ const MAX_BODY_BYTES = 20_000;
 export const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
   Response.json(body, { status, headers: { "cache-control": "no-store", ...headers } });
 
+const orderCookie = (publicId: string) => `falken_order_${publicId}`;
+
+/** A same-browser, HttpOnly proof that survives the return from Stripe without exposing a token in a URL. */
+export function setOrderAccessCookie(response: Response, request: Request, publicId: string, token: string) {
+  const secure = request.headers.get("x-forwarded-proto") === "https" || new URL(request.url).protocol === "https:";
+  response.headers.append("set-cookie", `${orderCookie(publicId)}=${encodeURIComponent(token)}; Path=/; Max-Age=2700; HttpOnly; SameSite=Lax${secure ? "; Secure" : ""}`);
+}
+
+export function orderAccessToken(request: Request, publicId: string): string | null {
+  const header = request.headers.get("x-order-token");
+  if (header) return header;
+  const prefix = `${orderCookie(publicId)}=`;
+  const part = request.headers.get("cookie")?.split(";").map((v) => v.trim()).find((v) => v.startsWith(prefix));
+  if (!part) return null;
+  try { return decodeURIComponent(part.slice(prefix.length)); } catch { return null; }
+}
+
 export function clientIp(request: Request): string {
   // Only trustworthy behind a proxy that sets this header (Vercel/Render do). Used for rate limiting only.
   return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";

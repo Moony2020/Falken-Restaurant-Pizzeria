@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { CategoryId } from "@/data/menu";
 import {
@@ -43,6 +44,10 @@ import {
   PhoneIcon,
   PlusIcon,
   TrashIcon,
+  PayPalLogo,
+  PayPalBadge,
+  VisaBadge,
+  MastercardBadge,
 } from "@/components/icons";
 import { Modal } from "@/components/modal";
 import { useOrder } from "./order-provider";
@@ -61,33 +66,15 @@ export function CartDrawer() {
   );
 }
 
-type Step = "cart" | "details";
-
 const productFor = (menu: PublicMenu | null, slug: string) =>
   menu?.products.find((p) => p.slug === slug);
 
 function CartContents() {
   const { lines, count, closeCart } = useOrder();
-  const checkout = useSyncExternalStore(
-    checkoutStore.subscribe,
-    checkoutStore.getSnapshot,
-    checkoutStore.getServerSnapshot,
-  );
+  const router = useRouter();
   const pricing = useCartPricing();
   const menuState = useMenu();
   const menu = menuState.status === "ready" ? menuState.menu : null;
-  const [step, setStep] = useState<Step>("cart");
-
-  if (checkout.order) {
-    return (
-      <OrderCreated
-        order={checkout.order}
-        token={checkout.accessToken}
-        notice={checkout.notice}
-        onClose={closeCart}
-      />
-    );
-  }
 
   const changes =
     pricing.status === "ready" ? priceChanges(lines, pricing.lines) : [];
@@ -99,7 +86,7 @@ function CartContents() {
       <header className="flex shrink-0 items-center justify-between border-b border-line bg-ink px-5 py-4 text-ivory">
         <div>
           <h2 className="font-display text-2xl font-medium">
-            {step === "cart" ? "Din beställning" : "Dina uppgifter"}
+            Din beställning
           </h2>
           <p className="text-xs text-muted-dark">
             {count > 0
@@ -119,7 +106,7 @@ function CartContents() {
 
       {lines.length === 0 ? (
         <EmptyCart onNavigate={closeCart} />
-      ) : step === "cart" ? (
+      ) : (
         <>
           <div className="min-h-0 flex-1 overflow-y-auto">
             {changes.length > 0 && pricing.status === "ready" && (
@@ -193,11 +180,20 @@ function CartContents() {
             <button
               type="button"
               disabled={!canContinue}
-              onClick={() => setStep("details")}
+              onClick={() => {
+                closeCart();
+                router.push("/kassa");
+              }}
               className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-gold text-sm font-semibold text-ink transition hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-45"
             >
-              Gå vidare <ArrowIcon className="size-4" />
+              Fortsätt till kassan <ArrowIcon className="size-4" />
             </button>
+            <div className="flex items-center justify-center gap-2 pt-1 text-xs text-muted">
+              <span className="text-[11px]">Säker betalning:</span>
+              <VisaBadge className="h-5 w-auto" />
+              <MastercardBadge className="h-5 w-auto" />
+              <PayPalBadge className="h-5 w-auto" />
+            </div>
             <button
               type="button"
               onClick={() => cartStore.clear()}
@@ -207,16 +203,106 @@ function CartContents() {
             </button>
           </footer>
         </>
-      ) : (
-        <Details
-          lines={lines}
-          totalSek={
-            pricing.status === "ready" && canContinue ? pricing.totalSek : null
-          }
-          onBack={() => setStep("cart")}
-        />
       )}
     </>
+  );
+}
+
+/** The checkout is deliberately a page, so form data is not dismissed by clicking outside the cart drawer. */
+export function CheckoutPage() {
+  const { lines } = useOrder();
+  const router = useRouter();
+  const checkout = useSyncExternalStore(
+    checkoutStore.subscribe,
+    checkoutStore.getSnapshot,
+    checkoutStore.getServerSnapshot,
+  );
+  const pricing = useCartPricing();
+  const changes = pricing.status === "ready" ? priceChanges(lines, pricing.lines) : [];
+  const canPay = pricing.status === "ready" && changes.length === 0;
+
+  if (checkout.order) {
+    return (
+      <section className="bg-ivory py-8 sm:py-12">
+        <div className="mx-auto max-w-2xl overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
+          <OrderCreated
+            order={checkout.order}
+            token={checkout.accessToken}
+            notice={checkout.notice}
+            onClose={() => router.push("/meny")}
+          />
+        </div>
+      </section>
+    );
+  }
+
+  if (lines.length === 0) {
+    return (
+      <section className="bg-ivory py-16 sm:py-24">
+        <div className="mx-auto max-w-xl rounded-2xl border border-line bg-white p-8 text-center shadow-sm">
+          <h1 className="font-display text-4xl font-semibold">Din varukorg är tom</h1>
+          <p className="mt-3 text-muted">Välj något från menyn innan du går till kassan.</p>
+          <Link href="/meny" className="mt-6 inline-flex min-h-12 items-center rounded-full bg-gold px-7 text-sm font-semibold text-ink hover:bg-gold-light">
+            Till menyn
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="bg-ivory py-8 sm:py-12">
+      <div className="mx-auto max-w-2xl overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
+        <header className="border-b border-line bg-ink px-5 py-5 text-ivory sm:px-7">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold">Avhämtning</p>
+          <h1 className="mt-1 font-display text-4xl font-semibold">Kassan</h1>
+          <p className="mt-1 text-sm text-ivory/70">Granska din beställning och fyll i dina uppgifter.</p>
+        </header>
+        {pricing.status === "ready" && <CheckoutSummary pricing={pricing} />}
+        <Details
+          lines={lines}
+          totalSek={canPay ? pricing.totalSek : null}
+          onBack={() => router.push("/meny")}
+        />
+      </div>
+    </section>
+  );
+}
+
+function CheckoutSummary({ pricing }: { pricing: Extract<ReturnType<typeof useCartPricing>, { status: "ready" }> }) {
+  return (
+    <section aria-labelledby="checkout-summary" className="border-b border-line bg-cream/60 px-5 py-5 sm:px-7">
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 id="checkout-summary" className="font-display text-2xl font-semibold">Din beställning</h2>
+        <span className="text-sm text-muted">Avhämtning</span>
+      </div>
+      <ul className="mt-3 divide-y divide-line rounded-xl border border-line bg-white px-4 text-sm">
+        {pricing.lines.map((line, index) => (
+          <li key={`${line.productSlug}-${index}`} className="flex justify-between gap-3 py-3">
+            <div className="min-w-0">
+              <p>{line.quantity} × {line.productNameSnapshot}</p>
+              {(line.modifiersSnapshot.length > 0 || line.removedIngredients.length > 0) && (
+                <ul className="mt-1 space-y-0.5 text-xs leading-relaxed text-muted">
+                  {line.modifiersSnapshot.map((modifier) => (
+                    <li key={modifier.modifierSlug}>
+                      + {modifier.quantity > 1 ? `${modifier.quantity} × ` : ""}{modifier.labelSv} ({kr(modifier.priceSek * modifier.quantity)})
+                    </li>
+                  ))}
+                  {line.removedIngredients.length > 0 && (
+                    <li>Utan: {line.removedIngredients.join(", ")}</li>
+                  )}
+                </ul>
+              )}
+            </div>
+            <span className="shrink-0 font-semibold tabular-nums">{kr(line.lineTotalSek)}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="mt-4 flex items-baseline justify-between">
+        <span className="text-sm text-muted">Totalt att betala</span>
+        <span className="font-display text-3xl font-semibold tabular-nums">{kr(pricing.totalSek)}</span>
+      </div>
+    </section>
   );
 }
 
@@ -313,7 +399,8 @@ function CartItem({
         productNameSnapshot: string;
         variantNameSnapshot: string;
         lineTotalSek: number;
-        modifiersSnapshot: { labelSv: string }[];
+        modifiersSnapshot: { labelSv: string; priceSek?: number; quantity?: number; modifierSlug?: string }[];
+        removedIngredients?: string[];
       }
     | undefined;
   loading: boolean;
@@ -325,32 +412,87 @@ function CartItem({
   const variantLabel =
     priced?.variantNameSnapshot ??
     product?.variants.find((v) => v.id === line.variantId)?.label;
-  const extras = priced
-    ? priced.modifiersSnapshot.map((m) => m.labelSv)
-    : line.modifiers.map(
-        (m) => menu?.modifiers.find((x) => x.slug === m.slug)?.label ?? m.slug,
-      );
-  const details = [
-    product && product.variants.length > 1 ? variantLabel : null,
-    ...extras,
-    line.removed.length > 0
-      ? `Utan: ${line.removed.join(", ").toLowerCase()}`
-      : null,
-  ].filter(Boolean);
+
+  const modifiers =
+    priced?.modifiersSnapshot?.map((m) => ({
+      label: m.labelSv,
+      quantity: m.quantity ?? 1,
+      priceSek: m.priceSek,
+    })) ??
+    line.modifiers.map((m) => {
+      const def = menu?.modifiers.find((x) => x.slug === m.slug);
+      const price = def ? def.priceByVariantSek[line.variantId] : undefined;
+      return {
+        label: def?.label ?? m.slug,
+        quantity: m.quantity,
+        priceSek: price,
+      };
+    });
+
+  const removedIngredients = priced?.removedIngredients ?? line.removed;
 
   return (
-    <li className={`flex gap-3 py-4 ${issue ? "rounded-lg bg-ember/5" : ""}`}>
+    <li className={`flex items-start gap-3 py-3.5 ${issue ? "rounded-lg bg-ember/5" : ""}`}>
       <DishArt
         category={(product?.category ?? "pizza") as CategoryId}
         seed={product?.menuNumber ?? 3}
-        className="size-16 shrink-0 rounded-xl"
+        className="size-16 sm:size-[72px] shrink-0 rounded-xl"
       />
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-2">
-          <p className="font-display text-lg font-semibold leading-tight">
+      <div className="min-w-0 flex-1 flex items-start justify-between gap-2.5">
+        {/* Left column: Name, Variant, Modifiers, Notes */}
+        <div className="min-w-0 flex-1">
+          <p className="font-display text-base sm:text-lg font-semibold leading-tight text-ink">
             {name}
           </p>
-          <p className="shrink-0 text-sm font-semibold tabular-nums">
+          {variantLabel && variantLabel !== "Standard" && (
+            <span className="mt-1 inline-block rounded-md border border-line bg-cream/70 px-2 py-0.5 text-[11px] font-semibold text-gold-deep">
+              {variantLabel}
+            </span>
+          )}
+
+          {/* Extra modifiers / ingredients */}
+          {modifiers.length > 0 && (
+            <ul className="mt-1.5 space-y-0.5 text-xs">
+              {modifiers.map((mod, idx) => (
+                <li key={idx} className="flex items-center gap-1 text-gold-deep font-medium">
+                  <span>+ {mod.quantity > 1 ? `${mod.quantity} × ` : ""}{mod.label}</span>
+                  {typeof mod.priceSek === "number" && (
+                    <span className="text-muted font-normal">({kr(mod.priceSek * mod.quantity)})</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {/* Removed ingredients */}
+          {removedIngredients.length > 0 && (
+            <p className="mt-1 text-xs text-muted">
+              <span className="font-medium text-ember">Utan:</span> {removedIngredients.join(", ")}
+            </p>
+          )}
+
+          {line.note && (
+            <p className="mt-1 text-xs italic leading-relaxed text-muted">
+              ”{line.note}”
+            </p>
+          )}
+          {change && (
+            <p className="mt-1 text-xs font-semibold text-ember">
+              Priset har ändrats:{" "}
+              <span className="line-through">{kr(change.from)}</span> →{" "}
+              {kr(change.to)}
+            </p>
+          )}
+          {issue && (
+            <p className="mt-1 text-xs font-semibold text-ember">
+              {issueMessageSv(issue.code)}
+            </p>
+          )}
+        </div>
+
+        {/* Right column: Price at top, Quantity + Delete directly underneath */}
+        <div className="flex flex-col items-end justify-between shrink-0 gap-2.5 pt-0.5">
+          <p className="text-sm font-semibold tabular-nums text-ink">
             {priced ? (
               kr(priced.lineTotalSek)
             ) : loading ? (
@@ -362,66 +504,47 @@ function CartItem({
               "–"
             )}
           </p>
-        </div>
-        {details.length > 0 && (
-          <p className="mt-0.5 text-xs leading-relaxed text-muted">
-            {details.join(" · ")}
-          </p>
-        )}
-        {line.note && (
-          <p className="mt-0.5 text-xs italic leading-relaxed text-muted">
-            ”{line.note}”
-          </p>
-        )}
-        {change && (
-          <p className="mt-1 text-xs font-semibold text-ember">
-            Priset har ändrats:{" "}
-            <span className="line-through">{kr(change.from)}</span> →{" "}
-            {kr(change.to)}
-          </p>
-        )}
-        {issue && (
-          <p className="mt-1 text-xs font-semibold text-ember">
-            {issueMessageSv(issue.code)}
-          </p>
-        )}
-        <div className="mt-2 flex items-center justify-between">
-          <div
-            className="flex items-center rounded-full border border-line bg-white"
-            role="group"
-            aria-label={`Antal ${name}`}
-          >
+
+          {/* Controls: Quantity Pill & Delete Button */}
+          <div className="flex items-center gap-1">
+            <div
+              className="flex items-center rounded-full border border-line bg-white shadow-xs"
+              role="group"
+              aria-label={`Antal ${name}`}
+            >
+              <button
+                type="button"
+                onClick={() => cartStore.setQuantity(line.key, line.quantity - 1)}
+                aria-label={
+                  line.quantity === 1 ? `Ta bort ${name}` : `Minska antal ${name}`
+                }
+                className="grid size-7 place-items-center rounded-full transition hover:bg-cream"
+              >
+                <MinusIcon className="size-3.5" />
+              </button>
+              <output className="w-5 text-center text-xs font-semibold tabular-nums">
+                {line.quantity}
+              </output>
+              <button
+                type="button"
+                onClick={() => cartStore.setQuantity(line.key, line.quantity + 1)}
+                disabled={line.quantity >= MAX_LINE_QUANTITY}
+                aria-label={`Öka antal ${name}`}
+                className="grid size-7 place-items-center rounded-full transition hover:bg-cream disabled:opacity-35"
+              >
+                <PlusIcon className="size-3.5" />
+              </button>
+            </div>
+
             <button
               type="button"
-              onClick={() => cartStore.setQuantity(line.key, line.quantity - 1)}
-              aria-label={
-                line.quantity === 1 ? `Ta bort ${name}` : `Minska antal ${name}`
-              }
-              className="grid size-11 place-items-center rounded-full transition hover:bg-cream"
+              onClick={() => cartStore.remove(line.key)}
+              aria-label={`Ta bort ${name}`}
+              className="grid size-7 place-items-center rounded-full text-muted transition hover:bg-cream hover:text-ember"
             >
-              <MinusIcon className="size-4" />
-            </button>
-            <output className="w-6 text-center text-sm font-semibold tabular-nums">
-              {line.quantity}
-            </output>
-            <button
-              type="button"
-              onClick={() => cartStore.setQuantity(line.key, line.quantity + 1)}
-              disabled={line.quantity >= MAX_LINE_QUANTITY}
-              aria-label={`Öka antal ${name}`}
-              className="grid size-11 place-items-center rounded-full transition hover:bg-cream disabled:opacity-35"
-            >
-              <PlusIcon className="size-4" />
+              <TrashIcon className="size-4" />
             </button>
           </div>
-          <button
-            type="button"
-            onClick={() => cartStore.remove(line.key)}
-            aria-label={`Ta bort ${name}`}
-            className="grid size-11 place-items-center rounded-full text-muted transition hover:bg-cream hover:text-ember"
-          >
-            <TrashIcon className="size-5" />
-          </button>
         </div>
       </div>
     </li>
@@ -702,12 +825,13 @@ function PayPalButton() {
       type="button"
       disabled
       aria-disabled="true"
-      className="flex min-h-12 w-full cursor-not-allowed items-center justify-center gap-2 rounded-full border border-line bg-white text-sm font-semibold text-muted"
+      title="PayPal (kommer snart)"
+      className="flex min-h-12 w-full cursor-not-allowed items-center justify-center gap-2.5 rounded-full border border-[#E0AC30] bg-[#FFC439] px-4 py-2 text-sm font-semibold shadow-xs disabled:opacity-90 transition"
     >
-      <span className="font-bold italic text-[#003087]/60">
-        Pay<span className="text-[#009cde]/60">Pal</span>
+      <PayPalLogo className="h-6 w-auto" />
+      <span className="rounded-full bg-[#003087]/12 px-2 py-0.5 text-[11px] font-semibold text-[#003087]">
+        kommer snart
       </span>
-      <span className="text-xs font-normal">kommer snart</span>
     </button>
   );
 }
@@ -724,8 +848,9 @@ function OrderCreated({
   onClose: () => void;
 }) {
   const [paying, setPaying] = useState(false);
+  const paymentNeedsAttention = Boolean(notice);
   const pay = async () => {
-    if (!token || paying) return;
+    if (paying) return;
     setPaying(true);
     checkoutStore.setNotice(null);
     const r = await startCardPayment(order.publicId, token);
@@ -762,12 +887,16 @@ function OrderCreated({
           className="rounded-xl border border-gold-deep/40 bg-cream p-4 text-sm leading-relaxed"
         >
           <p className="font-semibold">
-            Väntar på betalning – inte bekräftad än
+            {paymentNeedsAttention
+              ? "Betalningen behöver åtgärdas"
+              : "Väntar på betalning – inte bekräftad än"}
           </p>
           <p className="mt-1 text-ink/80">
             Din beställning är sparad men{" "}
             <strong>inte betald och inte bekräftad</strong>, och den har inte
-            skickats till köket. Betala med kort för att bekräfta den. Ring{" "}
+            skickats till köket. {paymentNeedsAttention
+              ? "Läs meddelandet nedan och försök igen eller påbörja en ny beställning."
+              : "Betala med kort för att bekräfta den."} Ring{" "}
             <a
               href={site.phoneHref}
               className="font-semibold underline underline-offset-2"
@@ -798,7 +927,9 @@ function OrderCreated({
             <dt className="text-xs uppercase tracking-[0.18em] text-muted">
               Status
             </dt>
-            <dd className="mt-1 font-semibold">Väntar på betalning</dd>
+            <dd className="mt-1 font-semibold">
+              {paymentNeedsAttention ? "Obetald – åtgärd krävs" : "Väntar på betalning"}
+            </dd>
           </div>
           <div>
             <dt className="text-xs uppercase tracking-[0.18em] text-muted">
@@ -833,7 +964,7 @@ function OrderCreated({
         <button
           type="button"
           onClick={pay}
-          disabled={!token || paying}
+          disabled={paying}
           aria-busy={paying}
           className="flex min-h-12 w-full items-center justify-center rounded-full bg-gold text-sm font-semibold text-ink transition hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-45"
         >

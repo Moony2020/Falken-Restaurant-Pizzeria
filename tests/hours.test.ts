@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { PREP_MINUTES, SLOT_STEP_MINUTES } from "../src/data/site.ts";
 import { getOpenStatus, getPickupSlots } from "../src/lib/hours.ts";
 
 const opts = { prepMinutes: 25, lastBeforeClose: 15, step: 15 };
@@ -35,6 +36,15 @@ test("pickup slots start after prep time and round up to the step", () => {
   const slots = getPickupSlots(at("10:00"), "vinter", opts); // 12:00 + 25min -> 12:30 (rounded up from 12:25)
   assert.equal(slots[0], "12:30");
   assert.equal(slots.at(-1), "20:45"); // close 21:00 minus 15
+});
+
+test("the configured earliest pickup is within 10 to 15 minutes", () => {
+  const slots = getPickupSlots(at("10:00"), "vinter", {
+    prepMinutes: PREP_MINUTES,
+    lastBeforeClose: 15,
+    step: SLOT_STEP_MINUTES,
+  });
+  assert.equal(slots[0], "12:10");
 });
 
 test("before opening, first slot is at opening time", () => {

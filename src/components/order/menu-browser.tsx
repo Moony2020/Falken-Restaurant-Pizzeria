@@ -15,12 +15,10 @@ import { PageBanner } from "@/components/page-banner";
 import { BannerArt } from "@/components/banner-art";
 import {
   ArrowIcon,
-  CartIcon,
   ClockIcon,
   PhoneIcon,
   SearchIcon,
 } from "@/components/icons";
-import { useOrder } from "./order-provider";
 import { ProductCard, ingredientText } from "./product-card";
 
 // The active tab lives in the URL hash (#pizza) so it can be linked to without making the page dynamic.
@@ -65,7 +63,6 @@ export function MenuBrowser() {
   const state = useMenu();
   const hash = useSyncExternalStore(subscribeHash, getHash, getServerHash);
   const [query, setQuery] = useState("");
-  const { count, openCart } = useOrder();
 
   const menu = state.status === "ready" ? state.menu : null;
   const active = menu
@@ -132,7 +129,7 @@ export function MenuBrowser() {
           className="wrap py-3"
           aria-busy={state.status === "loading"}
         >
-          <ul className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:px-0 lg:flex-wrap lg:overflow-visible lg:pb-0">
+          <ul className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 lg:flex-wrap lg:overflow-visible lg:pb-0">
             {menu
               ? menu.categories.map((c) => {
                   const current = !searching && c.slug === active?.slug;
@@ -183,27 +180,6 @@ export function MenuBrowser() {
           </>
         )}
       </div>
-
-      {count > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 p-3 lg:hidden">
-          <button
-            type="button"
-            onClick={openCart}
-            className="mx-auto flex min-h-14 w-full max-w-md items-center justify-between rounded-full bg-ink px-6 text-ivory shadow-2xl"
-          >
-            <span className="flex items-center gap-3 text-sm font-semibold">
-              <span className="relative">
-                <CartIcon className="size-6" />
-                <span className="absolute -right-2 -top-2 grid min-w-5 place-items-center rounded-full bg-gold px-1 text-[0.7rem] font-bold leading-5 text-ink">
-                  {count}
-                </span>
-              </span>
-              Visa varukorg
-            </span>
-            <ArrowIcon className="size-4 text-gold" />
-          </button>
-        </div>
-      )}
     </>
   );
 }

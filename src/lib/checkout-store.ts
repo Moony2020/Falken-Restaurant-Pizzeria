@@ -9,6 +9,7 @@ export type CheckoutState = {
   order: PublicOrder | null;
   accessToken?: string;
   notice?: string;
+  paymentMethod?: "card" | "cash";
 };
 
 const STORAGE_KEY = "falken.checkout.v1";
@@ -40,6 +41,10 @@ function load() {
       order: isOrder(p.order) ? p.order : null,
       accessToken:
         typeof p.accessToken === "string" ? p.accessToken : undefined,
+      paymentMethod:
+        p.paymentMethod === "cash" || p.paymentMethod === "card"
+          ? p.paymentMethod
+          : undefined,
     };
   } catch {
     // Unreadable storage: begin fresh.
@@ -76,9 +81,9 @@ export const checkoutStore = {
     commit({ ...state, attempt });
   },
   /** An order exists: the attempt is finished, so the next order gets a new key. */
-  setOrder(order: PublicOrder, accessToken?: string) {
+  setOrder(order: PublicOrder, accessToken?: string, paymentMethod?: "card" | "cash") {
     load();
-    commit({ attempt: null, order, accessToken });
+    commit({ attempt: null, order, accessToken, paymentMethod });
   },
   /** A message about the payment of the current order (for example "payment is not available"). */
   setNotice(notice: string | null) {

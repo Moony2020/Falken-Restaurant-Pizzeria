@@ -23,7 +23,7 @@ export const mapsUrl =
   "https://www.google.com/maps/search/?api=1&query=Restaurang+%26+Pizzeria+Falken%2C+Skolgatan+4%2C+719+30+Vintrosa";
 
 /** Path under /public of a real hero photo, e.g. "/images/hero.jpg". While null, an illustrated pizza is shown. */
-export const heroImage: string | null = null;
+export const heroImage: string | null = "/images/hero/falken-hero-home.jpg";
 
 export const nav = [
   { href: "/", label: "Hem" },
@@ -38,9 +38,9 @@ export const CURRENT_SEASON: Season = "vinter";
 export type { Season };
 
 /** Minutes the kitchen needs before an order is ready, and how long before closing the last pickup is offered. */
-export const PREP_MINUTES = 25;
+export const PREP_MINUTES = 10;
 export const LAST_PICKUP_BEFORE_CLOSE = 15;
-export const SLOT_STEP_MINUTES = 15;
+export const SLOT_STEP_MINUTES = 5;
 /** Clock-drift slack and furthest-ahead pickup the server accepts. */
 export const PICKUP_GRACE_MINUTES = 5;
 export const PICKUP_MAX_AHEAD_HOURS = 24;
@@ -79,10 +79,10 @@ export const hoursDisplay: Record<Season, { days: string; time: string }[]> = {
 };
 
 /** Path under /public of a real photo for the menu page banner (a round crop of a pizza works best). While null, an illustration is shown. */
-export const menuHeroImage: string | null = null;
+export const menuHeroImage: string | null = "/images/hero/pizza-circle.jpg";
 
 /** Path under /public of a real photo for the contact page banner. While null, an illustration is shown. */
-export const contactHeroImage: string | null = null;
+export const contactHeroImage: string | null = "/images/hero/falken-kontakt.jpg";
 
 /** Path under /public of a real photo for the gallery banner. While null, an illustration is shown. */
-export const galleryHeroImage: string | null = null;
+export const galleryHeroImage: string | null = "/images/hero/restaurant-interior.jpg";

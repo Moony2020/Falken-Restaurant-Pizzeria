@@ -1,6 +1,6 @@
 import { connectDb } from "../../../../../server/db.ts";
 import { getOrderTokenSecret } from "../../../../../server/env.ts";
-import { guardWrite, json, serverError } from "../../../../../server/http.ts";
+import { guardWrite, json, orderAccessToken, serverError } from "../../../../../server/http.ts";
 import { getPaymentsConfig } from "../../../../../server/payments-config.ts";
 import { createCheckout } from "../../../../../server/payments-service.ts";
 import { getStripeGateway } from "../../../../../server/stripe-gateway.ts";
@@ -20,7 +20,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/orders/[pub
     await connectDb();
     const result = await createCheckout({
       publicId,
-      token: request.headers.get("x-order-token"),
+      token: orderAccessToken(request, publicId),
       origin: new URL(request.url).origin,
       tokenSecret: getOrderTokenSecret(),
       gateway: getStripeGateway(config),

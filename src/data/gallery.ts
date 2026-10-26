@@ -35,6 +35,7 @@ export const gallery: GalleryItem[] = [
     seed: 37,
     size: "big",
     caption: "Pizza bakad på beställning.",
+    src: "/images/gallery/falken-special.jpg",
   },
   {
     id: "matsalen",
@@ -44,6 +45,7 @@ export const gallery: GalleryItem[] = [
     seed: 1,
     size: "wide",
     caption: "Vår matsal i Vintrosa.",
+    src: "/images/gallery/matsalen.jpg",
   },
   {
     id: "kebabtallrik",
@@ -53,6 +55,7 @@ export const gallery: GalleryItem[] = [
     seed: 2,
     size: "normal",
     caption: "Gyros eller nötkött.",
+    src: "/images/gallery/kebabtallrik.jpg",
   },
   {
     id: "pollo",
@@ -89,6 +92,7 @@ export const gallery: GalleryItem[] = [
     seed: 7,
     size: "tall",
     caption: "Fräsch och mättande.",
+    src: "/images/gallery/grekisksallad.jpg",
   },
   {
     id: "hamburgare",
@@ -98,6 +102,7 @@ export const gallery: GalleryItem[] = [
     seed: 5,
     size: "normal",
     caption: "Med eller utan pommes.",
+    src: "/images/gallery/hamburgare.jpg",
   },
   {
     id: "disken",
@@ -116,6 +121,7 @@ export const gallery: GalleryItem[] = [
     seed: 59,
     size: "big",
     caption: "Kebabpizza.",
+    src: "/images/gallery/kebabpizza.jpg",
   },
   {
     id: "utsidan",

@@ -1,7 +1,7 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { isValidPickupTime } from "../src/lib/hours.ts";
-import { clientIp, readJsonBody, sameOrigin, serverError } from "../src/server/http.ts";
+import { clientIp, json, orderAccessToken, readJsonBody, sameOrigin, serverError, setOrderAccessCookie } from "../src/server/http.ts";
 import { rateLimit, resetRateLimits } from "../src/server/rate-limit.ts";
 
 const rules = { prepMinutes: 25, lastBeforeClose: 15, step: 15, graceMinutes: 5, maxAheadHours: 24 };
@@ -72,6 +72,21 @@ describe("rate limiter", () => {
 describe("http helpers", () => {
   const req = (headers: Record<string, string>, body = "{}") =>
     new Request("http://shop.test/api/orders", { method: "POST", headers, body });
+
+  test("the same browser can use its HttpOnly order cookie after returning from Stripe", () => {
+    const response = json({ ok: true });
+    setOrderAccessCookie(response, new Request("https://shop.test/api/orders"), "ABCDEFGHJK", "token with spaces");
+    const cookie = response.headers.get("set-cookie");
+    assert.match(cookie ?? "", /HttpOnly/);
+    assert.match(cookie ?? "", /Secure/);
+    assert.equal(
+      orderAccessToken(
+        new Request("https://shop.test/api/orders/ABCDEFGHJK/status", { headers: { cookie: cookie!.split(";")[0] } }),
+        "ABCDEFGHJK",
+      ),
+      "token with spaces",
+    );
+  });
 
   test("same-origin check", () => {
     assert.equal(sameOrigin(req({})), true);

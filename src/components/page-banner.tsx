@@ -18,12 +18,12 @@ export function PageBanner({
   aside?: ReactNode;
 }) {
   return (
-    <section className="relative overflow-hidden bg-ink-2 text-ivory">
+    <section className="relative flex min-h-[16rem] flex-col justify-center overflow-hidden bg-ink-2 text-ivory sm:min-h-[18rem] lg:min-h-[23rem]">
       {aside}
-      <div className="wrap relative pb-14 pt-8 sm:pb-20 sm:pt-12">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-gold">{eyebrow}</p>
-        <h1 className="mt-2 text-5xl font-medium uppercase leading-none sm:text-7xl">{title}</h1>
-        <p className="mt-5 max-w-xl text-base leading-relaxed text-ivory/75">{text}</p>
+      <div className="wrap relative w-full py-9 sm:py-12 lg:py-14">
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-gold sm:text-xs sm:tracking-[0.28em]">{eyebrow}</p>
+        <h1 className="mt-2 text-[1.85rem] font-medium uppercase leading-[1.05] min-[360px]:text-[2.2rem] sm:text-5xl md:text-6xl lg:text-7xl">{title}</h1>
+        <p className="mt-4 max-w-xl text-[0.88rem] leading-relaxed text-ivory/75 sm:mt-5 sm:text-base">{text}</p>
         {children}
       </div>
     </section>

@@ -1,8 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowIcon, ClockIcon, MailIcon, PhoneIcon, PinIcon } from "@/components/icons";
 import { DishArt } from "@/components/art";
-import { HeroPizza } from "@/components/hero-pizza";
 import { OpenStatus } from "@/components/open-status";
 import { FeaturedDishes } from "@/components/featured-dishes";
 import { buttonClass, eyebrow } from "@/components/ui";
@@ -46,13 +45,18 @@ export default function HomePage() {
 
             <div
               aria-hidden="true"
-              className="pointer-events-none relative -mb-24 mt-8 flex justify-center sm:-mb-32 lg:absolute lg:-right-10 lg:top-1/2 lg:mb-0 lg:mt-0 lg:block lg:size-[26rem] lg:-translate-y-1/2 xl:-right-12 xl:size-[34rem]"
+              className="pointer-events-none relative -mb-10 mt-6 flex justify-center sm:-mb-14 lg:absolute lg:right-6 lg:top-1/2 lg:mb-0 lg:mt-0 lg:block lg:size-[23rem] lg:-translate-y-1/2 xl:right-10 xl:size-[27rem]"
             >
-              {heroImage ? (
-                <Image src={heroImage} alt="" fill priority sizes="(min-width: 1024px) 464px, 100vw" className="object-cover object-center" />
-              ) : (
-                <HeroPizza className="size-72 sm:size-96 lg:size-full" />
-              )}
+              <div className="relative size-64 sm:size-76 lg:size-full overflow-hidden rounded-full ring-2 ring-gold/45 shadow-[0_24px_55px_rgba(0,0,0,0.7)]">
+                <Image
+                  src={heroImage || "/images/hero/falken-hero-home.jpg"}
+                  alt="Restaurang & Pizzeria Falken"
+                  fill
+                  priority
+                  sizes="(min-width: 1280px) 432px, (min-width: 1024px) 368px, 304px"
+                  className="object-cover scale-110"
+                />
+              </div>
             </div>
           </div>
         </div>
