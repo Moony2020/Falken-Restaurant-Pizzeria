@@ -23,7 +23,7 @@ export function ProductCard({ product, featured = false }: { product: PublicProd
     <li
       className={`group relative overflow-hidden rounded-2xl border border-line bg-white shadow-card transition duration-200 hover:border-gold ${
         featured
-          ? "flex w-[82vw] max-w-[21rem] shrink-0 snap-start gap-3.5 p-3.5 sm:gap-4 sm:p-4 lg:w-auto lg:max-w-none"
+          ? "flex w-[84vw] max-w-[24rem] sm:w-[24rem] sm:max-w-none shrink-0 snap-start gap-3.5 p-3.5 sm:gap-4 sm:p-4 xl:w-auto xl:max-w-none"
           : "flex gap-2.5 p-2.5 sm:gap-4 sm:p-3.5"
       }`}
     >
