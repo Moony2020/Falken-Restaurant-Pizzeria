@@ -25,8 +25,8 @@ import { kr } from "@/lib/pricing";
 const POLL_MS = 3000;
 const GIVE_UP_AFTER_MS = 3 * 60_000;
 const PAID_STATES = new Set([
-  "PAID",
-  "ACCEPTED",
+  "CONFIRMED",
+  "ACKNOWLEDGED",
   "PREPARING",
   "READY_FOR_PICKUP",
   "PICKED_UP",

@@ -6,6 +6,7 @@ import type { PublicProduct } from "@/lib/menu-types";
 import { kr } from "@/lib/pricing";
 import { DishArt } from "@/components/art";
 import type { CategoryId } from "@/data/menu";
+import { useRestaurantStatus } from "@/lib/use-restaurant-status";
 import { useOrder } from "./order-provider";
 
 /** Pizza cards show their full recipe, including the tomato-sauce and cheese base. */
@@ -16,12 +17,16 @@ export function ingredientText(product: PublicProduct): string {
 
 export function ProductCard({ product, featured = false }: { product: PublicProduct; featured?: boolean }) {
   const { openProduct } = useOrder();
+  const { status: restaurantStatus } = useRestaurantStatus();
   const multi = product.variants.length > 1;
   const orderable = isOrderable(product);
+  const isClosed = !restaurantStatus ? false : !restaurantStatus.isOpen;
 
   return (
     <li
-      className={`group relative overflow-hidden rounded-2xl border border-line bg-white shadow-card transition duration-200 hover:border-gold ${
+      className={`group relative overflow-hidden rounded-2xl border border-line bg-white shadow-card transition duration-200 ${
+        isClosed ? "cursor-default" : "hover:border-gold"
+      } ${
         featured
           ? "flex w-[84vw] max-w-[24rem] sm:w-[24rem] sm:max-w-none shrink-0 snap-start gap-3.5 p-3.5 sm:gap-4 sm:p-4 xl:w-auto xl:max-w-none"
           : "flex gap-2.5 p-2.5 sm:gap-4 sm:p-3.5"
@@ -67,14 +72,31 @@ export function ProductCard({ product, featured = false }: { product: PublicProd
           {!featured && <VariantPrices product={product} multi={multi} orderable={orderable} />}
 
           {orderable ? (
-            <button
-              type="button"
-              onClick={() => openProduct(product.slug)}
-              aria-label={`Beställ ${product.name}`}
-              className="inline-flex min-h-8 items-center justify-center rounded-full border border-gold-deep/60 px-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-ink transition after:absolute after:inset-0 after:rounded-2xl after:content-[''] group-hover:border-gold group-hover:bg-gold shrink-0 sm:min-h-9 sm:px-4 sm:text-xs sm:tracking-[0.1em]"
-            >
-              Beställ
-            </button>
+            isClosed ? (
+              <button
+                type="button"
+                disabled
+                aria-disabled="true"
+                aria-label={`Beställningar är stängda för ${product.name}`}
+                title={
+                  restaurantStatus?.closeReason === "manual"
+                    ? "Onlinebeställningar är tillfälligt pausade just nu"
+                    : "Restaurangen är stängd för beställningar just nu"
+                }
+                className="inline-flex min-h-8 items-center justify-center rounded-full border border-line bg-[#efece4] px-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-[#8f857a] opacity-60 cursor-not-allowed select-none shrink-0 sm:min-h-9 sm:px-4 sm:text-xs sm:tracking-[0.1em]"
+              >
+                Beställ
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => openProduct(product.slug)}
+                aria-label={`Beställ ${product.name}`}
+                className="inline-flex min-h-8 items-center justify-center rounded-full border border-gold-deep/60 px-3.5 text-[0.72rem] font-semibold uppercase tracking-[0.08em] text-ink transition after:absolute after:inset-0 after:rounded-2xl after:content-[''] group-hover:border-gold group-hover:bg-gold shrink-0 sm:min-h-9 sm:px-4 sm:text-xs sm:tracking-[0.1em]"
+              >
+                Beställ
+              </button>
+            )
           ) : (
             <p className="max-w-[8.5rem] text-right text-[0.7rem] leading-snug text-muted sm:text-xs">
               Pris bekräftas snart – kan inte beställas online än

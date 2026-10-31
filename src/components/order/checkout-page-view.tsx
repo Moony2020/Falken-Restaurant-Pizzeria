@@ -29,6 +29,7 @@ import {
 import { getOpenStatus, getPickupSlotInstants } from "@/lib/hours";
 import { kr } from "@/lib/pricing";
 import { useNow } from "@/lib/use-now";
+import { useRestaurantStatus } from "@/lib/use-restaurant-status";
 import {
   ArrowIcon,
   CartIcon,
@@ -88,8 +89,10 @@ export function CheckoutPageView() {
     checkoutStore.getServerSnapshot,
   );
   const pricing = useCartPricing();
+  const { status: restaurantStatus } = useRestaurantStatus();
+  const isClosed = !restaurantStatus ? false : !restaurantStatus.isOpen;
   const changes = pricing.status === "ready" ? priceChanges(lines, pricing.lines) : [];
-  const canPay = pricing.status === "ready" && changes.length === 0;
+  const canPay = pricing.status === "ready" && changes.length === 0 && !isClosed;
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">(() => {
     const draft = readDraft();
     return draft.paymentMethod === "card" || draft.paymentMethod === "cash"
@@ -102,6 +105,14 @@ export function CheckoutPageView() {
     const draft = readDraft();
     saveDraft({ ...draft, paymentMethod: m });
   };
+
+  // If the user has active items in the cart, they are here to checkout their current cart!
+  // Any old completed order must be cleared so it does not block the checkout flow.
+  useEffect(() => {
+    if (lines.length > 0 && checkout.order) {
+      checkoutStore.dismissOrder();
+    }
+  }, [lines.length, checkout.order]);
 
   // While SSR is running or before client hydration completes, show a matching layout skeleton
   // so the user NEVER sees a flash of "Din varukorg är tom" on page refresh.
@@ -130,7 +141,7 @@ export function CheckoutPageView() {
     );
   }
 
-  if (checkout.order) {
+  if (checkout.order && lines.length === 0) {
     return (
       <section className="min-h-[70vh] bg-ivory py-10 sm:py-16">
         <div className="mx-auto max-w-2xl overflow-hidden rounded-2xl border border-line bg-white shadow-card">
@@ -139,7 +150,10 @@ export function CheckoutPageView() {
             token={checkout.accessToken}
             notice={checkout.notice}
             paymentMethod={checkout.paymentMethod}
-            onClose={() => router.push("/meny")}
+            onClose={() => {
+              checkoutStore.dismissOrder();
+              router.push("/meny");
+            }}
           />
         </div>
       </section>
@@ -288,13 +302,22 @@ export function CheckoutPageView() {
 
               {/* CTA placed on the right column */}
               <div className="mt-6">
+                {isClosed && (
+                  <p className="mb-3 rounded-xl border border-ember/30 bg-ember/10 p-3 text-xs leading-relaxed text-ember">
+                    {restaurantStatus?.closeReason === "manual"
+                      ? `Onlinebeställningar är tillfälligt pausade just nu. Ring oss gärna på ${site.phone}.`
+                      : `Restaurangen är stängd för beställningar just nu (${restaurantStatus?.scheduleLabel}). Välkommen åter under öppettiderna!`}
+                  </p>
+                )}
                 <button
                   type="submit"
                   form="checkout-form"
                   disabled={!canPay}
                   className="flex min-h-13 w-full items-center justify-center gap-2 rounded-xl bg-gold px-6 text-sm font-semibold uppercase tracking-[0.08em] text-ink shadow-sm transition-all hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  {paymentMethod === "cash"
+                  {isClosed
+                    ? "Beställningar stängda"
+                    : paymentMethod === "cash"
                     ? "Bekräfta beställning"
                     : "Gå till betalning"}
                   <ArrowIcon className="size-4" />
@@ -349,18 +372,22 @@ function CheckoutForm({
     saveDraft({ name, phone, pickup, note, paymentMethod });
   }, [name, phone, pickup, note, paymentMethod]);
 
+  const { status: restaurantStatus } = useRestaurantStatus();
+  const isClosed = !restaurantStatus ? false : !restaurantStatus.isOpen;
+
   const { slots, status } = useMemo(() => {
-    if (now === null) return { slots: null, status: null };
+    if (now === null || isClosed) return { slots: isClosed ? [] : null, status: null };
     const date = new Date(now);
+    const isForceOpen = Boolean(restaurantStatus?.isOpen && !restaurantStatus?.isOpenBySchedule);
     return {
       slots: getPickupSlotInstants(date, CURRENT_SEASON, {
         prepMinutes: PREP_MINUTES,
         lastBeforeClose: LAST_PICKUP_BEFORE_CLOSE,
         step: SLOT_STEP_MINUTES,
-      }),
+      }, isForceOpen),
       status: getOpenStatus(date, CURRENT_SEASON),
     };
-  }, [now]);
+  }, [now, isClosed, restaurantStatus?.isOpen, restaurantStatus?.isOpenBySchedule]);
 
   const selectedPickup = slots?.some((s) => s.iso === pickup)
     ? pickup
@@ -370,12 +397,18 @@ function CheckoutForm({
   const phoneError = !PHONE_PATTERN.test(phone.trim())
     ? "Fyll i ett giltigt telefonnummer (t.ex. 070-123 45 67)."
     : null;
-  const pickupError = !selectedPickup ? "Det finns inga fler hämttider idag." : null;
+  const pickupError = isClosed
+    ? restaurantStatus?.closeReason === "manual"
+      ? "Onlinebeställningar är tillfälligt pausade."
+      : "Restaurangen är stängd för beställningar just nu."
+    : !selectedPickup
+      ? "Det finns inga fler hämttider idag."
+      : null;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setTouched(true);
-    if (sending.current || nameError || phoneError || pickupError || totalSek === null) return;
+    if (sending.current || isClosed || nameError || phoneError || pickupError || totalSek === null) return;
 
     sending.current = true;
     setSubmitting(true);
@@ -641,13 +674,22 @@ function CheckoutForm({
 
       {/* Mobile Submit Button (Visible on small screens) */}
       <div className="block lg:hidden">
+        {isClosed && (
+          <p className="mb-3 rounded-xl border border-ember/30 bg-ember/10 p-3 text-xs leading-relaxed text-ember">
+            {restaurantStatus?.closeReason === "manual"
+              ? `Onlinebeställningar är tillfälligt pausade just nu. Ring ${site.phone}.`
+              : `Restaurangen är stängd för beställningar (${restaurantStatus?.scheduleLabel}).`}
+          </p>
+        )}
         <button
           type="submit"
-          disabled={submitting || totalSek === null}
+          disabled={submitting || totalSek === null || isClosed}
           aria-busy={submitting}
           className="flex min-h-13 w-full items-center justify-center rounded-xl bg-gold text-sm font-semibold uppercase tracking-wider text-ink transition hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-45 shadow-sm"
         >
-          {submitting
+          {isClosed
+            ? "Beställningar stängda"
+            : submitting
             ? "Behandlar beställning…"
             : paymentMethod === "cash"
             ? `Bekräfta beställning · ${totalSek ? kr(totalSek) : ""}`
@@ -793,7 +835,7 @@ function OrderCreatedView({
               type="button"
               onClick={() => {
                 clearDraft();
-                checkoutStore.dismissOrder();
+                onClose();
               }}
               className="flex min-h-11 w-full items-center justify-center rounded-xl border border-line text-sm font-medium text-muted transition hover:bg-cream hover:text-ink"
             >
@@ -815,7 +857,7 @@ function OrderCreatedView({
               type="button"
               onClick={() => {
                 clearDraft();
-                checkoutStore.dismissOrder();
+                onClose();
               }}
               className="flex min-h-11 w-full items-center justify-center rounded-xl border border-line text-sm font-medium text-muted transition hover:bg-cream hover:text-ink"
             >

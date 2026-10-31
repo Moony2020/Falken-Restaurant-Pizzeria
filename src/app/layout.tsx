@@ -1,12 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import { Suspense } from "react";
-import { Footer } from "@/components/footer";
-import { Header } from "@/components/header";
-import { CartDrawer } from "@/components/order/cart-drawer";
 import { OrderProvider } from "@/components/order/order-provider";
-import { ProductDialog } from "@/components/order/product-dialog";
-import { Toast } from "@/components/order/toast";
+import { SiteShell } from "@/components/site-shell";
 import { site } from "@/data/site";
 import "./globals.css";
 
@@ -66,23 +62,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(restaurantJsonLd).replace(/</g, "\\u003c") }}
         />
         <OrderProvider>
-          <a
-            href="#innehall"
-            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-gold focus:px-5 focus:py-3 focus:text-sm focus:font-semibold focus:text-ink"
-          >
-            Hoppa till innehållet
-          </a>
-          {/* The header reads the current path, which a page with a dynamic order number only knows at request time. */}
-          <Suspense fallback={<div className="h-20 bg-ink-2 sm:h-24" aria-hidden="true" />}>
-            <Header />
+          <Suspense fallback={<main id="innehall" className="flex-1">{children}</main>}>
+            <SiteShell>{children}</SiteShell>
           </Suspense>
-          <main id="innehall" className="flex-1">
-            {children}
-          </main>
-          <Footer />
-          <ProductDialog />
-          <CartDrawer />
-          <Toast />
         </OrderProvider>
       </body>
     </html>

@@ -50,6 +50,14 @@
     transform: none;
   }
 }
+@keyframes falken-loader-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(225%);
+  }
+}
 
 @utility wrap {
   margin-inline: auto;
@@ -150,3 +158,28 @@ html:has(dialog[open]) {
   background-size: 1rem;
   padding-right: 3.25rem;
 }
+
+/* Subtle, light admin horizontal scrollbar matching Falken ivory/cream palette */
+.admin-scrollbar::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.admin-scrollbar::-webkit-scrollbar-track {
+  background: #f4eee2;
+  border-radius: 9999px;
+}
+.admin-scrollbar::-webkit-scrollbar-thumb {
+  background: #d6ccbe;
+  border-radius: 9999px;
+}
+.admin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #bfb29e;
+}
+
+@supports (scrollbar-width: thin) {
+  .admin-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #d6ccbe #f4eee2;
+  }
+}
+

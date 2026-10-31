@@ -4,14 +4,17 @@ export type PriceStatus = (typeof PRICE_STATUS)[number];
 /** Kitchen workflow. PENDING_PAYMENT exists only until the card provider confirms. */
 export const FULFILLMENT_STATUS = [
   "PENDING_PAYMENT",
-  "PAID",
-  /** The restaurant accepted a pay-on-pickup order. Its payment may still be outstanding. */
+  /** The order was accepted automatically by the system, not manually approved by staff. */
   "CONFIRMED",
-  "ACCEPTED",
+  /** A staff member has seen the order. Starting preparation also records this acknowledgement. */
+  "ACKNOWLEDGED",
   "PREPARING",
   "READY_FOR_PICKUP",
   "PICKED_UP",
   "CANCELLED",
+  /** Legacy read-only values. A1 creates no new orders in these states. */
+  "PAID",
+  "ACCEPTED",
   "REFUNDED",
 ] as const;
 export type FulfillmentStatus = (typeof FULFILLMENT_STATUS)[number];
@@ -26,6 +29,11 @@ export type PaymentProvider = (typeof PAYMENT_PROVIDER)[number];
 /** How the customer intends to pay. This is deliberately separate from paymentStatus. */
 export const PAYMENT_METHOD = ["card", "pay_on_pickup"] as const;
 export type PaymentMethod = (typeof PAYMENT_METHOD)[number];
+
+/** Roles for the restaurant's private administration area. */
+// FALKEN is a single restaurant: every staff account uses the same Admin capabilities.
+export const STAFF_ROLE = ["ADMIN"] as const;
+export type StaffRole = (typeof STAFF_ROLE)[number];
 
 /** Slug of the gluten-free dough modifier seeded in the catalog. Only products with glutenFreeOption may use it. */
 export const GLUTEN_FREE_SLUG = "glutenfri-deg";

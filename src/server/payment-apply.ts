@@ -3,7 +3,6 @@ import type { PaymentProvider } from "./models/constants.ts";
 import { OrderModel } from "./models/order.ts";
 import { PaymentModel } from "./models/order.ts";
 import { audit, flagForReview, transitionOrder, type OrderLean } from "./order-transitions.ts";
-import { isPaidStatus } from "./order-state.ts";
 
 // Turning a CONFIRMED payment into an order outcome. "Confirmed" means a provider adapter has already verified it
 // (webhook signature checked, or the provider's API asked directly). Nothing a browser says ever reaches this code.
@@ -29,7 +28,7 @@ export function markVerified(p: Omit<VerifiedPayment, typeof verifiedBrand>): Ve
 }
 
 export type ApplyOutcome =
-  | "paid" // order moved to PAID
+  | "paid" // order moved to CONFIRMED with paymentStatus=paid
   | "already_paid" // this payment had already paid the order (duplicate event / retry)
   | "late_payment" // order was already cancelled or expired: money received, order NOT revived, flagged
   | "duplicate_payment" // order already paid by a different payment: flagged for refund
@@ -72,7 +71,7 @@ export async function applyVerifiedPayment(payment: VerifiedPayment, now: Date =
     }
 
     if (order.fulfillmentStatus === "PENDING_PAYMENT") {
-      const t = await transitionOrder({ orderId: id, to: "PAID", actor, reason: `payment_confirmed:${payment.providerPaymentId}`, now, set: { paymentProvider: payment.provider, paymentId: record._id } });
+      const t = await transitionOrder({ orderId: id, to: "CONFIRMED", actor, reason: `payment_confirmed:${payment.providerPaymentId}`, now, set: { paymentProvider: payment.provider, paymentId: record._id } });
       if (!t.ok) {
         if (t.reason === "conflict") continue; // the order moved meanwhile: look again
         return { outcome: "conflict", orderId: id };
@@ -83,16 +82,15 @@ export async function applyVerifiedPayment(payment: VerifiedPayment, now: Date =
       return { outcome: t.changed ? "paid" : "already_paid", orderId: id };
     }
 
-    if (isPaidStatus(order.fulfillmentStatus) || order.fulfillmentStatus === "REFUNDED") {
+    if (order.paymentStatus === "paid") {
       if (order.paymentId && String(order.paymentId) === String(record._id)) {
         await recordPaid(record._id, payment); // repairs the Payment record if a crash left it behind
         return { outcome: "already_paid", orderId: id };
       }
       await recordPaid(record._id, payment);
-      const refunded = order.fulfillmentStatus === "REFUNDED";
-      await flagForReview(id, refunded ? "paid_after_refund" : "duplicate_payment", "A second payment arrived for an order that was already settled", now);
-      await audit(refunded ? "payment_after_refund" : "payment_duplicate", String(id), actor, now, detail);
-      return { outcome: refunded ? "paid_after_refund" : "duplicate_payment", orderId: id };
+      await flagForReview(id, "duplicate_payment", "A second payment arrived for an order that was already settled", now);
+      await audit("payment_duplicate", String(id), actor, now, detail);
+      return { outcome: "duplicate_payment", orderId: id };
     }
 
     // CANCELLED: the order was cancelled or expired before the confirmation arrived. The customer HAS paid, so the

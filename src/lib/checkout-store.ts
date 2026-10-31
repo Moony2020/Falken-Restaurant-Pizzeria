@@ -36,15 +36,28 @@ function load() {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return;
     const p = JSON.parse(raw) as Partial<CheckoutState>;
+    let order = isOrder(p.order) ? p.order : null;
+    let accessToken = typeof p.accessToken === "string" ? p.accessToken : undefined;
+    let paymentMethod =
+      p.paymentMethod === "cash" || p.paymentMethod === "card"
+        ? p.paymentMethod
+        : undefined;
+
+    // Discard orders whose pickup was more than 2 hours ago
+    if (order?.pickupAt) {
+      const pickupTime = new Date(order.pickupAt).getTime();
+      if (!Number.isNaN(pickupTime) && Date.now() - pickupTime > 2 * 3600 * 1000) {
+        order = null;
+        accessToken = undefined;
+        paymentMethod = undefined;
+      }
+    }
+
     state = {
       attempt: isAttempt(p.attempt) ? p.attempt : null,
-      order: isOrder(p.order) ? p.order : null,
-      accessToken:
-        typeof p.accessToken === "string" ? p.accessToken : undefined,
-      paymentMethod:
-        p.paymentMethod === "cash" || p.paymentMethod === "card"
-          ? p.paymentMethod
-          : undefined,
+      order,
+      accessToken,
+      paymentMethod,
     };
   } catch {
     // Unreadable storage: begin fresh.

@@ -71,16 +71,21 @@ export type SlotOptions = {
   step: number;
 };
 
-/** Pickup times (HH:MM) still available today. Empty once the kitchen can no longer serve today. */
-export function getPickupSlots(date: Date, season: Season, opts: SlotOptions): string[] {
+export function getPickupSlots(date: Date, season: Season, opts: SlotOptions, forceOpen = false): string[] {
   const { weekday, minutes } = stockholmNow(date);
   const today = HOURS[season][weekday];
-  const earliest = Math.max(minutes + opts.prepMinutes, today.open * 60);
+  const earliest = forceOpen ? minutes + opts.prepMinutes : Math.max(minutes + opts.prepMinutes, today.open * 60);
   const first = Math.ceil(earliest / opts.step) * opts.step;
-  const last = today.close * 60 - opts.lastBeforeClose;
+  const maxToday = 23 * 60 + 45;
+  const last = forceOpen
+    ? Math.min(maxToday, Math.max(today.close * 60 - opts.lastBeforeClose, first + 120))
+    : today.close * 60 - opts.lastBeforeClose;
 
   const slots: string[] = [];
   for (let m = first; m <= last; m += opts.step) slots.push(formatMinutes(m));
+  if (forceOpen && slots.length === 0) {
+    slots.push(formatMinutes(Math.min(first, maxToday)));
+  }
   return slots;
 }
 
@@ -91,7 +96,7 @@ export type PickupRules = SlotOptions & {
 };
 
 /** Server-side check of a requested pickup time. The browser's idea of "available" is never trusted. */
-export function isValidPickupTime(pickup: Date, now: Date, season: Season, rules: PickupRules): boolean {
+export function isValidPickupTime(pickup: Date, now: Date, season: Season, rules: PickupRules, forceOpen = false): boolean {
   const lead = pickup.getTime() - now.getTime();
   if (Number.isNaN(lead)) return false;
   if (lead < (rules.prepMinutes - rules.graceMinutes) * 60_000) return false;
@@ -100,6 +105,7 @@ export function isValidPickupTime(pickup: Date, now: Date, season: Season, rules
 
   const { weekday, minutes } = stockholmNow(pickup);
   if (minutes % rules.step !== 0) return false;
+  if (forceOpen) return true;
   const day = HOURS[season][weekday];
   return minutes >= day.open * 60 && minutes <= day.close * 60 - rules.lastBeforeClose;
 }
@@ -108,10 +114,15 @@ export function isValidPickupTime(pickup: Date, now: Date, season: Season, rules
  * Pickup slots as real instants, for sending to the server. `label` is the Stockholm wall-clock time shown
  * to the customer. Whole minutes are enough: the opening-hours table has no daylight-saving change inside a day.
  */
-export function getPickupSlotInstants(date: Date, season: Season, opts: SlotOptions): { label: string; iso: string }[] {
+export function getPickupSlotInstants(
+  date: Date,
+  season: Season,
+  opts: SlotOptions,
+  forceOpen = false,
+): { label: string; iso: string }[] {
   const { minutes: nowMinutes } = stockholmNow(date);
   const baseMs = Math.floor(date.getTime() / 60_000) * 60_000;
-  return getPickupSlots(date, season, opts).map((label) => {
+  return getPickupSlots(date, season, opts, forceOpen).map((label) => {
     const [h, m] = label.split(":").map(Number);
     return { label, iso: new Date(baseMs + (h * 60 + m - nowMinutes) * 60_000).toISOString() };
   });

@@ -43,6 +43,16 @@ async function makePayment(orderId: unknown, over: Record<string, unknown> = {})
   const doc = await PaymentModel.create({ orderId, provider: "stripe", providerSessionId: `cs_test_${++n}`, amountSek: 110, status: "pending", ...over } as never);
   return doc as unknown as { _id: mongoose.Types.ObjectId; providerSessionId: string };
 }
+async function confirmCardOrder(orderId: mongoose.Types.ObjectId, paymentId: mongoose.Types.ObjectId, now = NOW) {
+  return transitionOrder({
+    orderId,
+    to: "CONFIRMED",
+    actor: { type: "payment", id: "stripe" },
+    reason: "verified_card_payment",
+    now,
+    set: { paymentProvider: "stripe", paymentId },
+  });
+}
 const verified = (sessionId: string, over: Record<string, unknown> = {}) =>
   markVerified({ provider: "stripe", providerSessionId: sessionId, providerPaymentId: `pi_${sessionId}`, amountSek: 110, currency: "SEK", ...over } as never);
 const status = async (id: unknown) => (await OrderModel.findById(id).lean())!;
@@ -63,20 +73,21 @@ describe("payment foundation on a local test database", { skip: !uri ? "MONGODB_
   describe("transitions", () => {
     test("a legal transition changes the status and records who, when and why, in the same update", async () => {
       const o = await makeOrder();
-      const r = await transitionOrder({ orderId: o._id, to: "PAID", actor: { type: "payment", id: "stripe" }, reason: "test", now: NOW });
+      const p = await makePayment(o._id);
+      const r = await confirmCardOrder(o._id, p._id);
       assert.ok(r.ok && r.changed);
       const after = await status(o._id);
-      assert.equal(after.fulfillmentStatus, "PAID");
+      assert.equal(after.fulfillmentStatus, "CONFIRMED");
       assert.equal(after.paymentStatus, "paid");
       assert.deepEqual(after.paidAt, NOW);
       const last = after.statusHistory.at(-1)!;
-      assert.deepEqual([last.from, last.to, last.actorType, last.actorId, last.reason], ["PENDING_PAYMENT", "PAID", "payment", "stripe", "test"]);
+      assert.deepEqual([last.from, last.to, last.actorType, last.actorId, last.reason], ["PENDING_PAYMENT", "CONFIRMED", "payment", "stripe", "verified_card_payment"]);
       assert.equal(after.statusHistory.length, 2);
     });
 
-    test("staff cannot mark an order paid, and the attempt is audited", async () => {
+    test("staff cannot confirm a pending card order, and the attempt is audited", async () => {
       const o = await makeOrder();
-      const r = await transitionOrder({ orderId: o._id, to: "PAID", actor: { type: "staff", id: "u1" }, now: NOW });
+      const r = await transitionOrder({ orderId: o._id, to: "CONFIRMED", actor: { type: "staff", id: "u1" }, now: NOW });
       assert.deepEqual(r.ok ? null : r.reason, "actor_not_allowed");
       const after = await status(o._id);
       assert.equal(after.fulfillmentStatus, "PENDING_PAYMENT");
@@ -86,7 +97,7 @@ describe("payment foundation on a local test database", { skip: !uri ? "MONGODB_
 
     test("an unpaid order can't skip to the kitchen steps", async () => {
       const o = await makeOrder();
-      for (const to of ["ACCEPTED", "PREPARING", "READY_FOR_PICKUP", "PICKED_UP", "REFUNDED"] as const) {
+      for (const to of ["ACKNOWLEDGED", "PREPARING", "READY_FOR_PICKUP", "PICKED_UP", "REFUNDED"] as const) {
         const r = await transitionOrder({ orderId: o._id, to, actor: { type: "staff" }, now: NOW });
         assert.equal(r.ok, false, to);
       }
@@ -95,31 +106,79 @@ describe("payment foundation on a local test database", { skip: !uri ? "MONGODB_
 
     test("asking for the status it already has is a harmless no-op", async () => {
       const o = await makeOrder();
-      await transitionOrder({ orderId: o._id, to: "PAID", actor: { type: "payment" }, now: NOW });
-      const again = await transitionOrder({ orderId: o._id, to: "PAID", actor: { type: "payment" }, now: NOW });
+      const p = await makePayment(o._id);
+      await confirmCardOrder(o._id, p._id);
+      const again = await confirmCardOrder(o._id, p._id);
       assert.ok(again.ok && !again.changed);
       assert.equal((await status(o._id)).statusHistory.length, 2);
     });
 
-    test("ten simultaneous 'mark paid' requests produce exactly one change and one history entry", async () => {
+    test("starting preparation directly from confirmed records acknowledgement in the same atomic transition", async () => {
       const o = await makeOrder();
-      const results = await Promise.all(Array.from({ length: 10 }, () => transitionOrder({ orderId: o._id, to: "PAID", actor: { type: "payment" }, now: NOW })));
+      const p = await makePayment(o._id);
+      await confirmCardOrder(o._id, p._id);
+      const startedAt = min(2);
+      const r = await transitionOrder({ orderId: o._id, to: "PREPARING", actor: { type: "staff", id: "kitchen-1" }, now: startedAt });
+      assert.ok(r.ok && r.changed);
+      const after = await status(o._id);
+      assert.equal(after.fulfillmentStatus, "PREPARING");
+      assert.deepEqual(after.acknowledgedAt, startedAt);
+      assert.equal(after.acknowledgedBy, "kitchen-1");
+      assert.equal(after.statusHistory.at(-1)?.to, "PREPARING");
+      assert.equal(after.statusHistory.filter((h) => h.to === "ACKNOWLEDGED").length, 0);
+    });
+
+    test("concurrent preparation starts yield one transition and one acknowledgement", async () => {
+      const o = await makeOrder();
+      const p = await makePayment(o._id);
+      await confirmCardOrder(o._id, p._id);
+      const results = await Promise.all(Array.from({ length: 6 }, (_, i) =>
+        transitionOrder({ orderId: o._id, to: "PREPARING", actor: { type: "staff", id: `kitchen-${i}` }, now: NOW }),
+      ));
+      assert.equal(results.filter((r) => r.ok && r.changed).length, 1);
+      const after = await status(o._id);
+      assert.equal(after.fulfillmentStatus, "PREPARING");
+      assert.ok(after.acknowledgedAt);
+      assert.match(after.acknowledgedBy ?? "", /^kitchen-\d$/);
+      assert.equal(after.statusHistory.filter((h) => h.to === "PREPARING").length, 1);
+    });
+
+    test("an unpaid pay-on-pickup order cannot be picked up before trusted on-site collection", async () => {
+      const o = await makeOrder({
+        paymentMethod: "pay_on_pickup",
+        paymentStatus: "unpaid",
+        fulfillmentStatus: "CONFIRMED",
+        paymentExpiresAt: undefined,
+        statusHistory: [{ at: NOW, to: "CONFIRMED", actorType: "customer", reason: "pay_on_pickup_created" }],
+      });
+      assert.ok((await transitionOrder({ orderId: o._id, to: "PREPARING", actor: { type: "staff", id: "kitchen-1" }, now: NOW })).ok);
+      assert.ok((await transitionOrder({ orderId: o._id, to: "READY_FOR_PICKUP", actor: { type: "staff", id: "kitchen-1" }, now: min(1) })).ok);
+      const collected = await transitionOrder({ orderId: o._id, to: "PICKED_UP", actor: { type: "staff", id: "cashier-1" }, now: min(2) });
+      assert.deepEqual(collected.ok ? null : collected.reason, "payment_required");
+      assert.equal((await status(o._id)).fulfillmentStatus, "READY_FOR_PICKUP");
+    });
+
+    test("ten simultaneous card confirmations produce exactly one change and one history entry", async () => {
+      const o = await makeOrder();
+      const p = await makePayment(o._id);
+      const results = await Promise.all(Array.from({ length: 10 }, () => confirmCardOrder(o._id, p._id)));
       assert.equal(results.filter((r) => r.ok && r.changed).length, 1);
       assert.ok(results.every((r) => r.ok));
       const after = await status(o._id);
-      assert.equal(after.statusHistory.filter((h) => h.to === "PAID").length, 1);
+      assert.equal(after.statusHistory.filter((h) => h.to === "CONFIRMED").length, 1);
     });
 
     test("a paid order cannot be cancelled, even by the system", async () => {
       const o = await makeOrder();
-      await transitionOrder({ orderId: o._id, to: "PAID", actor: { type: "payment" }, now: NOW });
+      const p = await makePayment(o._id);
+      await confirmCardOrder(o._id, p._id);
       const r = await transitionOrder({ orderId: o._id, to: "CANCELLED", actor: { type: "system" }, now: NOW });
       assert.equal(r.ok, false);
-      assert.equal((await status(o._id)).fulfillmentStatus, "PAID");
+      assert.equal((await status(o._id)).fulfillmentStatus, "CONFIRMED");
     });
 
     test("unknown orders are reported, not thrown", async () => {
-      const r = await transitionOrder({ orderId: new mongoose.Types.ObjectId(), to: "PAID", actor: { type: "payment" } });
+      const r = await transitionOrder({ orderId: new mongoose.Types.ObjectId(), to: "CONFIRMED", actor: { type: "payment" } });
       assert.deepEqual(r.ok ? null : r.reason, "not_found");
     });
   });
@@ -196,7 +255,7 @@ describe("payment foundation on a local test database", { skip: !uri ? "MONGODB_
       const r = await applyVerifiedPayment(verified(p.providerSessionId), NOW);
       assert.equal(r.outcome, "paid");
       const after = await status(o._id);
-      assert.equal(after.fulfillmentStatus, "PAID");
+      assert.equal(after.fulfillmentStatus, "CONFIRMED");
       assert.equal(String(after.paymentId), String(p._id));
       assert.equal(after.paymentProvider, "stripe");
       const pay = await PaymentModel.findById(p._id).lean();
@@ -208,7 +267,7 @@ describe("payment foundation on a local test database", { skip: !uri ? "MONGODB_
       const p = await makePayment(o._id);
       assert.equal((await applyVerifiedPayment(verified(p.providerSessionId), NOW)).outcome, "paid");
       assert.equal((await applyVerifiedPayment(verified(p.providerSessionId), min(1))).outcome, "already_paid");
-      assert.equal((await status(o._id)).statusHistory.filter((h) => h.to === "PAID").length, 1);
+      assert.equal((await status(o._id)).statusHistory.filter((h) => h.to === "CONFIRMED").length, 1);
     });
 
     test("six simultaneous confirmations of one payment: one 'paid', the rest 'already_paid', never a duplicate flag", async () => {
@@ -219,13 +278,13 @@ describe("payment foundation on a local test database", { skip: !uri ? "MONGODB_
       assert.ok(rs.every((r) => r.outcome === "paid" || r.outcome === "already_paid"), JSON.stringify(rs.map((r) => r.outcome)));
       const after = await status(o._id);
       assert.equal(after.needsReview?.reason, undefined);
-      assert.equal(after.statusHistory.filter((h) => h.to === "PAID").length, 1);
+      assert.equal(after.statusHistory.filter((h) => h.to === "CONFIRMED").length, 1);
     });
 
     test("a crash after the order was marked paid but before the payment record was updated is repaired on retry", async () => {
       const o = await makeOrder();
       const p = await makePayment(o._id);
-      await transitionOrder({ orderId: o._id, to: "PAID", actor: { type: "payment" }, now: NOW, set: { paymentProvider: "stripe", paymentId: p._id } });
+      await confirmCardOrder(o._id, p._id);
       assert.equal((await PaymentModel.findById(p._id).lean())?.status, "pending"); // the half-finished state
       assert.equal((await applyVerifiedPayment(verified(p.providerSessionId), min(1))).outcome, "already_paid");
       assert.equal((await PaymentModel.findById(p._id).lean())?.status, "paid");
@@ -256,8 +315,8 @@ describe("payment foundation on a local test database", { skip: !uri ? "MONGODB_
         console.error = quiet;
       }
       const after = await status(o._id);
-      assert.equal(after.fulfillmentStatus, "PAID");
-      assert.equal(after.statusHistory.at(-1)?.to, "PAID");
+      assert.equal(after.fulfillmentStatus, "CONFIRMED");
+      assert.equal(after.statusHistory.at(-1)?.to, "CONFIRMED");
     });
 
     test("a wrong amount never pays the order: it is flagged and the received amount is recorded", async () => {
@@ -375,9 +434,10 @@ describe("payment foundation on a local test database", { skip: !uri ? "MONGODB_
 
     test("paid orders and already cancelled orders are never touched; running twice changes nothing more", async () => {
       const paid = await makeOrder({ paymentExpiresAt: min(-1) });
-      await transitionOrder({ orderId: paid._id, to: "PAID", actor: { type: "payment" }, now: NOW });
+      const payment = await makePayment(paid._id);
+      await confirmCardOrder(paid._id, payment._id);
       await expirePendingOrders({ now: NOW });
-      assert.equal((await status(paid._id)).fulfillmentStatus, "PAID");
+      assert.equal((await status(paid._id)).fulfillmentStatus, "CONFIRMED");
       const again = await expirePendingOrders({ now: NOW });
       assert.equal(again.cancelled, 0);
     });
@@ -397,13 +457,14 @@ describe("payment foundation on a local test database", { skip: !uri ? "MONGODB_
   });
 
   describe("kitchen", () => {
-    test("only paid, active orders are listed; unpaid, cancelled, refunded and collected ones never are", async () => {
+    test("only eligible active orders are listed; unpaid cards, cancelled and collected orders never are", async () => {
       const mk = async (to: string | null) => {
         const o = await makeOrder();
         if (to) {
-          await transitionOrder({ orderId: o._id, to: "PAID", actor: { type: "payment" }, now: NOW });
-          for (const step of ["ACCEPTED", "PREPARING", "READY_FOR_PICKUP", "PICKED_UP"]) {
-            if (to === "PAID") break;
+          const p = await makePayment(o._id);
+          await confirmCardOrder(o._id, p._id);
+          for (const step of ["ACKNOWLEDGED", "PREPARING", "READY_FOR_PICKUP", "PICKED_UP"]) {
+            if (to === "CONFIRMED") break;
             await transitionOrder({ orderId: o._id, to: step as never, actor: { type: "staff" }, now: NOW });
             if (step === to) break;
           }
@@ -411,7 +472,7 @@ describe("payment foundation on a local test database", { skip: !uri ? "MONGODB_
         return o.publicId;
       };
       const pending = await mk(null);
-      const paid = await mk("PAID");
+      const paid = await mk("CONFIRMED");
       const ready = await mk("READY_FOR_PICKUP");
       const collected = await mk("PICKED_UP");
       const cancelled = (await makeOrder()).publicId;
@@ -423,13 +484,14 @@ describe("payment foundation on a local test database", { skip: !uri ? "MONGODB_
 
     test("even a corrupted status can't leak an unpaid order: both status and payment status must say paid", async () => {
       const o = await makeOrder();
-      await OrderModel.updateOne({ _id: o._id }, { $set: { fulfillmentStatus: "PAID" } }); // wrongly forced, paymentStatus still "pending"
+      await OrderModel.updateOne({ _id: o._id }, { $set: { fulfillmentStatus: "CONFIRMED" } }); // wrongly forced, paymentStatus still "pending"
       assert.ok(!(await listKitchenOrders()).some((k) => k.publicId === o.publicId));
     });
 
     test("kitchen entries expose what the kitchen needs and nothing about money internals", async () => {
       const o = await makeOrder();
-      await transitionOrder({ orderId: o._id, to: "PAID", actor: { type: "payment" }, now: NOW });
+      const p = await makePayment(o._id);
+      await confirmCardOrder(o._id, p._id);
       const entry = (await listKitchenOrders()).find((k) => k.publicId === o.publicId)!;
       assert.deepEqual(Object.keys(entry).sort(), ["_id", "contact", "fulfillmentStatus", "items", "paidAt", "pickupAt", "publicId", "totalSek"]);
     });

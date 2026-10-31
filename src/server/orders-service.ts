@@ -4,11 +4,12 @@ import { isValidPickupTime } from "../lib/hours.ts";
 import { orderRequestSchema, type CartInput, type OrderRequest } from "./cart-schema.ts";
 import { loadCatalogForCart } from "./catalog-repo.ts";
 import { OrderModel, type OrderDoc } from "./models/order.ts";
+import { RestaurantSettingsModel } from "./models/restaurant-settings.ts";
 import { deriveAccessToken } from "./order-access.ts";
 import { ORDER_EXPIRY_MINUTES } from "./payments-config.ts";
 import { priceCart, type PricedLine, type PricingIssue } from "./pricing-engine.ts";
 
-type OrderErrorCode = "invalid_request" | "pricing" | "pickup_unavailable" | "idempotency_conflict" | "price_changed";
+type OrderErrorCode = "invalid_request" | "pricing" | "pickup_unavailable" | "idempotency_conflict" | "price_changed" | "ordering_closed";
 
 export class OrderError extends Error {
   // Explicit fields (not constructor parameter properties): plain Node runs this file with type stripping.
@@ -119,6 +120,20 @@ export async function createOrder(body: unknown, now: Date = new Date(), options
   const already = await replay();
   if (already) return already;
 
+  let isManuallyOpen = false;
+  const assertOrderingEnabled = async () => {
+    const settings = await RestaurantSettingsModel.findById("restaurant")
+      .select("onlineOrderingEnabled manualOverride")
+      .lean();
+    isManuallyOpen = settings?.manualOverride === "open";
+    const isManuallyClosed =
+      settings?.manualOverride === "closed" || settings?.onlineOrderingEnabled === false;
+    if (isManuallyClosed) {
+      throw new OrderError("ordering_closed", 409, "Onlinebeställningar är tillfälligt stängda.");
+    }
+  };
+  await assertOrderingEnabled();
+
   const priced = await priceCartFromDb({ items: req.items });
   if (!priced.ok) {
     throw new OrderError("pricing", 422, "Some items can't be ordered", priced.issues satisfies PricingIssue[]);
@@ -138,10 +153,12 @@ export async function createOrder(body: unknown, now: Date = new Date(), options
     step: SLOT_STEP_MINUTES,
     graceMinutes: PICKUP_GRACE_MINUTES,
     maxAheadHours: PICKUP_MAX_AHEAD_HOURS,
-  });
+  }, isManuallyOpen);
   if (!pickupOk) throw new OrderError("pickup_unavailable", 422, "The chosen pickup time is not available");
 
   try {
+    // Recheck immediately before creation so a recently closed online-order switch is honored.
+    await assertOrderingEnabled();
     const isPayOnPickup = req.paymentMethod === "pay_on_pickup";
     const fulfillmentStatus = isPayOnPickup ? "CONFIRMED" : "PENDING_PAYMENT";
     const created = await OrderModel.create({

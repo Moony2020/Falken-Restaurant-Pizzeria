@@ -12,11 +12,15 @@
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "node --env-file-if-exists=.env.local --test \"tests/**/*.test.ts\"",
-    "db:seed": "node --env-file-if-exists=.env.local scripts/seed.ts"
+    "db:seed": "node --env-file-if-exists=.env.local scripts/seed.ts",
+    "admin:bootstrap": "node --env-file-if-exists=.env.local scripts/bootstrap-admin.ts",
+    "admin:manage": "node --env-file-if-exists=.env.local scripts/manage-staff.ts"
   },
   "dependencies": {
+    "@types/nodemailer": "^8.0.2",
     "mongoose": "^9.11.3",
     "next": "16.4.2",
+    "nodemailer": "^10.3.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "stripe": "^23.0.0",

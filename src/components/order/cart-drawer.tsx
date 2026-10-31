@@ -36,6 +36,7 @@ import { useMenu } from "@/lib/menu-store";
 import type { PublicMenu } from "@/lib/menu-types";
 import { kr } from "@/lib/pricing";
 import { useNow } from "@/lib/use-now";
+import { useRestaurantStatus } from "@/lib/use-restaurant-status";
 import { DishArt } from "@/components/art";
 import {
   ArrowIcon,
@@ -172,7 +173,7 @@ function CartContents() {
               aria-live="polite"
             >
               <span className="text-sm text-muted">Summa</span>
-              <TotalAmount pricing={pricing} />
+              <TotalAmount pricing={pricing} lines={lines} menu={menu} />
             </div>
             {pricing.status === "error" && (
               <PricingError reason={pricing.reason} />
@@ -182,6 +183,7 @@ function CartContents() {
               disabled={!canContinue}
               onClick={() => {
                 closeCart();
+                checkoutStore.dismissOrder();
                 router.push("/kassa");
               }}
               className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-gold text-sm font-semibold text-ink transition hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-45"
@@ -220,7 +222,7 @@ export function CheckoutPage() {
   const changes = pricing.status === "ready" ? priceChanges(lines, pricing.lines) : [];
   const canPay = pricing.status === "ready" && changes.length === 0;
 
-  if (checkout.order) {
+  if (checkout.order && lines.length === 0) {
     return (
       <section className="bg-ivory py-8 sm:py-12">
         <div className="mx-auto max-w-2xl overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
@@ -228,7 +230,10 @@ export function CheckoutPage() {
             order={checkout.order}
             token={checkout.accessToken}
             notice={checkout.notice}
-            onClose={() => router.push("/meny")}
+            onClose={() => {
+              checkoutStore.dismissOrder();
+              router.push("/meny");
+            }}
           />
         </div>
       </section>
@@ -307,8 +312,12 @@ function CheckoutSummary({ pricing }: { pricing: Extract<ReturnType<typeof useCa
 
 function TotalAmount({
   pricing,
+  lines,
+  menu,
 }: {
   pricing: ReturnType<typeof useCartPricing>;
+  lines?: CartLine[];
+  menu?: PublicMenu | null;
 }) {
   if (pricing.status === "ready") {
     return (
@@ -321,6 +330,30 @@ function TotalAmount({
     return <span className="text-sm text-muted">Åtgärda markerade rader</span>;
   if (pricing.status === "error")
     return <span className="text-sm text-muted">Kan inte beräknas</span>;
+
+  // Show estimated sum immediately while validating
+  if (lines && lines.length > 0 && menu) {
+    const estSum = lines.reduce((acc, l) => {
+      if (typeof l.seenTotalSek === "number") return acc + l.seenTotalSek;
+      const p = productFor(menu, l.productSlug);
+      const v = p?.variants.find((vr) => vr.id === l.variantId);
+      const base = v?.priceSek ?? 0;
+      const mods = l.modifiers.reduce((mSum, m) => {
+        const def = menu.modifiers.find((x) => x.slug === m.slug);
+        const mp = def ? (def.priceByVariantSek[l.variantId] ?? 0) : 0;
+        return mSum + mp * m.quantity;
+      }, 0);
+      return acc + (base + mods) * l.quantity;
+    }, 0);
+    if (estSum > 0) {
+      return (
+        <span className="font-display text-3xl font-semibold tabular-nums text-ink">
+          {kr(estSum)}
+        </span>
+      );
+    }
+  }
+
   return (
     <span
       className="h-8 w-24 animate-pulse rounded bg-cream"
@@ -430,6 +463,20 @@ function CartItem({
 
   const removedIngredients = priced?.removedIngredients ?? line.removed;
 
+  const estimatedLineTotal = useMemo(() => {
+    if (priced) return priced.lineTotalSek;
+    if (typeof line.seenTotalSek === "number") return line.seenTotalSek;
+    if (!product) return null;
+    const v = product.variants.find((x) => x.id === line.variantId);
+    const base = v?.priceSek ?? 0;
+    const modsTotal = line.modifiers.reduce((sum, m) => {
+      const def = menu?.modifiers.find((x) => x.slug === m.slug);
+      const p = def ? (def.priceByVariantSek[line.variantId] ?? 0) : 0;
+      return sum + p * m.quantity;
+    }, 0);
+    return (base + modsTotal) * line.quantity;
+  }, [priced, line, product, menu]);
+
   return (
     <li className={`flex items-start gap-3 py-3.5 ${issue ? "rounded-lg bg-ember/5" : ""}`}>
       <div className="relative size-16 sm:size-[72px] shrink-0 overflow-hidden rounded-xl">
@@ -504,8 +551,8 @@ function CartItem({
         {/* Right column: Price at top, Quantity + Delete directly underneath */}
         <div className="flex flex-col items-end justify-between shrink-0 gap-2.5 pt-0.5">
           <p className="text-sm font-semibold tabular-nums text-ink">
-            {priced ? (
-              kr(priced.lineTotalSek)
+            {estimatedLineTotal !== null ? (
+              kr(estimatedLineTotal)
             ) : loading ? (
               <span
                 className="inline-block h-4 w-14 animate-pulse rounded bg-cream align-middle"
@@ -587,18 +634,22 @@ function Details({
   const [failure, setFailure] = useState<OrderResult | null>(null);
   const sending = useRef(false);
 
+  const { status: restaurantStatus } = useRestaurantStatus();
+  const isClosed = !restaurantStatus ? false : !restaurantStatus.isOpen;
+
   const { slots, status } = useMemo(() => {
-    if (now === null) return { slots: null, status: null };
+    if (now === null || isClosed) return { slots: isClosed ? [] : null, status: null };
     const date = new Date(now);
+    const isForceOpen = Boolean(restaurantStatus?.isOpen && !restaurantStatus?.isOpenBySchedule);
     return {
       slots: getPickupSlotInstants(date, CURRENT_SEASON, {
         prepMinutes: PREP_MINUTES,
         lastBeforeClose: LAST_PICKUP_BEFORE_CLOSE,
         step: SLOT_STEP_MINUTES,
-      }),
+      }, isForceOpen),
       status: getOpenStatus(date, CURRENT_SEASON),
     };
-  }, [now]);
+  }, [now, isClosed, restaurantStatus?.isOpen, restaurantStatus?.isOpenBySchedule]);
 
   // The first available slot is the default until the customer picks another one.
   const selectedPickup = slots?.some((s) => s.iso === pickup)
@@ -609,15 +660,20 @@ function Details({
   const phoneError = !PHONE_PATTERN.test(phone.trim())
     ? "Fyll i ett giltigt telefonnummer, till exempel 070-123 45 67."
     : null;
-  const pickupError = !selectedPickup
-    ? "Det finns inga fler hämttider idag."
-    : null;
+  const pickupError = isClosed
+    ? restaurantStatus?.closeReason === "manual"
+      ? "Onlinebeställningar är tillfälligt pausade."
+      : "Restaurangen är stängd för beställningar just nu."
+    : !selectedPickup
+      ? "Det finns inga fler hämttider idag."
+      : null;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setTouched(true);
     if (
       sending.current ||
+      isClosed ||
       nameError ||
       phoneError ||
       pickupError ||
@@ -795,13 +851,20 @@ function Details({
             {totalSek !== null ? kr(totalSek) : "–"}
           </span>
         </div>
+        {isClosed && (
+          <p className="rounded-xl border border-ember/30 bg-ember/10 p-3 text-xs leading-relaxed text-ember">
+            {restaurantStatus?.closeReason === "manual"
+              ? `Onlinebeställningar är tillfälligt pausade just nu. Ring oss gärna på ${site.phone} för avhämtning.`
+              : `Restaurangen är stängd för beställningar just nu (${restaurantStatus?.scheduleLabel}). Välkommen åter under öppettiderna!`}
+          </p>
+        )}
         <button
           type="submit"
-          disabled={submitting || totalSek === null}
+          disabled={submitting || totalSek === null || isClosed}
           aria-busy={submitting}
           className="flex min-h-12 w-full items-center justify-center rounded-full bg-gold text-sm font-semibold text-ink transition hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-45"
         >
-          {submitting ? "Går till betalning…" : "Betala med kort"}
+          {isClosed ? "Beställningar stängda" : submitting ? "Går till betalning…" : "Betala med kort"}
         </button>
         <SwishButton />
         <p
@@ -985,7 +1048,7 @@ function OrderCreated({
         <SwishButton />
         <button
           type="button"
-          onClick={() => checkoutStore.dismissOrder()}
+          onClick={onClose}
           className="flex min-h-12 w-full items-center justify-center rounded-full border border-ink/25 text-sm font-semibold transition hover:bg-ink hover:text-ivory"
         >
           Påbörja en ny beställning

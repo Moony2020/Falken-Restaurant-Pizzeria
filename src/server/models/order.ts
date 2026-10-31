@@ -82,9 +82,12 @@ const orderSchema = new Schema(
     fulfillmentStatus: { type: String, enum: FULFILLMENT_STATUS, default: "PENDING_PAYMENT", index: true },
     /** After this moment an order that is still unpaid may be cancelled (after the provider has been asked). */
     paymentExpiresAt: { type: Date, index: true },
-    /** The Payment that paid this order. Written in the same atomic update as the PAID transition. */
+    /** The trusted Payment record that paid this order. Written atomically with the Stripe confirmation. */
     paymentId: { type: Schema.Types.ObjectId, ref: "Payment" },
     paidAt: { type: Date },
+    /** Populated by an explicit acknowledgement or atomically when staff starts preparing. */
+    acknowledgedAt: { type: Date, index: true },
+    acknowledgedBy: { type: String, maxlength: 100 },
     cancelledAt: { type: Date },
     statusHistory: { type: [statusHistorySchema], default: [] },
     /** Something needs a person: a late payment, an amount mismatch, a double payment. Never cleared automatically. */
@@ -148,6 +151,8 @@ export type OrderDoc = {
   paymentExpiresAt?: Date;
   paymentId?: Types.ObjectId;
   paidAt?: Date;
+  acknowledgedAt?: Date;
+  acknowledgedBy?: string;
   cancelledAt?: Date;
   statusHistory: {
     at: Date;

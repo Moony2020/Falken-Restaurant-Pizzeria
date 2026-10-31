@@ -11,8 +11,8 @@ import { claimWebhookEvent, completeWebhookEvent, failWebhookEvent } from "./web
 
 // Stripe Checkout for an existing order (test mode). Three rules run through everything here:
 //  1. The amount always comes from the order saved on the server. Nothing the browser sends is used for money.
-//  2. An order becomes PAID only after Stripe itself says the payment was made (the session is fetched from
-//     Stripe, not read from the webhook body) and applyVerifiedPayment has checked order, amount and currency.
+//  2. An order becomes CONFIRMED + paid only after Stripe itself says the payment was made (the session is fetched
+//     from Stripe, not read from the webhook body) and applyVerifiedPayment has checked order, amount and currency.
 //  3. Anything we can't be sure about is left alone and flagged, never guessed.
 
 export const MAX_SESSIONS_PER_ORDER = 5;

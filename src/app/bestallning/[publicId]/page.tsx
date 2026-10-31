@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { OrderStatus } from "@/components/order/order-status";
+import { FalkenLoading } from "@/components/falken-loading";
 
 export const metadata: Metadata = {
   title: "Din beställning",
@@ -16,7 +17,7 @@ export default function BestallningPage() {
   return (
     <main className="bg-ivory">
       <div className="wrap max-w-4xl py-8 sm:py-12">
-        <Suspense fallback={<p role="status" className="text-muted">Hämtar din beställning…</p>}>
+        <Suspense fallback={<FalkenLoading fullScreen={false} label="Hämtar din beställning…" />}>
           <OrderStatus />
         </Suspense>
       </div>

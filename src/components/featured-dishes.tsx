@@ -1,8 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { reloadMenu, useMenu } from "@/lib/menu-store";
+import { products as menuSeed } from "@/data/menu";
 import { ProductCard } from "./order/product-card";
+
+// Keep the original home-page trio visible when an older catalog record has no featured flag.
+// Product details and orderability still come from the live menu API.
+const HOME_FEATURED_SLUGS = ["falken-special", "quattro-formaggi", "pollo-a-la-falken"];
 
 /** Home-page highlights. Names and prices come from the menu API like everywhere else. */
 export function FeaturedDishes() {
@@ -40,16 +46,41 @@ export function FeaturedDishes() {
     );
   }
 
-  const featured = state.menu.products.filter((p) => p.featured).slice(0, 3);
+  const flagged = state.menu.products.filter((p) => p.featured);
+  const selected = new Set(flagged.map((product) => product.slug));
+  const preferredFallback = HOME_FEATURED_SLUGS.flatMap((slug) => {
+    const product = state.menu.products.find((item) => item.slug === slug);
+    if (!product || selected.has(product.slug)) return [];
+    selected.add(product.slug);
+    return [product];
+  });
+  // Catalogs can use different slugs (or have no featured flags); fill any remaining
+  // slots from the live, active menu order instead of hiding the whole section.
+  const catalogFallback = state.menu.products.filter((product) => !selected.has(product.slug));
+  const featured = [...flagged, ...preferredFallback, ...catalogFallback].slice(0, 3);
   if (featured.length === 0) {
     return (
-      <p className="mt-8 text-muted">
-        Se hela utbudet i{" "}
-        <Link href="/meny" className="font-semibold text-ink underline underline-offset-2">
-          menyn
-        </Link>
-        .
-      </p>
+      <ul className="mt-8 flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:grid xl:grid-cols-3 xl:gap-4 xl:overflow-visible xl:pb-0">
+        {menuSeed.filter((product) => product.featured).slice(0, 3).map((product) => (
+          <li key={product.id} className="flex w-[84vw] max-w-[24rem] shrink-0 snap-start gap-4 rounded-2xl border border-line bg-white p-3.5 shadow-card sm:w-[24rem] sm:p-4 xl:w-full xl:max-w-none">
+            <div className="relative size-24 shrink-0 overflow-hidden rounded-xl sm:size-28 md:size-32">
+              {product.image ? <Image src={product.image} alt={product.name} fill sizes="(max-width: 640px) 96px, 128px" className="object-cover" /> : null}
+            </div>
+            <div className="flex min-w-0 flex-1 flex-col justify-between">
+              <div>
+                <div className="flex items-baseline gap-2">
+                  {product.number ? <span className="shrink-0 text-xs font-semibold tabular-nums text-gold-deep">{product.number}.</span> : null}
+                  <h3 className="font-display text-lg font-semibold leading-tight sm:text-xl">{product.name}</h3>
+                </div>
+                <p className="mt-1 text-sm leading-relaxed text-muted">{product.description ?? product.ingredients.join(", ")}</p>
+              </div>
+              <Link href={`/meny#${product.category}`} className="mt-3 inline-flex min-h-9 w-fit items-center rounded-full border border-gold-deep/60 px-4 text-xs font-semibold uppercase tracking-[0.1em] text-ink transition hover:bg-gold">
+                Se menyn
+              </Link>
+            </div>
+          </li>
+        ))}
+      </ul>
     );
   }
 

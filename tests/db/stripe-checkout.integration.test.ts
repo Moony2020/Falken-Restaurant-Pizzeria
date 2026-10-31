@@ -162,9 +162,11 @@ describe("Stripe Checkout (test mode, local fake)", { skip: !uri ? "MONGODB_URI_
       const late = await makeOrder();
       assert.deepEqual(await checkout(late, { now: min(46) }), { kind: "expired" });
       const paid = await makeOrder();
-      await transitionOrder({ orderId: paid.id, to: "PAID", actor: { type: "payment" }, now: NOW });
-      assert.deepEqual(await checkout(paid), { kind: "not_payable", status: "PAID" });
-      assert.equal(stripe.createCalls, 0);
+      const page = await checkout(paid);
+      assert.ok(page.kind === "ok");
+      stripe.pay(page.sessionId);
+      assert.deepEqual(await checkout(paid), { kind: "paid" });
+      assert.deepEqual(await checkout(paid), { kind: "not_payable", status: "CONFIRMED" });
     });
 
     test("when Stripe can't be reached nothing is stored and the error is thrown for the route to answer 502", async () => {
@@ -182,7 +184,7 @@ describe("Stripe Checkout (test mode, local fake)", { skip: !uri ? "MONGODB_URI_
       assert.ok(r.kind === "ok");
       stripe.pay(r.sessionId);
       assert.deepEqual(await checkout(o), { kind: "paid" });
-      assert.equal((await status(o.id)).fulfillmentStatus, "PAID");
+      assert.equal((await status(o.id)).fulfillmentStatus, "CONFIRMED");
     });
   });
 
@@ -217,15 +219,15 @@ describe("Stripe Checkout (test mode, local fake)", { skip: !uri ? "MONGODB_URI_
       assert.equal((await handleStripeWebhook({ rawBody: body, signature, gateway: stripe, now: NOW })).status, 200);
     });
 
-    test("a confirmed card payment moves the order to PAID once, with history, and only then the kitchen sees it", async () => {
+    test("a confirmed card payment moves the order to CONFIRMED plus paid once, with history, and only then the kitchen sees it", async () => {
       const o = await pendingOrder();
       assert.ok(!(await listKitchenOrders()).some((k) => k.publicId === o.publicId));
       stripe.pay(o.sessionId);
       const r = await deliver("evt_paid_1", "checkout.session.completed", o.sessionId);
       assert.deepEqual([r.status, r.body.outcome], [200, "paid"]);
       const after = await status(o.id);
-      assert.deepEqual([after.fulfillmentStatus, after.paymentStatus, after.paymentProvider], ["PAID", "paid", "stripe"]);
-      assert.equal(after.statusHistory.filter((h) => h.to === "PAID").length, 1);
+      assert.deepEqual([after.fulfillmentStatus, after.paymentStatus, after.paymentProvider], ["CONFIRMED", "paid", "stripe"]);
+      assert.equal(after.statusHistory.filter((h) => h.to === "CONFIRMED").length, 1);
       const [p] = await payments(o.id);
       assert.deepEqual([p.status, p.receivedSek], ["paid", 150]);
       assert.ok((await listKitchenOrders()).some((k) => k.publicId === o.publicId));
@@ -240,7 +242,7 @@ describe("Stripe Checkout (test mode, local fake)", { skip: !uri ? "MONGODB_URI_
       assert.equal(results.filter((r) => r.body.outcome === "paid").length, 1);
       const again = await deliver("evt_dup", "checkout.session.completed", o.sessionId);
       assert.deepEqual([again.status, again.body.outcome], [200, "duplicate"]);
-      assert.equal((await status(o.id)).statusHistory.filter((h) => h.to === "PAID").length, 1);
+      assert.equal((await status(o.id)).statusHistory.filter((h) => h.to === "CONFIRMED").length, 1);
     });
 
     test("'completed' is not 'paid': an asynchronous method waits until Stripe says the money arrived", async () => {
@@ -252,7 +254,7 @@ describe("Stripe Checkout (test mode, local fake)", { skip: !uri ? "MONGODB_URI_
       stripe.settleAsync(o.sessionId);
       const second = await deliver("evt_async_2", "checkout.session.async_payment_succeeded", o.sessionId);
       assert.deepEqual([second.status, second.body.outcome], [200, "paid"]);
-      assert.equal((await status(o.id)).fulfillmentStatus, "PAID");
+      assert.equal((await status(o.id)).fulfillmentStatus, "CONFIRMED");
     });
 
     test("the event body is never trusted: Stripe is asked, and an event for an unpaid session pays nothing", async () => {
@@ -303,7 +305,7 @@ describe("Stripe Checkout (test mode, local fake)", { skip: !uri ? "MONGODB_URI_
       stripe.failNetwork = false;
       const retry = await deliver("evt_retry", "checkout.session.completed", o.sessionId);
       assert.deepEqual([retry.status, retry.body.outcome], [200, "paid"]);
-      assert.equal((await status(o.id)).fulfillmentStatus, "PAID");
+      assert.equal((await status(o.id)).fulfillmentStatus, "CONFIRMED");
     });
 
     test("expired and failed sessions close the Payment but never touch a paid one, whatever order the events arrive in", async () => {
@@ -323,7 +325,7 @@ describe("Stripe Checkout (test mode, local fake)", { skip: !uri ? "MONGODB_URI_
       await deliver("evt_c_paid", "checkout.session.completed", c.sessionId);
       await deliver("evt_c_exp", "checkout.session.expired", c.sessionId); // out of order / stale
       assert.equal((await payments(c.id))[0].status, "paid");
-      assert.equal((await status(c.id)).fulfillmentStatus, "PAID");
+      assert.equal((await status(c.id)).fulfillmentStatus, "CONFIRMED");
     });
 
     test("events we don't handle, and events for sessions we never made, are acknowledged without effect", async () => {
@@ -354,7 +356,7 @@ describe("Stripe Checkout (test mode, local fake)", { skip: !uri ? "MONGODB_URI_
       await handleStripeWebhook({ rawBody: eventBody("evt_s", "checkout.session.completed", r.sessionId), signature: signPayload(eventBody("evt_s", "checkout.session.completed", r.sessionId)), gateway: stripe, now: NOW });
       await OrderModel.updateOne({ _id: o.id }, { $set: { "needsReview.reason": "x" } });
       const after = await getOrderStatus({ publicId: o.publicId, token: o.token, tokenSecret: SECRET });
-      assert.ok(after.kind === "ok" && after.order.status === "PAID" && after.order.paidAt);
+      assert.ok(after.kind === "ok" && after.order.status === "CONFIRMED" && after.order.paidAt);
       assert.deepEqual(Object.keys(after.order).sort(), ["items", "paidAt", "paymentMethod", "paymentStatus", "pickupAt", "publicId", "status", "totalSek"]);
     });
 
@@ -395,7 +397,7 @@ describe("Stripe Checkout (test mode, local fake)", { skip: !uri ? "MONGODB_URI_
       stripe.pay(r0.sessionId);
       await run();
       const after = await status(o.id);
-      assert.equal(after.fulfillmentStatus, "PAID");
+      assert.equal(after.fulfillmentStatus, "CONFIRMED");
       assert.equal(after.needsReview?.reason, undefined);
     });
 
@@ -505,7 +507,7 @@ describe("Stripe Checkout (test mode, local fake)", { skip: !uri ? "MONGODB_URI_
       assert.deepEqual([ok.status, (await ok.json()).order.status], [200, "PENDING_PAYMENT"]);
     });
 
-    test("POST /api/webhooks/stripe: forged signature 400, valid signature 200 and the order is paid", async () => {
+    test("POST /api/webhooks/stripe: forged signature 400, valid signature 200 and the order is confirmed plus paid", async () => {
       const o = await makeOrder();
       const r = await createCheckout({ publicId: o.publicId, token: o.token, origin: "https://falken.test", tokenSecret: SECRET, gateway: stripe, config: ENABLED, now: NOW });
       assert.ok(r.kind === "ok");
@@ -518,7 +520,7 @@ describe("Stripe Checkout (test mode, local fake)", { skip: !uri ? "MONGODB_URI_
       assert.equal((await status(o.id)).fulfillmentStatus, "PENDING_PAYMENT");
       const good = await send(signPayload(body));
       assert.deepEqual([good.status, (await good.json()).outcome], [200, "paid"]);
-      assert.equal((await status(o.id)).fulfillmentStatus, "PAID");
+      assert.equal((await status(o.id)).fulfillmentStatus, "CONFIRMED");
     });
   });
 });

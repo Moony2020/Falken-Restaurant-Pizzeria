@@ -8,8 +8,7 @@ import {
   type IfUnavailable,
 } from "@/data/modifier-groups";
 import { CURRENT_SEASON, site } from "@/data/site";
-import { getOpenStatus } from "@/lib/hours";
-import { useNow } from "@/lib/use-now";
+import { useRestaurantStatus } from "@/lib/use-restaurant-status";
 import type { CategoryId } from "@/data/menu";
 import { cartStore, MAX_LINE_QUANTITY } from "@/lib/cart-store";
 import {
@@ -174,11 +173,9 @@ function ProductForm({
   onClose: () => void;
 }) {
   const { showNotice } = useOrder();
-  // While the restaurant is closed nothing can be added: the customer is told why instead of getting a dead order.
-  const now = useNow();
-  const closedStatus =
-    now === null ? null : getOpenStatus(new Date(now), CURRENT_SEASON);
-  const closed = !!closedStatus && !closedStatus.isOpen;
+  // While the restaurant is closed (by schedule or manual pause) nothing can be added.
+  const { status: restaurantStatus } = useRestaurantStatus();
+  const closed = !restaurantStatus ? false : !restaurantStatus.isOpen;
   const removable = !!category?.removable && product.ingredients.length > 0;
   const groups = useMemo(() => groupsFor(product, menu), [product, menu]);
 
@@ -440,9 +437,9 @@ function ProductForm({
             role="status"
             className="mb-3 rounded-lg bg-cream px-3 py-2 text-xs leading-relaxed text-muted"
           >
-            Vi har stängt just nu ({closedStatus?.label.toLowerCase().replace(/^stängt\s*·\s*/, "")}), så du
-            kan inte lägga till rätter i varukorgen. Välkommen tillbaka när vi
-            öppnar!
+            {restaurantStatus?.closeReason === "manual"
+              ? `Onlinebeställningar är tillfälligt pausade just nu. Ring oss gärna på ${site.phone} för att beställa.`
+              : `Vi har stängt just nu (${restaurantStatus?.scheduleLabel ? restaurantStatus.scheduleLabel.toLowerCase().replace(/^stängt\s*·\s*/, "") : "utanför öppettider"}), så du kan inte lägga till rätter i varukorgen. Välkommen tillbaka när vi öppnar!`}
           </p>
         ) : unit === null ? (
           <p

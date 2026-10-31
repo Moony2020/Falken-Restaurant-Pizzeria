@@ -2,7 +2,7 @@ import type { Types } from "mongoose";
 import type { FulfillmentStatus, PaymentProvider } from "./models/constants.ts";
 import { AuditLogModel } from "./models/events.ts";
 import { OrderModel, type OrderDoc } from "./models/order.ts";
-import { canTransition, type Actor } from "./order-state.ts";
+import { canMarkPickedUp, canTransition, type Actor } from "./order-state.ts";
 
 // The only place an order's status is written. It checks the rules in order-state.ts, then changes the status
 // and appends the history entry in ONE atomic update that only matches if the order is still in the status we
@@ -12,7 +12,7 @@ export type OrderLean = OrderDoc & { _id: Types.ObjectId };
 
 export type TransitionResult =
   | { ok: true; changed: boolean; order: OrderLean }
-  | { ok: false; reason: "not_found" | "unknown_transition" | "actor_not_allowed" | "conflict"; from?: FulfillmentStatus };
+  | { ok: false; reason: "not_found" | "unknown_transition" | "actor_not_allowed" | "payment_required" | "refund_required" | "conflict"; from?: FulfillmentStatus };
 
 export type TransitionArgs = {
   orderId: Types.ObjectId | string;
@@ -38,13 +38,36 @@ export async function transitionOrder({ orderId, to, actor, reason, now = new Da
     return { ok: false, reason: check.reason, from };
   }
 
+  // Collection at the counter is a trusted staff operation added in A5. Until it exists, an unpaid
+  // pay-on-pickup order can never be marked as collected merely by advancing fulfillment.
+  if (to === "PICKED_UP" && !canMarkPickedUp(order)) {
+    await audit("transition_rejected", String(order._id), actor, now, { from, to, why: "payment_required" });
+    return { ok: false, reason: "payment_required", from };
+  }
+
+  // A paid card order cannot be silently cancelled: an eventual cancellation must go through
+  // the provider-backed refund workflow introduced later in A8.
+  if (to === "CANCELLED" && order.paymentStatus === "paid") {
+    await audit("transition_rejected", String(order._id), actor, now, { from, to, why: "refund_required" });
+    return { ok: false, reason: "refund_required", from };
+  }
+
   const fields: Record<string, unknown> = { fulfillmentStatus: to };
-  if (to === "PAID") {
+  if (from === "PENDING_PAYMENT" && to === "CONFIRMED") {
+    // A card order cannot enter the kitchen merely because a field was edited. The verified payment
+    // path must link the trusted Payment record and provider in the same update.
+    if (!set?.paymentProvider || !set.paymentId) {
+      await audit("transition_rejected", String(order._id), actor, now, { from, to, why: "payment_proof_required" });
+      return { ok: false, reason: "unknown_transition", from };
+    }
     fields.paymentStatus = "paid";
     fields.paidAt = now;
   }
+  if (to === "ACKNOWLEDGED" || (from === "CONFIRMED" && to === "PREPARING")) {
+    fields.acknowledgedAt = now;
+    if (actor.id) fields.acknowledgedBy = actor.id;
+  }
   if (to === "CANCELLED") fields.cancelledAt = now;
-  if (to === "REFUNDED") fields.paymentStatus = "refunded";
   if (set?.paymentProvider) fields.paymentProvider = set.paymentProvider;
   if (set?.paymentId) fields.paymentId = set.paymentId;
 

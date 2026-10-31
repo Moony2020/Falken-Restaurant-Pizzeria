@@ -1,12 +1,9 @@
 "use client";
 
-import { CURRENT_SEASON } from "@/data/site";
-import { getOpenStatus } from "@/lib/hours";
-import { useNow } from "@/lib/use-now";
+import { useRestaurantStatus } from "@/lib/use-restaurant-status";
 
 export function OpenStatus({ tone = "dark" }: { tone?: "dark" | "light" }) {
-  const now = useNow();
-  const status = now === null ? null : getOpenStatus(new Date(now), CURRENT_SEASON);
+  const { status } = useRestaurantStatus();
   const text = tone === "dark" ? "text-ivory/90" : "text-ink";
 
   return (
