@@ -59,7 +59,7 @@ export default function AdminResetPasswordPage() {
 
         {/* Footer */}
         <footer className="border-t border-line py-4 text-center text-xs text-muted">
-          © {new Date().getFullYear()} Restaurang & Pizzeria Falken — Internt administrationssystem
+          © 2026 Restaurang & Pizzeria Falken — Internt administrationssystem
         </footer>
       </div>
     </Suspense>
