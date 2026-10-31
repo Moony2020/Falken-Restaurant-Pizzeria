@@ -7,7 +7,7 @@ import {
   IF_UNAVAILABLE_LABELS_SV,
   type IfUnavailable,
 } from "@/data/modifier-groups";
-import { CURRENT_SEASON, site } from "@/data/site";
+import { site } from "@/data/site";
 import { useRestaurantStatus } from "@/lib/use-restaurant-status";
 import type { CategoryId } from "@/data/menu";
 import { cartStore, MAX_LINE_QUANTITY } from "@/lib/cart-store";

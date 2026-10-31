@@ -1,4 +1,4 @@
-import mongoose, { type Model } from "mongoose";
+import mongoose from "mongoose";
 
 const { model, models, Schema } = mongoose;
 

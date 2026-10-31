@@ -10,8 +10,8 @@ export function AdminResetPasswordForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") || "";
 
-  const [checking, setChecking] = useState(true);
-  const [tokenValid, setTokenValid] = useState<boolean | null>(null);
+  const [checking, setChecking] = useState(() => Boolean(token));
+  const [tokenValid, setTokenValid] = useState<boolean | null>(() => (!token ? false : null));
   const [userEmail, setUserEmail] = useState<string>("");
   const [userName, setUserName] = useState<string>("");
 
@@ -41,11 +41,7 @@ export function AdminResetPasswordForm() {
 
   // Validate token on mount
   useEffect(() => {
-    if (!token) {
-      setChecking(false);
-      setTokenValid(false);
-      return;
-    }
+    if (!token) return;
 
     let isMounted = true;
     async function verify() {

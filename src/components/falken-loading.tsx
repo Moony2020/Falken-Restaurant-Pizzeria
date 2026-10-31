@@ -1,5 +1,3 @@
-import type { SVGProps } from "react";
-
 function FalconEmblem({ className = "h-8 w-8 text-[#b88e4d]" }: { className?: string }) {
   return (
     <svg

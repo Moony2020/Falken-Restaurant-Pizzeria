@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, useCallback } from "react";
+import { useSyncExternalStore, useCallback } from "react";
 import { CURRENT_SEASON } from "@/data/site";
 import { getOpenStatus } from "@/lib/hours";
 import { useNow } from "@/lib/use-now";
@@ -54,22 +54,26 @@ function notify() {
   listeners.forEach((l) => l());
 }
 
-export async function fetchRestaurantStatus(): Promise<void> {
-  try {
-    const res = await fetch("/api/restaurant/status", { cache: "no-store" });
-    if (res.ok) {
-      const data = (await res.json()) as RestaurantStatusResponse;
-      cachedSettings = {
-        onlineOrderingEnabled: data.onlineOrderingEnabled,
-        manualOverride: data.manualOverride ?? null,
-      };
-      notify();
+export function fetchRestaurantStatus(): Promise<void> {
+  if (fetchPromise) return fetchPromise;
+  fetchPromise = (async () => {
+    try {
+      const res = await fetch("/api/restaurant/status", { cache: "no-store" });
+      if (res.ok) {
+        const data = (await res.json()) as RestaurantStatusResponse;
+        cachedSettings = {
+          onlineOrderingEnabled: data.onlineOrderingEnabled,
+          manualOverride: data.manualOverride ?? null,
+        };
+        notify();
+      }
+    } catch {
+      // Keep cached settings on network glitch
+    } finally {
+      fetchPromise = null;
     }
-  } catch {
-    // Keep cached settings on network glitch
-  } finally {
-    fetchPromise = null;
-  }
+  })();
+  return fetchPromise;
 }
 
 function startPolling() {

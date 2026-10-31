@@ -1,4 +1,4 @@
-import { OrderModel, PaymentModel } from "./models/order.ts";
+import { OrderModel } from "./models/order.ts";
 import { RestaurantSettingsModel } from "./models/restaurant-settings.ts";
 import { adminVisibleOrderFilter } from "./admin-orders.ts";
 
@@ -199,7 +199,6 @@ export async function getAdminOverview(period: OverviewPeriod, status = "ALL", n
     activeCount,
     unpaidOrders,
     paidStripeOrderCount,
-    paidRevenueRows,
     orderBuckets,
     revenueBuckets,
     bestSellers,
@@ -210,13 +209,6 @@ export async function getAdminOverview(period: OverviewPeriod, status = "ALL", n
     OrderModel.countDocuments({ ...inRangeVisible, fulfillmentStatus: { $in: activeStatuses } }),
     OrderModel.find({ ...inRangeVisible, paymentStatus: "unpaid" }).select("totalSek").lean(),
     OrderModel.countDocuments({ ...visibleOrderBase, ...paidRange, paymentMethod: "card", paymentProvider: "stripe", paymentStatus: "paid", paymentId: { $exists: true } }),
-    OrderModel.aggregate([
-      { $match: { ...visibleOrderBase, ...paidRange, paymentMethod: "card", paymentProvider: "stripe", paymentStatus: { $in: ["paid", "refunded"] }, paymentId: { $exists: true } } },
-      { $lookup: { from: PaymentModel.collection.name, localField: "paymentId", foreignField: "_id", as: "payment" } },
-      { $unwind: "$payment" },
-      { $match: { "payment.provider": "stripe", "payment.status": { $in: ["paid", "refunded"] } } },
-      { $group: { _id: null, sek: { $sum: { $max: [0, { $subtract: [{ $ifNull: ["$payment.receivedSek", "$payment.amountSek"] }, { $ifNull: ["$payment.refundedSek", 0] }] }] } } } },
-    ]),
     OrderModel.aggregate([
       { $match: { ...visibleOrderBase, ...createdRange, fulfillmentStatus: { $in: operationalStatuses } } },
       { $group: { _id: { $dateToString: { format: bucketFormat(range.granularity), date: "$createdAt", timezone: ZONE } }, count: { $sum: 1 } } },
@@ -242,8 +234,14 @@ export async function getAdminOverview(period: OverviewPeriod, status = "ALL", n
 
   const buckets = chartBuckets(period, range);
   const byKey = new Map(buckets.map((bucket) => [bucket.key, bucket]));
-  for (const item of orderBuckets as { _id: string; count: number }[]) byKey.get(item._id) && (byKey.get(item._id)!.orders = item.count);
-  for (const item of revenueBuckets as { _id: string; sek: number }[]) byKey.get(item._id) && (byKey.get(item._id)!.revenueSek = item.sek);
+  for (const item of orderBuckets as { _id: string; count: number }[]) {
+    const bucket = byKey.get(item._id);
+    if (bucket) bucket.orders = item.count;
+  }
+  for (const item of revenueBuckets as { _id: string; sek: number }[]) {
+    const bucket = byKey.get(item._id);
+    if (bucket) bucket.revenueSek = item.sek;
+  }
   const operationalSet = new Set<string>(operationalStatuses);
   const operationalOrders = periodOrders.filter((order) => operationalSet.has(order.fulfillmentStatus));
   const totalSalesSek = operationalOrders.reduce((sum, order) => sum + order.totalSek, 0);

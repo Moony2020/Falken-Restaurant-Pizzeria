@@ -2,7 +2,7 @@ import { connection } from "next/server";
 import { CURRENT_SEASON } from "@/data/site";
 import { getOpenStatus } from "@/lib/hours";
 import { connectDb } from "@/server/db";
-import { json, serverError } from "@/server/http";
+import { json } from "@/server/http";
 import { RestaurantSettingsModel } from "@/server/models/restaurant-settings";
 
 export interface RestaurantStatusResponse {
@@ -64,7 +64,7 @@ export async function GET() {
     return json(responseData, 200, {
       "cache-control": "no-store, must-revalidate",
     });
-  } catch (err) {
+  } catch {
     // If DB is unreachable, fallback gracefully to schedule
     const now = new Date();
     const scheduleStatus = getOpenStatus(now, CURRENT_SEASON);
