@@ -171,3 +171,16 @@ export function SwishLogo({ className = "h-6 w-auto" }: { className?: string }) 
     />
   );
 }
+
+export function FalconEmblem({ className = "h-8 w-8 text-[#b88e4d]" }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 64 64"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M32 4 C36 10, 48 12, 58 10 C54 18, 46 22, 40 24 C46 28, 54 29, 60 28 C52 35, 42 37, 34 35 C38 41, 46 45, 52 47 C42 50, 32 46, 26 40 C28 46, 30 52, 34 56 C26 54, 20 48, 18 42 C14 48, 10 52, 6 54 C10 46, 14 38, 18 30 C12 28, 6 24, 2 20 C10 20, 18 22, 24 26 C22 18, 24 10, 32 4 Z" />
+    </svg>
+  );
+}
