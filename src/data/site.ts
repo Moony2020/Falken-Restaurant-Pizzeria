@@ -23,7 +23,7 @@ export const mapsUrl =
   "https://www.google.com/maps/search/?api=1&query=Restaurang+%26+Pizzeria+Falken%2C+Skolgatan+4%2C+719+30+Vintrosa";
 
 /** Path under /public of a real hero photo, e.g. "/images/hero.jpg". While null, an illustrated pizza is shown. */
-export const heroImage: string | null = "/images/hero/falken-hero-home.jpg";
+export const heroImage: string | null = "/images/hero/Hero-image.png";
 
 export const nav = [
   { href: "/", label: "Hem" },

@@ -21,14 +21,14 @@ const steps = [
 export default function HomePage() {
   return (
     <>
-      <section aria-labelledby="hero-title" className="bg-[linear-gradient(to_bottom,var(--color-ink-2)_0,var(--color-ink-2)_88%,var(--color-ivory)_88%)]">
+      <section aria-labelledby="hero-title" className="bg-[linear-gradient(to_bottom,var(--color-ink-2)_0,var(--color-ink-2)_70%,var(--color-ivory)_70%)]">
         <div className="mx-auto w-full max-w-[1760px] px-3 pb-2 pt-2 sm:px-5 sm:pt-3 lg:px-7">
-          <div className="relative isolate flex min-h-[22rem] items-center overflow-hidden rounded-[1.5rem] bg-[#1a1d22] px-7 py-8 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)] ring-1 ring-white/10 sm:min-h-[24rem] sm:px-12 sm:py-10 lg:min-h-[25rem] lg:px-14 xl:min-h-[27rem] xl:px-16">
+          <div className="relative isolate flex min-h-[17.5rem] items-center overflow-hidden rounded-[1.5rem] bg-[#1a1d22] px-7 py-5 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)] ring-1 ring-white/10 sm:min-h-[19rem] sm:px-10 sm:py-6 lg:min-h-[20.5rem] lg:px-12 lg:py-7 xl:min-h-[21.5rem] xl:px-14 xl:py-8">
             
             {/* Background hero photo with pizza perfectly on the right and warm restaurant wood on the left */}
             <div className="pointer-events-none absolute inset-0 z-0 select-none overflow-hidden">
               <Image
-                src="/images/hero/Hero-image1.png"
+                src="/images/hero/Hero-image.png"
                 alt="Restaurang & Pizzeria Falken"
                 fill
                 priority
@@ -38,23 +38,23 @@ export default function HomePage() {
               />
 
               {/* Soft, warm dark shadow on the left behind text allowing natural wood & warm lights to shine through */}
-              <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 via-45% to-transparent" />
+              <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-black/45 via-black/20 via-40% to-transparent" />
               
               {/* Mobile overlay */}
-              <div className="md:hidden absolute inset-0 bg-gradient-to-t from-black/90 via-black/70 to-black/40" />
+              <div className="md:hidden absolute inset-0 bg-gradient-to-t from-black/60 via-black/40 to-black/20" />
             </div>
 
             {/* Left Content (2 lines title, comfortable spacing, original elegant typography) */}
             <div className="relative z-10 max-w-xl animate-rise lg:max-w-2xl">
               <OpenStatus />
-              <h1 id="hero-title" className="mt-3 font-display text-[2.2rem] font-medium uppercase leading-[1.06] text-ivory drop-shadow-md sm:text-4xl lg:text-[2.6rem] xl:text-[3.2rem]">
+              <h1 id="hero-title" className="mt-2.5 font-display text-[2rem] font-medium uppercase leading-[1.06] text-ivory drop-shadow-md sm:text-[2.2rem] lg:text-[2.5rem] xl:text-[2.85rem]">
                 Äkta smak i
                 <span className="block text-gold">hjärtat av Vintrosa</span>
               </h1>
-              <p className="mt-3.5 max-w-md text-sm leading-relaxed text-ivory/90 drop-shadow-sm sm:text-base">
+              <p className="mt-2.5 max-w-md text-sm leading-relaxed text-ivory/90 drop-shadow-sm sm:text-[0.95rem]">
                 Över 90 rätter – pizza, kebab, hamburgare och à la carte. Beställ för avhämtning eller slå dig ner hos oss.
               </p>
-              <div className="mt-6 flex flex-wrap items-center gap-3">
+              <div className="mt-4 flex flex-wrap items-center gap-3">
                 <Link href="/meny" className={buttonClass("gold")}>
                   Se menyn
                 </Link>
