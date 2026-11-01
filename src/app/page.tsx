@@ -6,7 +6,7 @@ import { OpenStatus } from "@/components/open-status";
 import { FeaturedDishes } from "@/components/featured-dishes";
 import { buttonClass, eyebrow } from "@/components/ui";
 import { categories, type CategoryId } from "@/data/menu";
-import { CURRENT_SEASON, dagensLunch, heroImage, hoursDisplay, mapsUrl, site } from "@/data/site";
+import { CURRENT_SEASON, dagensLunch, hoursDisplay, mapsUrl, site } from "@/data/site";
 import { kr } from "@/lib/pricing";
 
 const tiles: CategoryId[] = ["pizza", "kebabpizza", "kebab", "hamburgare", "sallader", "alacarte", "barn", "lunch"];
@@ -23,39 +23,48 @@ export default function HomePage() {
     <>
       <section aria-labelledby="hero-title" className="bg-[linear-gradient(to_bottom,var(--color-ink-2)_0,var(--color-ink-2)_88%,var(--color-ivory)_88%)]">
         <div className="mx-auto w-full max-w-[1760px] px-3 pb-2 pt-2 sm:px-5 sm:pt-3 lg:px-7">
-          <div className="hero-slate relative isolate grid items-center overflow-hidden rounded-[1.5rem] px-7 pt-10 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.6)] ring-1 ring-white/5 sm:px-12 lg:min-h-[22rem] lg:grid-cols-[1.15fr_1fr] lg:px-12 lg:py-10 xl:min-h-[25rem] xl:px-16 xl:py-12">
-            <div className="relative z-10 max-w-xl animate-rise lg:max-w-none">
+          <div className="relative isolate flex min-h-[30rem] items-center overflow-hidden rounded-[1.5rem] bg-[#121519] shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)] ring-1 ring-white/10 sm:min-h-[32rem] lg:min-h-[34rem] xl:min-h-[38rem]">
+            {/* Full-bleed background hero photo */}
+            <div className="pointer-events-none absolute inset-0 z-0 select-none">
+              <Image
+                src="/images/hero/Hero-image.png"
+                alt="Restaurang & Pizzeria Falken"
+                fill
+                priority
+                quality={92}
+                sizes="(min-width: 1760px) 1760px, 100vw"
+                className="object-cover object-[78%_center] sm:object-[72%_center] lg:object-[68%_center] xl:object-[62%_center]"
+              />
+
+              {/* Atmospheric dark fog & gradient for crystal-clear text readability */}
+              {/* Mobile / Tablet overlay: Top-to-bottom soft dark vignette */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#101317]/95 via-[#101317]/85 to-[#101317]/70 md:hidden" />
+
+              {/* Desktop overlay: Horizontal smooth dark gradient from left to center-right */}
+              <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-[#0d0f12] via-[#0d0f12]/92 via-42% to-transparent" />
+              <div className="hidden lg:block absolute inset-y-0 left-0 w-1/3 bg-[#0d0f12]/50" />
+
+              {/* Global subtle cinematic contrast */}
+              <div className="absolute inset-0 bg-black/20" />
+            </div>
+
+            {/* Left Content */}
+            <div className="relative z-10 w-full px-7 py-12 sm:px-12 sm:py-16 lg:max-w-2xl lg:px-14 xl:max-w-3xl xl:px-16 animate-rise">
               <OpenStatus />
-              <h1 id="hero-title" className="mt-4 text-[2.5rem] font-medium uppercase leading-[1.05] text-ivory sm:text-5xl lg:text-[2.8rem] xl:text-[3.6rem]">
+              <h1 id="hero-title" className="mt-4 text-[2.5rem] font-medium uppercase leading-[1.05] text-ivory drop-shadow-sm sm:text-5xl lg:text-[2.8rem] xl:text-[3.6rem]">
                 Äkta smak i
                 <span className="block text-gold">hjärtat av Vintrosa</span>
               </h1>
-              <p className="mt-4 max-w-md text-base leading-relaxed text-ivory/80">
+              <p className="mt-4 max-w-lg text-base sm:text-lg leading-relaxed text-ivory/85 drop-shadow-xs">
                 Över 90 rätter – pizza, kebab, hamburgare och à la carte. Beställ för avhämtning eller slå dig ner hos oss.
               </p>
-              <div className="mt-6 flex flex-wrap gap-3">
+              <div className="mt-7 flex flex-wrap items-center gap-3.5">
                 <Link href="/meny" className={buttonClass("gold")}>
                   Se menyn
                 </Link>
-                <Link href="/kontakt" className={buttonClass("outline-light")}>
-                  Hitta hit
+                <Link href="/meny" className={buttonClass("outline-light")}>
+                  Beställ online
                 </Link>
-              </div>
-            </div>
-
-            <div
-              aria-hidden="true"
-              className="pointer-events-none relative -mb-10 mt-6 flex justify-center sm:-mb-14 lg:absolute lg:right-6 lg:top-1/2 lg:mb-0 lg:mt-0 lg:block lg:size-[23rem] lg:-translate-y-1/2 xl:right-10 xl:size-[27rem]"
-            >
-              <div className="relative size-64 sm:size-76 lg:size-full overflow-hidden rounded-full ring-2 ring-gold/45 shadow-[0_24px_55px_rgba(0,0,0,0.7)]">
-                <Image
-                  src={heroImage || "/images/hero/falken-hero-home.jpg"}
-                  alt="Restaurang & Pizzeria Falken"
-                  fill
-                  priority
-                  sizes="(min-width: 1280px) 432px, (min-width: 1024px) 368px, 304px"
-                  className="object-cover scale-110"
-                />
               </div>
             </div>
           </div>
