@@ -31,7 +31,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 bg-ink-2 text-ivory">
-      <div className="mx-auto flex h-20 w-full max-w-[1760px] items-center justify-between gap-4 px-5 sm:h-24 sm:px-8 lg:px-12">
+      <div className="mx-auto flex h-16 w-full max-w-[1760px] items-center justify-between gap-4 px-5 sm:h-20 sm:px-8 lg:px-12">
         <Logo />
 
         <nav aria-label="Huvudmeny" className="hidden lg:block">
@@ -92,7 +92,7 @@ export function Header() {
         <div
           onClick={() => setMenuOpen(false)}
           aria-hidden="true"
-          className="fixed inset-0 top-20 z-30 bg-ink/75 backdrop-blur-md animate-fade sm:top-24 lg:hidden"
+          className="fixed inset-0 top-16 z-30 bg-ink/75 backdrop-blur-md animate-fade sm:top-20 lg:hidden"
         />
       )}
 

@@ -28,7 +28,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       >
         Hoppa till innehållet
       </a>
-      <Suspense fallback={<div className="h-20 bg-ink-2 sm:h-24" aria-hidden="true" />}>
+      <Suspense fallback={<div className="h-16 bg-ink-2 sm:h-20" aria-hidden="true" />}>
         <Header />
       </Suspense>
       <main id="innehall" className="flex-1">

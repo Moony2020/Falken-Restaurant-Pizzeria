@@ -123,7 +123,7 @@ export function MenuBrowser() {
         </div>
       </PageBanner>
 
-      <div className="sticky top-20 z-30 border-b border-line bg-ivory/95 backdrop-blur sm:top-24">
+      <div className="sticky top-16 z-30 border-b border-line bg-ivory/95 backdrop-blur sm:top-20">
         <nav
           aria-label="Menykategorier"
           className="wrap py-3"
