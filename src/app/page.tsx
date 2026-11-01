@@ -23,25 +23,25 @@ export default function HomePage() {
     <>
       <section aria-labelledby="hero-title" className="bg-[linear-gradient(to_bottom,var(--color-ink-2)_0,var(--color-ink-2)_88%,var(--color-ivory)_88%)]">
         <div className="mx-auto w-full max-w-[1760px] px-3 pb-2 pt-2 sm:px-5 sm:pt-3 lg:px-7">
-          <div className="relative isolate flex min-h-[22rem] items-center overflow-hidden rounded-[1.5rem] bg-[#1a1d22] px-7 py-8 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)] ring-1 ring-white/10 sm:min-h-[24rem] sm:px-12 sm:py-10 lg:min-h-[26rem] lg:px-14 xl:min-h-[28rem] xl:px-16">
+          <div className="relative isolate flex min-h-[22rem] items-center overflow-hidden rounded-[1.5rem] bg-[#1a1d22] px-7 py-8 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)] ring-1 ring-white/10 sm:min-h-[24rem] sm:px-12 sm:py-10 lg:min-h-[25rem] lg:px-14 xl:min-h-[27rem] xl:px-16">
             
-            {/* Full-bleed background hero photo showing restaurant atmosphere */}
+            {/* Background hero photo with pizza perfectly on the right and warm restaurant wood on the left */}
             <div className="pointer-events-none absolute inset-0 z-0 select-none overflow-hidden">
               <Image
-                src="/images/hero/Hero-image.png"
+                src="/images/hero/Hero-image1.png"
                 alt="Restaurang & Pizzeria Falken"
                 fill
                 priority
                 quality={92}
                 sizes="(min-width: 1760px) 1760px, 100vw"
-                className="object-cover object-[78%_center] sm:object-[72%_center] lg:object-[68%_center] xl:object-[62%_center]"
+                className="object-cover object-[center_center] lg:object-[center_center]"
               />
 
-              {/* Soft, warm cinematic dark vignette behind text: lets the restaurant lights & interior shine through */}
-              <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 via-45% to-transparent" />
+              {/* Soft, warm dark shadow on the left behind text allowing natural wood & warm lights to shine through */}
+              <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 via-45% to-transparent" />
               
               {/* Mobile overlay */}
-              <div className="md:hidden absolute inset-0 bg-gradient-to-t from-black/90 via-black/75 to-black/50" />
+              <div className="md:hidden absolute inset-0 bg-gradient-to-t from-black/90 via-black/70 to-black/40" />
             </div>
 
             {/* Left Content (2 lines title, comfortable spacing, original elegant typography) */}
