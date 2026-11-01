@@ -25,29 +25,33 @@ export default function HomePage() {
         <div className="mx-auto w-full max-w-[1760px] px-3 pb-2 pt-2 sm:px-5 sm:pt-3 lg:px-7">
           <div className="relative isolate flex min-h-[22rem] items-center overflow-hidden rounded-[1.5rem] bg-[#121418] px-7 py-8 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)] ring-1 ring-white/10 sm:min-h-[24rem] sm:px-12 sm:py-10 lg:min-h-[26rem] lg:px-14 xl:min-h-[28rem] xl:px-16">
             
-            {/* Full-bleed background hero photo (pizza on the right, dark smoke on the left) */}
-            <div className="pointer-events-none absolute inset-0 z-0 select-none">
+            {/* Background hero photo - positioned nicely on the right side */}
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-0 select-none w-full md:w-[72%] lg:w-[65%] xl:w-[60%] overflow-hidden">
               <Image
                 src="/images/hero/Hero-image.png"
                 alt="Restaurang & Pizzeria Falken"
                 fill
                 priority
                 quality={95}
-                sizes="(min-width: 1760px) 1760px, 100vw"
-                className="object-cover object-right"
+                sizes="(min-width: 1760px) 1100px, 100vw"
+                className="object-cover object-[70%_center] lg:object-[60%_center]"
               />
-              {/* Mobile overlay only: ensures text contrast on very narrow screens */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#121418]/95 via-[#121418]/80 to-[#121418]/50 md:hidden" />
             </div>
+
+            {/* Smooth dark atmospheric shadow on the left behind the text */}
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-[1] w-full md:w-[65%] lg:w-[58%] xl:w-[52%] bg-gradient-to-r from-[#121418] via-[#121418]/95 via-50% to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-[1] w-72 sm:w-96 bg-[#121418]/70 blur-2xl" />
+            {/* Mobile overlay for small screens */}
+            <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-[#121418]/95 via-[#121418]/85 to-[#121418]/60 md:hidden" />
 
             {/* Left Content (2 lines title, comfortable spacing, original elegant typography) */}
             <div className="relative z-10 max-w-xl animate-rise lg:max-w-2xl">
               <OpenStatus />
-              <h1 id="hero-title" className="mt-3 font-display text-[2.2rem] font-medium uppercase leading-[1.06] text-ivory drop-shadow-sm sm:text-4xl lg:text-[2.6rem] xl:text-[3.2rem]">
+              <h1 id="hero-title" className="mt-3 font-display text-[2.2rem] font-medium uppercase leading-[1.06] text-ivory drop-shadow-md sm:text-4xl lg:text-[2.6rem] xl:text-[3.2rem]">
                 Äkta smak i
                 <span className="block text-gold">hjärtat av Vintrosa</span>
               </h1>
-              <p className="mt-3.5 max-w-md text-sm leading-relaxed text-ivory/80 sm:text-base">
+              <p className="mt-3.5 max-w-md text-sm leading-relaxed text-ivory/85 drop-shadow-sm sm:text-base">
                 Över 90 rätter – pizza, kebab, hamburgare och à la carte. Beställ för avhämtning eller slå dig ner hos oss.
               </p>
               <div className="mt-6 flex flex-wrap items-center gap-3">
