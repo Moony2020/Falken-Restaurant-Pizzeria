@@ -23,7 +23,7 @@ export default function HomePage() {
     <>
       <section aria-labelledby="hero-title" className="bg-[linear-gradient(to_bottom,var(--color-ink-2)_0,var(--color-ink-2)_70%,var(--color-ivory)_70%)]">
         <div className="mx-auto w-full max-w-[1760px] px-3 pb-2 pt-2 sm:px-5 sm:pt-3 lg:px-7">
-          <div className="relative isolate flex min-h-[22rem] items-center overflow-hidden rounded-[1.5rem] bg-[#1a1d22] px-7 py-8 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)] ring-1 ring-white/10 sm:min-h-[24rem] sm:px-12 sm:py-10 lg:min-h-[25rem] lg:px-14 xl:min-h-[27rem] xl:px-16">
+          <div className="relative isolate flex min-h-[26rem] items-center overflow-hidden rounded-[1.5rem] bg-[#1a1d22] px-7 py-8 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)] ring-1 ring-white/10 sm:min-h-[28rem] sm:px-12 sm:py-10 lg:min-h-[30rem] lg:px-14 xl:min-h-[32rem] xl:px-16">
             
             {/* Background hero photo with pizza perfectly on the right and warm restaurant wood on the left */}
             <div className="pointer-events-none absolute inset-0 z-0 select-none overflow-hidden">
@@ -34,11 +34,11 @@ export default function HomePage() {
                 priority
                 quality={92}
                 sizes="(min-width: 1760px) 1760px, 100vw"
-                className="object-cover object-[center_center] lg:object-[center_center]"
+                className="object-cover object-[78%_center] sm:object-[74%_center] lg:object-[68%_center] xl:object-[62%_center]"
               />
 
               {/* Soft, warm dark shadow on the left behind text allowing natural wood & warm lights to shine through */}
-              <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-black/45 via-black/20 via-40% to-transparent" />
+              <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-black/55 via-black/30 via-45% to-transparent" />
               
               {/* Mobile overlay */}
               <div className="md:hidden absolute inset-0 bg-gradient-to-t from-black/60 via-black/40 to-black/20" />
