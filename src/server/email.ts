@@ -30,12 +30,14 @@ function getSmtpConfig() {
 
 export function generatePasswordResetEmailHtml(name: string, resetUrl: string): string {
   const recipientName = name.trim() || "Administratör";
-  const origin = (() => {
-    try {
-      return new URL(resetUrl).origin;
-    } catch {
-      return site.url;
+  // Images in emails must always resolve to a public HTTPS host because webmail clients (Gmail, Outlook, etc.)
+  // proxy images through cloud servers and cannot reach localhost.
+  const assetOrigin = (() => {
+    const configuredSite = process.env.SITE_URL?.trim();
+    if (configuredSite && !configuredSite.includes("localhost") && !configuredSite.includes("127.0.0.1")) {
+      return configuredSite.replace(/\/$/, "");
     }
+    return "https://falkenrestaurant.onrender.com";
   })();
 
   return `<!DOCTYPE html>
@@ -56,13 +58,13 @@ export function generatePasswordResetEmailHtml(name: string, resetUrl: string): 
               <!-- Admin Falcon Emblem Badge (exact same icon from admin login page) -->
               <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin: 0 auto 14px auto;">
                 <tr>
-                  <td align="center" style="width: 76px; height: 76px; border-radius: 22px; background-color: #ffffff; border: 1.5px solid #d5b46e; text-align: center; vertical-align: middle; box-shadow: 0 3px 12px rgba(60, 45, 20, 0.08);">
+                  <td align="center" style="width: 76px; height: 76px; border-radius: 22px; background-color: #faf6ed; border: 1.5px solid #d5b46e; text-align: center; vertical-align: middle; box-shadow: 0 3px 12px rgba(60, 45, 20, 0.08);">
                     <img
-                      src="${origin}/images/falken-admin-emblem.png"
+                      src="${assetOrigin}/images/falken-admin-emblem.png"
                       width="66"
                       height="66"
                       alt="Falken Emblem"
-                      style="display: block; width: 66px; height: 66px; margin: 0 auto; border: 0;"
+                      style="display: block; width: 66px; height: 66px; margin: 0 auto; border: 0; outline: none; text-decoration: none;"
                     />
                   </td>
                 </tr>
