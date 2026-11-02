@@ -47,26 +47,77 @@ export function GalleryGrid() {
 
   return (
     <div>
+      {/* Filter Tabs Centered with Icons */}
       <div
         role="group"
         aria-label="Filtrera bilder"
-        className="flex flex-wrap gap-2"
+        className="flex flex-wrap justify-center items-center gap-2.5 sm:gap-3.5 mb-10"
       >
-        {galleryFilters.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            onClick={() => setFilter(f.id)}
-            aria-pressed={filter === f.id}
-            className={`min-h-11 rounded-full border px-5 text-[0.8rem] font-semibold uppercase tracking-[0.1em] transition ${
-              filter === f.id
-                ? "border-ink bg-ink text-ivory"
-                : "border-line bg-white hover:border-gold-deep"
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
+        {galleryFilters.map((f) => {
+          const isActive = filter === f.id;
+          return (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => setFilter(f.id)}
+              aria-pressed={isActive}
+              className={`min-h-11 rounded-full border px-5 py-2 sm:px-6 sm:py-2.5 text-xs sm:text-sm font-semibold transition-all flex items-center gap-2.5 cursor-pointer shadow-xs ${
+                isActive
+                  ? "border-[#b88e4d] bg-[#141210] text-white shadow-sm ring-1 ring-[#b88e4d]/40"
+                  : "border-[#e5ded2] bg-white text-[#4a453e] hover:border-[#b88e4d] hover:text-[#1c1917] hover:bg-[#faf8f3]"
+              }`}
+            >
+              {f.id === "alla" && (
+                <svg
+                  viewBox="0 0 24 24"
+                  className={`size-4 shrink-0 ${isActive ? "text-[#b88e4d]" : "text-[#7c828d]"}`}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <rect x="3" y="3" width="7" height="7" rx="1.5" />
+                  <rect x="14" y="3" width="7" height="7" rx="1.5" />
+                  <rect x="3" y="14" width="7" height="7" rx="1.5" />
+                  <rect x="14" y="14" width="7" height="7" rx="1.5" />
+                </svg>
+              )}
+              {f.id === "mat" && (
+                <svg
+                  viewBox="0 0 24 24"
+                  className={`size-4 shrink-0 ${isActive ? "text-[#b88e4d]" : "text-[#7c828d]"}`}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M18 2v8a3 3 0 0 1-3 3h-1m4 7v-7m-4 0v7" />
+                  <path d="M4 2v4a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V2M6 8v12" />
+                </svg>
+              )}
+              {f.id === "lokal" && (
+                <svg
+                  viewBox="0 0 24 24"
+                  className={`size-4 shrink-0 ${isActive ? "text-[#b88e4d]" : "text-[#7c828d]"}`}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+              )}
+              <span>{f.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       <ul

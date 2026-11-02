@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BannerArt } from "@/components/banner-art";
+import { GalleryHero } from "@/components/gallery-hero";
 import { GalleryGrid } from "@/components/gallery-grid";
-import { PageBanner } from "@/components/page-banner";
 import { buttonClass } from "@/components/ui";
-import { galleryHeroImage, PREP_MINUTES, site } from "@/data/site";
+import { PREP_MINUTES, site } from "@/data/site";
 
 export const metadata: Metadata = {
   title: "Galleri",
@@ -37,12 +36,7 @@ const facts = [
 export default function GalleriPage() {
   return (
     <>
-      <PageBanner
-        eyebrow="Smaka med ögonen"
-        title="Galleri"
-        text="Ett urval av våra rätter och vår restaurang i Vintrosa."
-        aside={<BannerArt image={galleryHeroImage} />}
-      />
+      <GalleryHero />
       <div className="wrap py-12 sm:py-16">
         <GalleryGrid />
 
