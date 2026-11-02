@@ -45,7 +45,7 @@ export const gallery: GalleryItem[] = [
     seed: 1,
     size: "wide",
     caption: "Vår matsal i Vintrosa.",
-    src: "/images/gallery/matsalen.jpg",
+    src: "/images/gallery/matsalen.webp",
   },
   {
     id: "kebabtallrik",

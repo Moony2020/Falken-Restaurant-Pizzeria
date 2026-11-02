@@ -5,7 +5,7 @@ import Image from "next/image";
  * at the right. Still an illustration: pass `image` (a path under /public, set in data/site.ts) to show a real photo.
  */
 export function BannerArt({ image }: { image?: string | null }) {
-  const photoSrc = image || "/images/hero/pizza-circle.jpg";
+  const photoSrc = image || "/images/dishes/pizza/falken-special.webp";
 
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0">

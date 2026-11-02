@@ -23,7 +23,7 @@ export const mapsUrl =
   "https://www.google.com/maps/search/?api=1&query=Restaurang+%26+Pizzeria+Falken%2C+Skolgatan+4%2C+719+30+Vintrosa";
 
 /** Path under /public of a real hero photo, e.g. "/images/hero.jpg". While null, an illustrated pizza is shown. */
-export const heroImage: string | null = "/images/hero/Hero-image.png";
+export const heroImage: string | null = "/images/hero/Hero-image.webp";
 
 export const nav = [
   { href: "/", label: "Hem" },
@@ -82,7 +82,7 @@ export const hoursDisplay: Record<Season, { days: string; time: string }[]> = {
 export const menuHeroImage: string | null = "/images/menu/menu-hero.webp";
 
 /** Path under /public of a real photo for the contact page banner. While null, an illustration is shown. */
-export const contactHeroImage: string | null = "/images/hero/falken-kontakt.jpg";
+export const contactHeroImage: string | null = "/images/hero/falken-kontakt.webp";
 
 /** Path under /public of a real photo for the gallery banner. While null, an illustration is shown. */
-export const galleryHeroImage: string | null = "/images/hero/restaurant-interior.jpg";
+export const galleryHeroImage: string | null = "/images/gallery/gallery-hero.webp";

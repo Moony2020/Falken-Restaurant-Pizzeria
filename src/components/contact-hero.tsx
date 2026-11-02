@@ -230,7 +230,7 @@ export function ContactHero() {
               <div className="relative overflow-hidden rounded-[2rem] border-[3px] border-[#c5a059] shadow-2xl shadow-stone-800/15 sm:rounded-[2.4rem] sm:border-[3.5px] lg:rounded-[2.8rem]">
                 <div className="relative aspect-[4/3] w-full sm:aspect-[16/11] lg:aspect-[4/3]">
                   <Image
-                    src="/images/gallery/matsalen.jpg"
+                    src="/images/gallery/matsalen.webp"
                     alt="Restaurang Falken matsal och interiör i Vintrosa"
                     fill
                     priority

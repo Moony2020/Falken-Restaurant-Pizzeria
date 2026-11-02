@@ -28,7 +28,7 @@ export default function HomePage() {
             {/* Background hero photo with pizza perfectly on the right and warm restaurant wood on the left */}
             <div className="pointer-events-none absolute inset-0 z-0 select-none overflow-hidden">
               <Image
-                src="/images/hero/Hero-image.png"
+                src="/images/hero/Hero-image.webp"
                 alt="Restaurang & Pizzeria Falken"
                 fill
                 priority
