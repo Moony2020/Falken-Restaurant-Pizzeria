@@ -8,10 +8,10 @@ export function DagensLunchBanner() {
   return (
     <section aria-labelledby="lunch-title" className="mx-auto w-full max-w-[1760px] px-3 py-10 sm:px-5 sm:py-16 lg:px-7">
       <div className="relative isolate overflow-hidden rounded-2xl sm:rounded-3xl bg-[#121316] text-ivory border border-white/10 shadow-2xl">
-        <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] items-center">
-          
-          {/* Left Column: Details & Call to Action */}
-          <div className="p-6 sm:p-8 md:p-10 lg:py-12 lg:pl-12 lg:pr-6 max-w-xl">
+        
+        {/* Content & Price Layout */}
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between p-6 sm:p-8 md:p-10 lg:py-12 lg:pl-12 lg:pr-6 lg:mr-[320px] xl:mr-[390px]">
+          <div className="max-w-xl">
             <p className="text-[0.72rem] sm:text-xs font-semibold uppercase tracking-[0.24em] text-gold">
               Vardagar {dagensLunch.time}
             </p>
@@ -43,27 +43,29 @@ export function DagensLunchBanner() {
           </div>
 
           {/* Middle Column: Vertical Divider & Price (shown on sm+ screens) */}
-          <div className="hidden sm:flex items-center px-3 sm:px-5 lg:px-8 py-6 lg:py-12">
+          <div className="hidden sm:flex items-center shrink-0 pl-4 lg:pl-6">
             <div className="h-16 lg:h-20 w-px bg-white/20 mr-4 sm:mr-6 lg:mr-8" aria-hidden="true" />
-            <span className="font-display text-3xl min-[700px]:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-normal tracking-tight text-gold whitespace-nowrap">
+            <span className="font-display text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-normal tracking-tight text-gold whitespace-nowrap">
               {kr(dagensLunch.price)}
             </span>
           </div>
-
-          {/* Right Column: Fresh Salad Dish Image (kept visible on tablet/medium before disappearing on narrow mobile) */}
-          <div className="hidden sm:block relative shrink-0 h-48 sm:h-56 md:h-64 lg:h-72 w-[160px] sm:w-[190px] md:w-[250px] lg:w-[320px] xl:w-[380px] overflow-hidden">
-            <Image
-              src="/images/dishes/lunch-salad.webp"
-              alt="Fräsch sallad ingår i Dagens Lunch hos Falken"
-              fill
-              sizes="(min-width: 1280px) 380px, (min-width: 1024px) 320px, (min-width: 640px) 220px, 0px"
-              className="object-cover object-left"
-            />
-            {/* Subtle soft blend into dark card */}
-            <div className="absolute inset-0 bg-gradient-to-r from-[#121316] via-[#121316]/30 to-transparent" />
-          </div>
-
         </div>
+
+        {/* Full-Height Salad Plate photo on the right:
+            - hidden on mobile & tablets (< lg), COMPLETELY REMOVED so no cut-off slivers appear!
+            - on lg+ desktop: absolute inset-y-0 right-0 spanning 100% of card height with NO top/bottom gaps! */}
+        <div className="hidden lg:block absolute inset-y-0 right-0 w-[320px] xl:w-[390px] overflow-hidden pointer-events-none select-none">
+          <Image
+            src="/images/dishes/lunch-salad.webp"
+            alt="Fräsch sallad ingår i Dagens Lunch hos Falken"
+            fill
+            sizes="(min-width: 1280px) 390px, 320px"
+            className="object-cover object-left"
+          />
+          {/* Subtle soft blend into dark card */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#121316] via-[#121316]/20 to-transparent" />
+        </div>
+
       </div>
     </section>
   );
