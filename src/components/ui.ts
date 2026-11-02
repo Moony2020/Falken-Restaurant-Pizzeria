@@ -1,7 +1,7 @@
 type Variant = "gold" | "outline-light" | "outline-dark" | "ink";
 
 const base =
-  "inline-flex min-h-10 sm:min-h-12 items-center justify-center gap-2 rounded-full px-4 sm:px-7 text-xs sm:text-sm font-semibold transition-colors";
+  "inline-flex min-h-9.5 sm:min-h-11 items-center justify-center gap-2 rounded-full px-4 sm:px-6 text-xs sm:text-[0.84rem] font-semibold transition-colors";
 
 const variants: Record<Variant, string> = {
   gold: "bg-gold text-ink hover:bg-gold-light",

@@ -31,7 +31,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 bg-ink-2 text-ivory">
-      <div className="mx-auto flex h-16 w-full max-w-[1760px] items-center justify-between gap-4 px-5 sm:h-20 sm:px-8 lg:px-12">
+      <div className="mx-auto flex h-16 w-full max-w-[1760px] items-center justify-between gap-3 pl-3 sm:pl-5 lg:pl-7 pr-1 sm:pr-2 lg:pr-3 sm:h-20">
         <Logo />
 
         <nav aria-label="Huvudmeny" className="hidden lg:block">
@@ -52,10 +52,10 @@ export function Header() {
           </ul>
         </nav>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-2.5">
           <Link
             href="/meny"
-            className="hidden min-h-11 items-center rounded-full bg-gold px-6 text-[0.8rem] font-semibold uppercase tracking-[0.1em] text-ink transition hover:bg-gold-light sm:inline-flex"
+            className="hidden min-h-9 sm:min-h-9.5 items-center rounded-full bg-gold px-3.5 sm:px-4 text-[0.74rem] font-semibold uppercase tracking-[0.08em] text-ink transition hover:bg-gold-light sm:inline-flex"
           >
             Beställ online
           </Link>
@@ -121,7 +121,7 @@ export function Header() {
             <Link
               href="/meny"
               onClick={() => setMenuOpen(false)}
-              className="inline-flex min-h-12 flex-1 items-center justify-center rounded-full bg-gold text-sm font-semibold uppercase tracking-[0.1em] text-ink transition hover:bg-gold-light"
+              className="inline-flex min-h-10.5 flex-1 items-center justify-center rounded-full bg-gold text-xs sm:text-sm font-semibold uppercase tracking-[0.08em] text-ink transition hover:bg-gold-light"
             >
               Beställ online
             </Link>
