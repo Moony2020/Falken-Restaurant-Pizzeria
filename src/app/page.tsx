@@ -3,6 +3,7 @@ import Image from "next/image";
 import { ArrowIcon, ClockIcon, MailIcon, PhoneIcon, PinIcon } from "@/components/icons";
 import { OpenStatus } from "@/components/open-status";
 import { FeaturedDishes } from "@/components/featured-dishes";
+import { HomeWelcome } from "@/components/home-welcome";
 import { buttonClass, eyebrow } from "@/components/ui";
 import { CURRENT_SEASON, dagensLunch, hoursDisplay, mapsUrl, site } from "@/data/site";
 import { kr } from "@/lib/pricing";
@@ -78,6 +79,8 @@ export default function HomePage() {
         </div>
         <FeaturedDishes />
       </section>
+
+      <HomeWelcome />
 
       <section aria-labelledby="lunch-title" className="wrap py-16 sm:py-20">
         <div className="grid items-center gap-8 overflow-hidden rounded-[1.75rem] bg-ink px-7 py-10 text-ivory sm:px-12 md:grid-cols-[1fr_auto]">
