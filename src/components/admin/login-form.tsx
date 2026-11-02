@@ -2,17 +2,18 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { EyeIcon, EyeOffIcon } from "@/components/icons";
+import { FalkenLoading } from "@/components/falken-loading";
 
 export function AdminLoginForm() {
-  const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy || isRedirecting) return;
     setBusy(true);
     setMessage(null);
     const form = new FormData(event.currentTarget);
@@ -32,16 +33,25 @@ export function AdminLoginForm() {
         } else {
           setMessage("Felaktig e-postadress eller lösenord.");
         }
+        setBusy(false);
         return;
       }
 
-      router.push("/admin");
-      router.refresh();
+      // Login verified: show full loading screen immediately and navigate
+      setIsRedirecting(true);
+      window.location.href = "/admin";
     } catch {
       setMessage("Inloggningen kunde inte genomföras. Kontrollera nätverket och försök igen.");
-    } finally {
       setBusy(false);
     }
+  }
+
+  if (isRedirecting) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#faf8f3]">
+        <FalkenLoading label="Verifierad! Öppnar administrationspanelen…" fullScreen />
+      </div>
+    );
   }
 
   return (
@@ -102,10 +112,17 @@ export function AdminLoginForm() {
 
         <button
           type="submit"
-          disabled={busy}
-          className="w-full rounded-xl bg-gold px-5 py-3.5 font-semibold text-ink shadow-sm transition hover:bg-gold-light active:scale-[0.99] disabled:opacity-60 cursor-pointer"
+          disabled={busy || isRedirecting}
+          className="w-full rounded-xl bg-gold px-5 py-3.5 font-semibold text-ink shadow-sm transition hover:bg-gold-light active:scale-[0.99] disabled:opacity-60 cursor-pointer flex items-center justify-center gap-2"
         >
-          {busy ? "Verifierar personal…" : "Logga in till Admin"}
+          {busy || isRedirecting ? (
+            <>
+              <span className="inline-block size-4 animate-spin rounded-full border-2 border-ink border-t-transparent" />
+              <span>Verifierar personal…</span>
+            </>
+          ) : (
+            "Logga in till Admin"
+          )}
         </button>
       </form>
     </div>
