@@ -110,81 +110,90 @@ export default function HomePage() {
 
       <DagensLunchBanner />
 
-      {/* Så enkelt är det - Beställ för avhämtning with gold outline icons */}
-      <section aria-labelledby="how-title" className="bg-[#fbf9f5] py-16 sm:py-20 border-t border-[#ede6da]">
+      {/* Så enkelt är det & Besök oss (Unified warm cream section with reduced spacing & elegant divider line) */}
+      <section className="bg-[#fbf9f5] border-t border-[#ede6da] pt-12 pb-16 sm:pt-16 sm:pb-20">
         <div className="wrap">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold-deep">Beställ för avhämtning</p>
-          <h2 id="how-title" className="mt-1 font-display text-2xl font-normal uppercase min-[440px]:text-3xl sm:text-5xl tracking-wide text-ink">
-            Så enkelt är det
-          </h2>
-          <ol className="mt-8 sm:mt-10 grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {steps.map((s) => (
-              <li
-                key={s.title}
-                className="relative rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white p-6 sm:p-7 shadow-sm transition-all duration-300 hover:shadow-md"
-              >
-                <div className="flex items-center justify-start">
-                  <s.Icon className="size-8 sm:size-9 text-gold-deep" />
-                </div>
-                <h3 className="mt-4 font-display text-xl sm:text-2xl font-medium text-ink">{s.title}</h3>
-                <p className="mt-2 text-xs sm:text-sm leading-relaxed text-muted">{s.text}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      <section aria-labelledby="visit-title" className="wrap py-16 sm:py-20">
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-2xl border border-line bg-white p-8 shadow-card">
-            <p className={eyebrow}>Välkommen in</p>
-            <h2 id="visit-title" className="mt-1 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-4xl">
-              Hitta hit
+          
+          {/* Så enkelt är det */}
+          <div aria-labelledby="how-title">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold-deep">Beställ för avhämtning</p>
+            <h2 id="how-title" className="mt-1 font-display text-2xl font-normal uppercase min-[440px]:text-3xl sm:text-5xl tracking-wide text-ink">
+              Så enkelt är det
             </h2>
-            <address className="mt-6 space-y-4 not-italic">
-              <p className="flex gap-3">
-                <PinIcon className="mt-0.5 size-5 shrink-0 text-gold-deep" />
-                <span>
-                  {site.legalName}
-                  <br />
-                  {site.address.street}, {site.address.zip} {site.address.city}
-                </span>
-              </p>
-              <a href={site.phoneHref} className="flex items-center gap-3 hover:text-gold-deep">
-                <PhoneIcon className="size-5 shrink-0 text-gold-deep" />
-                {site.phone}
-              </a>
-              <a href={`mailto:${site.email}`} className="flex items-center gap-3 break-all hover:text-gold-deep">
-                <MailIcon className="size-5 shrink-0 text-gold-deep" />
-                {site.email}
-              </a>
-            </address>
-            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className={`${buttonClass("ink")} mt-8`}>
-              Visa på kartan
-            </a>
+            <ol className="mt-6 sm:mt-8 grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {steps.map((s) => (
+                <li
+                  key={s.title}
+                  className="relative rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white p-6 sm:p-7 shadow-sm transition-all duration-300 hover:shadow-md"
+                >
+                  <div className="flex items-center justify-start">
+                    <s.Icon className="size-8 sm:size-9 text-gold-deep" />
+                  </div>
+                  <h3 className="mt-4 font-display text-xl sm:text-2xl font-medium text-ink">{s.title}</h3>
+                  <p className="mt-2 text-xs sm:text-sm leading-relaxed text-muted">{s.text}</p>
+                </li>
+              ))}
+            </ol>
           </div>
 
-          <div className="rounded-2xl border border-line bg-white p-8 shadow-card">
-            <p className={eyebrow}>Öppettider</p>
-            <h2 className="mt-1 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-4xl">Vi har öppet</h2>
-            <dl className="mt-6 divide-y divide-line">
-              {hoursDisplay[CURRENT_SEASON].map((row) => (
-                <div key={row.days} className="flex justify-between gap-4 py-3 text-[0.95rem]">
-                  <dt className="font-medium">{row.days}</dt>
-                  <dd className="tabular-nums text-muted">{row.time}</dd>
-                </div>
-              ))}
-            </dl>
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-              <span className="flex items-center gap-2 text-sm">
-                <ClockIcon className="size-5 text-gold-deep" />
-                <OpenStatus tone="light" />
-              </span>
-              <Link href="/kontakt#oppettider" className="text-sm font-semibold text-gold-deep underline underline-offset-4">
-                Sommartider
-              </Link>
+          {/* Elegant Divider Line between sections (reduces dead space & creates cohesive flow) */}
+          <div className="my-10 sm:my-14 h-px w-full bg-[#ede6da]" aria-hidden="true" />
+
+          {/* Hitta hit & Öppettider */}
+          <div aria-labelledby="visit-title" className="grid gap-6 lg:grid-cols-2">
+            <div className="rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white p-6 sm:p-8 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold-deep">Välkommen in</p>
+              <h2 id="visit-title" className="mt-1 font-display text-2xl font-normal uppercase min-[440px]:text-3xl sm:text-4xl text-ink">
+                Hitta hit
+              </h2>
+              <address className="mt-6 space-y-4 not-italic">
+                <p className="flex gap-3">
+                  <PinIcon className="mt-0.5 size-5 shrink-0 text-gold-deep" />
+                  <span>
+                    {site.legalName}
+                    <br />
+                    {site.address.street}, {site.address.zip} {site.address.city}
+                  </span>
+                </p>
+                <a href={site.phoneHref} className="flex items-center gap-3 hover:text-gold-deep">
+                  <PhoneIcon className="size-5 shrink-0 text-gold-deep" />
+                  {site.phone}
+                </a>
+                <a href={`mailto:${site.email}`} className="flex items-center gap-3 break-all hover:text-gold-deep">
+                  <MailIcon className="size-5 shrink-0 text-gold-deep" />
+                  {site.email}
+                </a>
+              </address>
+              <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className={`${buttonClass("ink")} mt-8`}>
+                Visa på kartan
+              </a>
+            </div>
+
+            <div className="rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white p-6 sm:p-8 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold-deep">Öppettider</p>
+              <h2 className="mt-1 font-display text-2xl font-normal uppercase min-[440px]:text-3xl sm:text-4xl text-ink">
+                Vi har öppet
+              </h2>
+              <dl className="mt-6 divide-y divide-line">
+                {hoursDisplay[CURRENT_SEASON].map((row) => (
+                  <div key={row.days} className="flex justify-between gap-4 py-3 text-[0.95rem]">
+                    <dt className="font-medium">{row.days}</dt>
+                    <dd className="tabular-nums text-muted">{row.time}</dd>
+                  </div>
+                ))}
+              </dl>
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+                <span className="flex items-center gap-2 text-sm">
+                  <ClockIcon className="size-5 text-gold-deep" />
+                  <OpenStatus tone="light" />
+                </span>
+                <Link href="/kontakt#oppettider" className="text-sm font-semibold text-gold-deep underline underline-offset-4">
+                  Sommartider
+                </Link>
+              </div>
             </div>
           </div>
+
         </div>
       </section>
     </>
