@@ -30,7 +30,7 @@ export type Product = {
   variants: Variant[];
   glutenFreeOption?: boolean;
   featured?: boolean;
-  /** Path under /public, e.g. "/images/menu/vesuvio.jpg". Falls back to illustrated placeholder. */
+  /** Path under /public, e.g. "/images/dishes/pizza/vesuvio.webp". Falls back to illustrated placeholder. */
   image?: string;
   /** Internal note for the owner review pass; never rendered. */
   review?: string;
