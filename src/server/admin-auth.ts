@@ -1,4 +1,4 @@
-import { createHmac, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import type { Types } from "mongoose";
 import type { StaffRole } from "./models/constants.ts";
 import { StaffPasswordResetModel, StaffSessionModel, StaffUserModel } from "./models/staff.ts";
@@ -192,8 +192,17 @@ export function publicPrincipal(principal: AdminPrincipal) {
   return { id: principal.id, email: principal.email, displayName: principal.displayName, role: principal.role };
 }
 
-function resetTokenHash(rawToken: string, config: AdminAuthConfig): string {
-  return createHmac("sha256", config.sessionSecret).update(`reset:${rawToken}`).digest("base64url");
+export function resetTokenHash(rawToken: string): string {
+  return createHash("sha256").update(`falken-reset:${rawToken}`).digest("base64url");
+}
+
+export function resetTokenCandidateHashes(rawToken: string, config?: AdminAuthConfig): string[] {
+  const primary = resetTokenHash(rawToken);
+  const candidates = [primary];
+  if (config?.sessionSecret) {
+    candidates.push(createHmac("sha256", config.sessionSecret).update(`reset:${rawToken}`).digest("base64url"));
+  }
+  return candidates;
 }
 
 export async function createPasswordResetToken(
@@ -214,7 +223,7 @@ export async function createPasswordResetToken(
   );
 
   const rawToken = randomBytes(32).toString("base64url");
-  const tokenHash = resetTokenHash(rawToken, config);
+  const tokenHash = resetTokenHash(rawToken);
   const expiresAt = new Date(Date.now() + ttlMs);
 
   await StaffPasswordResetModel.create({
@@ -244,9 +253,9 @@ export async function verifyPasswordResetToken(
     return { valid: false, reason: "invalid_or_expired" };
   }
 
-  const tokenHash = resetTokenHash(rawToken, config);
+  const hashes = resetTokenCandidateHashes(rawToken, config);
   const resetRecord = await StaffPasswordResetModel.findOne({
-    tokenHash,
+    tokenHash: { $in: hashes },
     usedAt: null,
     expiresAt: { $gt: new Date() },
   }).lean();
@@ -281,17 +290,15 @@ export async function resetPasswordWithToken(
   }
 
   const newHash = await hashPassword(newPassword);
-  const tokenHash = resetTokenHash(rawToken, config);
-
   // Atomically update user's password and increment authVersion to revoke all active sessions
   await StaffUserModel.updateOne(
     { _id: check.user.id, active: true },
     { $set: { passwordHash: newHash }, $inc: { authVersion: 1 } },
   );
 
-  // Mark the token as used
-  await StaffPasswordResetModel.updateOne(
-    { tokenHash },
+  // Mark all pending tokens for this user as used
+  await StaffPasswordResetModel.updateMany(
+    { userId: check.user.id, usedAt: null },
     { $set: { usedAt: new Date() } },
   );
 

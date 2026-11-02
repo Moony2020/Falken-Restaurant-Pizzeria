@@ -43,7 +43,11 @@ export async function POST(request: Request) {
     const tokenResult = await createPasswordResetToken(normalisedEmail, config);
 
     if (tokenResult.userFound && tokenResult.rawToken) {
-      const siteUrl = process.env.SITE_URL?.replace(/\/$/, "") || new URL(request.url).origin;
+      const reqUrl = new URL(request.url);
+      const isLocal = reqUrl.hostname === "localhost" || reqUrl.hostname === "127.0.0.1";
+      const siteUrl = isLocal
+        ? reqUrl.origin
+        : (process.env.SITE_URL?.replace(/\/$/, "") || reqUrl.origin);
       const resetUrl = `${siteUrl}/admin/reset-password?token=${encodeURIComponent(tokenResult.rawToken)}`;
 
       await sendPasswordResetEmail({
