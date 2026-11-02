@@ -1,9 +1,11 @@
+import { connection } from "next/server";
 import { adminOrderQuerySchema, listAdminOrders } from "../../../../server/admin-orders.ts";
 import { getAdminAuthConfig, requireAdmin } from "../../../../server/admin-auth.ts";
 import { connectDb } from "../../../../server/db.ts";
 import { json, serverError } from "../../../../server/http.ts";
 
 export async function GET(request: Request) {
+  await connection();
   try {
     request.headers.get("cookie");
     const config = getAdminAuthConfig();
