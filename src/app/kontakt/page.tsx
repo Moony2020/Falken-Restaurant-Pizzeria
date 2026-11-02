@@ -3,11 +3,9 @@ import Link from "next/link";
 import { ClockIcon, MailIcon, PhoneIcon, PinIcon } from "@/components/icons";
 import { MapEmbed } from "@/components/map-embed";
 import { OpenStatus } from "@/components/open-status";
-import { BannerArt } from "@/components/banner-art";
-import { PageBanner } from "@/components/page-banner";
+import { ContactHero } from "@/components/contact-hero";
 import { buttonClass, eyebrow } from "@/components/ui";
 import {
-  contactHeroImage,
   CURRENT_SEASON,
   dagensLunch,
   hoursDisplay,
@@ -48,33 +46,6 @@ const contacts = [
   },
 ];
 
-const quick = [
-  {
-    icon: PinIcon,
-    label: "Adress",
-    value: `${site.address.street}, ${site.address.zip} ${site.address.city}`,
-    href: mapsUrl,
-    external: true,
-    ariaLabel: `Adress: ${site.address.street}, ${site.address.zip} ${site.address.city} (öppna vägbeskrivning i Google Maps)`,
-  },
-  {
-    icon: PhoneIcon,
-    label: "Telefon",
-    value: site.phone,
-    href: site.phoneHref,
-    external: false,
-    ariaLabel: `Telefon: ${site.phone} (ring restaurangen)`,
-  },
-  {
-    icon: ClockIcon,
-    label: "Avhämtning",
-    value: `ca ${PREP_MINUTES} min`,
-    href: "/meny",
-    external: false,
-    ariaLabel: `Avhämtning ca ${PREP_MINUTES} minuter (öppna menyn och beställ)`,
-  },
-];
-
 const faqs = [
   {
     q: "Kan jag få maten hemkörd?",
@@ -106,53 +77,7 @@ const seasonTitle: Record<Season, string> = {
 export default function KontaktPage() {
   return (
     <>
-      <PageBanner
-        eyebrow="Välkommen"
-        title="Kontakt"
-        text="Ring, mejla eller titta förbi – vi finns i Vintrosa och tar gärna emot dina frågor."
-        aside={<BannerArt image={contactHeroImage} />}
-      >
-        <div className="mt-6">
-          <OpenStatus />
-        </div>
-        <ul className="mt-6 grid max-w-xl gap-3 sm:grid-cols-3 lg:max-w-2xl">
-          {quick.map(({ icon: Icon, label, value, href, external, ariaLabel }) => (
-            <li key={label}>
-              <a
-                href={href}
-                {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                aria-label={ariaLabel}
-                className="group flex h-full items-center gap-3 rounded-2xl border border-ivory/15 bg-ivory/5 p-3.5 backdrop-blur transition duration-200 hover:border-gold hover:bg-ivory/10 hover:shadow-md cursor-pointer"
-              >
-                <span className="grid size-10 shrink-0 place-items-center rounded-full bg-gold/15 text-gold transition duration-200 group-hover:bg-gold group-hover:text-ink">
-                  <Icon className="size-5" />
-                </span>
-                <span className="min-w-0 leading-tight">
-                  <span className="block text-[0.65rem] uppercase tracking-[0.18em] text-ivory/60">
-                    {label}
-                  </span>
-                  <span className="block text-xs font-semibold sm:text-[0.82rem] leading-snug text-ivory group-hover:text-gold transition">
-                    {value}
-                  </span>
-                </span>
-              </a>
-            </li>
-          ))}
-        </ul>
-        <div className="mt-8 flex flex-wrap gap-3">
-          <a href={site.phoneHref} className={buttonClass("gold")}>
-            Ring restaurangen
-          </a>
-          <a
-            href={mapsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={buttonClass("outline-light")}
-          >
-            Vägbeskrivning
-          </a>
-        </div>
-      </PageBanner>
+      <ContactHero />
 
       <div className="wrap grid gap-10 py-14 sm:py-20 lg:grid-cols-[1fr_1.1fr]">
         <section aria-labelledby="contact-title">
