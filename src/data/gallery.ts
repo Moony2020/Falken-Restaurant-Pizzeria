@@ -147,4 +147,14 @@ export const gallery: GalleryItem[] = [
     caption: "À la carte.",
     src: "/images/dishes/alacarte/oxfile-planka.webp",
   },
+  {
+    id: "restaurangen",
+    title: "Restaurangen",
+    kind: "lokal",
+    art: "alacarte",
+    seed: 9,
+    size: "tall",
+    caption: "Trivsam och varm miljö i Vintrosa.",
+    src: "/images/gallery/restaurant1.webp",
+  },
 ];

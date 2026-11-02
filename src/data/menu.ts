@@ -562,6 +562,42 @@ const carteMenu: Product[] = [
   carte("Fläskfilé på planka", 199, "grillad fläskfilé, ruccolasallad, grillade/kalla grönsaker, bearnaisesås, rödvinssås"),
 ];
 
+// ---- Dryck -----------------------------------------------------------------
+
+function drink(name: string, price: number, group: string, description: string): Product {
+  return {
+    id: slug(name),
+    name,
+    category: "dryck",
+    group,
+    ingredients: [],
+    description,
+    variants: single(price),
+  };
+}
+
+const drinks: Product[] = [
+  drink("Coca-Cola Original 33 cl", 25, "Läsk 33 cl", "Klassisk Coca-Cola på burk (33 cl)."),
+  drink("Coca-Cola Zero 33 cl", 25, "Läsk 33 cl", "Sockerfri Coca-Cola Zero på burk (33 cl)."),
+  drink("Fanta Orange 33 cl", 25, "Läsk 33 cl", "Fanta med frisk apelsinsmak på burk (33 cl)."),
+  drink("Fanta Exotic 33 cl", 25, "Läsk 33 cl", "Fanta Exotic med tropisk fruktsmak på burk (33 cl)."),
+  drink("Sprite 33 cl", 25, "Läsk 33 cl", "Klassisk Sprite på burk (33 cl)."),
+  drink("Trocadero 33 cl", 25, "Läsk 33 cl", "Norrlands nationaldryck med smak av äpple och apelsin (33 cl)."),
+  drink("Trocadero Zero 33 cl", 25, "Läsk 33 cl", "Sockerfri Trocadero Zero på burk (33 cl)."),
+
+  drink("Loka Naturell 33 cl", 25, "Vatten & Juice", "Kolsyrat mineralvatten från Bergslagen (33 cl)."),
+  drink("Loka Citron 33 cl", 25, "Vatten & Juice", "Kolsyrat mineralvatten med frisk citronsmak (33 cl)."),
+  drink("Mer Apelsin 20 cl", 20, "Vatten & Juice", "Fruktdryck utan kolsyra med smak av apelsin (20 cl)."),
+  drink("Mer Päron 20 cl", 20, "Vatten & Juice", "Fruktdryck utan kolsyra med smak av päron (20 cl)."),
+
+  drink("Coca-Cola Original 1.5 L", 45, "Läsk 1.5 L", "Klassisk Coca-Cola i stor flaska (1.5 liter)."),
+  drink("Coca-Cola Zero 1.5 L", 45, "Läsk 1.5 L", "Sockerfri Coca-Cola Zero i stor flaska (1.5 liter)."),
+  drink("Fanta Orange 1.5 L", 45, "Läsk 1.5 L", "Fanta med frisk apelsinsmak i stor flaska (1.5 liter)."),
+
+  drink("Kaffe", 25, "Varma drycker", "Nybryggt kaffe."),
+  drink("Te", 25, "Varma drycker", "Varmt te."),
+];
+
 export const products: Product[] = [
   ...pizzas,
   ...kebabpizzas,
@@ -570,6 +606,7 @@ export const products: Product[] = [
   ...salads,
   ...kidsMenu,
   ...carteMenu,
+  ...drinks,
 ];
 
 const byId = new Map(products.map((p) => [p.id, p]));
