@@ -1,15 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowIcon, ClockIcon, MailIcon, PhoneIcon, PinIcon } from "@/components/icons";
-import { DishArt } from "@/components/art";
 import { OpenStatus } from "@/components/open-status";
 import { FeaturedDishes } from "@/components/featured-dishes";
 import { buttonClass, eyebrow } from "@/components/ui";
-import { categories, type CategoryId } from "@/data/menu";
 import { CURRENT_SEASON, dagensLunch, hoursDisplay, mapsUrl, site } from "@/data/site";
 import { kr } from "@/lib/pricing";
-
-const tiles: CategoryId[] = ["pizza", "kebabpizza", "kebab", "hamburgare", "sallader", "alacarte", "barn", "lunch"];
 
 const steps = [
   { title: "Välj din rätt", text: "Bläddra bland pizzor, kebab, grillat och sallader." },
@@ -81,34 +77,6 @@ export default function HomePage() {
           </Link>
         </div>
         <FeaturedDishes />
-      </section>
-
-      <section aria-labelledby="categories-title" className="bg-cream py-16 sm:py-20">
-        <div className="wrap">
-          <p className={eyebrow}>Menyn</p>
-          <h2 id="categories-title" className="mt-1 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-5xl">
-            Vad är du sugen på?
-          </h2>
-          <ul className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-            {tiles.map((id) => {
-              const c = categories.find((x) => x.id === id)!;
-              return (
-                <li key={id}>
-                  <Link
-                    href={`/meny#${id}`}
-                    className="group relative block overflow-hidden rounded-2xl border-2 border-transparent bg-ink text-ivory shadow-card transition hover:border-gold"
-                  >
-                    <DishArt category={id} seed={id.length + 2} className="aspect-[4/3] w-full" />
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink via-ink/85 to-transparent p-4 pt-10">
-                      <p className="font-display text-xl font-semibold">{c.name}</p>
-                      <p className="text-xs text-gold">Se rätterna</p>
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
       </section>
 
       <section aria-labelledby="lunch-title" className="wrap py-16 sm:py-20">
