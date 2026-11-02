@@ -31,7 +31,7 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 bg-ink-2 text-ivory">
-      <div className="mx-auto flex h-16 w-full max-w-[1760px] items-center justify-between gap-3 pl-3 sm:pl-5 lg:pl-7 pr-1 sm:pr-2 lg:pr-3 sm:h-20">
+      <div className="mx-auto flex h-16 w-full max-w-[1760px] items-center justify-between gap-3 pl-3 sm:pl-5 lg:pl-7 pr-1 sm:pr-2 lg:pr-7 sm:h-20">
         <Logo />
 
         <nav aria-label="Huvudmeny" className="hidden lg:block">
