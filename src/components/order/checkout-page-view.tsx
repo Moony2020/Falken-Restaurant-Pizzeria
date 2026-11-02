@@ -239,7 +239,7 @@ export function CheckoutPageView() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted">Tillagningstid:</span>
-                  <span className="font-medium text-ink">ca 15–25 minuter</span>
+                  <span className="font-medium text-ink">ca 10–15 minuter</span>
                 </div>
               </div>
 
