@@ -86,7 +86,7 @@ export default function HomePage() {
       <section aria-labelledby="categories-title" className="bg-cream py-16 sm:py-20">
         <div className="wrap">
           <p className={eyebrow}>Menyn</p>
-          <h2 id="categories-title" className="mt-1 text-2xl font-medium uppercase min-[380px]:text-[1.75rem] sm:text-5xl">
+          <h2 id="categories-title" className="mt-1 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-5xl">
             Vad är du sugen på?
           </h2>
           <ul className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
@@ -132,7 +132,7 @@ export default function HomePage() {
       <section aria-labelledby="how-title" className="bg-cream py-16 sm:py-20">
         <div className="wrap">
           <p className={eyebrow}>Beställ för avhämtning</p>
-          <h2 id="how-title" className="mt-1 text-2xl font-medium uppercase min-[380px]:text-3xl sm:text-5xl">
+          <h2 id="how-title" className="mt-1 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-5xl">
             Så enkelt är det
           </h2>
           <ol className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
