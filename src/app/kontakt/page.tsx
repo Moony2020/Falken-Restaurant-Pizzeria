@@ -84,7 +84,7 @@ export default function KontaktPage() {
           <p className={eyebrow}>Hitta oss</p>
           <h2
             id="contact-title"
-            className="mt-1 text-4xl font-medium uppercase sm:text-5xl"
+            className="mt-1 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-5xl"
           >
             {site.legalName}
           </h2>
@@ -229,7 +229,7 @@ export default function KontaktPage() {
           <p className={eyebrow}>Vanliga frågor</p>
           <h2
             id="faq-title"
-            className="mt-1 text-4xl font-medium uppercase sm:text-5xl"
+            className="mt-1 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-5xl"
           >
             Bra att veta
           </h2>
@@ -260,7 +260,7 @@ export default function KontaktPage() {
               <p className={eyebrow}>Karta &amp; besök</p>
               <h2
                 id="map-title"
-                className="mt-1 text-4xl font-medium uppercase sm:text-5xl"
+                className="mt-1 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-5xl"
               >
                 Hitta till Falken
               </h2>

@@ -68,7 +68,7 @@ export default function GalleriPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold">
                 Matglädje i Vintrosa
               </p>
-              <h2 className="mt-2 text-4xl font-medium uppercase sm:text-5xl">
+              <h2 className="mt-2 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-5xl">
                 Blev du sugen på något gott?
               </h2>
               <p className="mt-3 text-sm leading-relaxed text-ivory/75">

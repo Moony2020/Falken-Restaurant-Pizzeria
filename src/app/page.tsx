@@ -72,7 +72,7 @@ export default function HomePage() {
         <div className="flex items-end justify-between gap-6">
           <div>
             <p className={eyebrow}>Från köket</p>
-            <h2 id="featured-title" className="mt-1 text-4xl font-medium uppercase sm:text-5xl">
+            <h2 id="featured-title" className="mt-1 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-5xl">
               Utvalda rätter
             </h2>
           </div>
@@ -115,7 +115,7 @@ export default function HomePage() {
         <div className="grid items-center gap-8 overflow-hidden rounded-[1.75rem] bg-ink px-7 py-10 text-ivory sm:px-12 md:grid-cols-[1fr_auto]">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold">Vardagar {dagensLunch.time}</p>
-            <h2 id="lunch-title" className="mt-2 text-4xl font-medium uppercase sm:text-5xl">
+            <h2 id="lunch-title" className="mt-2 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-5xl">
               Dagens lunch
             </h2>
             <p className="mt-3 max-w-xl text-[0.95rem] leading-relaxed text-ivory/75">
@@ -151,7 +151,7 @@ export default function HomePage() {
         <div className="grid gap-6 lg:grid-cols-2">
           <div className="rounded-2xl border border-line bg-white p-8 shadow-card">
             <p className={eyebrow}>Välkommen in</p>
-            <h2 id="visit-title" className="mt-1 text-4xl font-medium uppercase">
+            <h2 id="visit-title" className="mt-1 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-4xl">
               Hitta hit
             </h2>
             <address className="mt-6 space-y-4 not-italic">
@@ -179,7 +179,7 @@ export default function HomePage() {
 
           <div className="rounded-2xl border border-line bg-white p-8 shadow-card">
             <p className={eyebrow}>Öppettider</p>
-            <h2 className="mt-1 text-4xl font-medium uppercase">Vi har öppet</h2>
+            <h2 className="mt-1 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-4xl">Vi har öppet</h2>
             <dl className="mt-6 divide-y divide-line">
               {hoursDisplay[CURRENT_SEASON].map((row) => (
                 <div key={row.days} className="flex justify-between gap-4 py-3 text-[0.95rem]">
