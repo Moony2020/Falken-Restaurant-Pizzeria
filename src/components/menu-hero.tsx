@@ -10,30 +10,27 @@ interface MenuHeroProps {
 
 export function MenuHero({ query, setQuery, disabled = false }: MenuHeroProps) {
   return (
-    <section className="relative w-full overflow-hidden bg-[#0d0f12] py-12 sm:py-16 md:py-20 lg:py-22">
+    <section className="relative w-full overflow-hidden bg-[#0d0f12] py-14 sm:py-20 md:py-24 lg:py-28">
       {/* Background Hero Image */}
       <div className="pointer-events-none absolute inset-0 select-none overflow-hidden">
-        {/* Right-aligned photo container: zoomed out (contained within height with breathing room) */}
-        <div className="absolute inset-y-2 right-0 w-full sm:inset-y-4 md:inset-y-5 md:right-4 md:w-[80%] lg:inset-y-6 lg:right-6 lg:w-[72%] xl:right-10 xl:w-[68%]">
-          <Image
-            src="/images/menu/menu-hero.webp"
-            alt="Falken Meny & Beställ – Oxfiléplanka och matupplevelse"
-            fill
-            priority
-            quality={95}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 75vw, 68vw"
-            className="object-cover object-[78%_center] md:object-contain md:object-right"
-          />
-        </div>
+        <Image
+          src="/images/menu/menu-hero.webp"
+          alt="Falken Meny & Beställ – Oxfiléplanka och matupplevelse"
+          fill
+          priority
+          quality={92}
+          sizes="100vw"
+          className="object-cover object-[78%_center] sm:object-[72%_center] md:object-[68%_center] lg:object-right"
+        />
 
         {/* Desktop & Tablet shadow overlay: deep dark fade on the left behind text */}
-        <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-[#0d0f12] via-[#0d0f12]/85 via-42% to-transparent" />
+        <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-black/95 via-black/75 via-48% to-transparent" />
 
         {/* Mobile atmospheric overlay: dark fade ensuring text clarity above steak photo */}
-        <div className="md:hidden absolute inset-0 bg-gradient-to-t from-[#0d0f12] via-[#0d0f12]/85 via-50% to-[#0d0f12]/40" />
+        <div className="md:hidden absolute inset-0 bg-gradient-to-t from-black/95 via-black/85 via-50% to-black/40" />
 
         {/* Soft bottom edge gradient for smooth transition */}
-        <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#0d0f12] to-transparent opacity-80" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0d0f12] to-transparent opacity-60" />
       </div>
 
       {/* Hero Content on the left */}
