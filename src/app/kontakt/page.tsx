@@ -300,7 +300,7 @@ export default function KontaktPage() {
       </section>
 
       <section aria-labelledby="faq-title" className="bg-cream py-16 sm:py-20">
-        <div className="wrap max-w-3xl">
+        <div className="wrap">
           <p className={eyebrow}>Vanliga frågor</p>
           <h2
             id="faq-title"
