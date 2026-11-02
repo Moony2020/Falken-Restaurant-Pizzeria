@@ -50,19 +50,19 @@ export function generatePasswordResetEmailHtml(name: string, resetUrl: string): 
     <tr>
       <td align="center">
         <!-- Top Brand Header (matches Admin Login icon & typography) -->
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 560px; margin-bottom: 22px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 640px; margin-bottom: 22px;">
           <tr>
             <td align="center" style="text-align: center;">
               <!-- Admin Falcon Emblem Badge (exact same icon from admin login page) -->
-              <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin: 0 auto 12px auto;">
+              <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin: 0 auto 14px auto;">
                 <tr>
-                  <td align="center" style="width: 56px; height: 56px; border-radius: 18px; background-color: #ffffff; border: 1.5px solid #d5b46e; text-align: center; vertical-align: middle; box-shadow: 0 2px 8px rgba(60, 45, 20, 0.06);">
+                  <td align="center" style="width: 76px; height: 76px; border-radius: 22px; background-color: #ffffff; border: 1.5px solid #d5b46e; text-align: center; vertical-align: middle; box-shadow: 0 3px 12px rgba(60, 45, 20, 0.08);">
                     <img
                       src="${origin}/images/falken-admin-emblem.png"
-                      width="48"
-                      height="48"
+                      width="66"
+                      height="66"
                       alt="Falken Emblem"
-                      style="display: block; width: 48px; height: 48px; margin: 0 auto; border: 0;"
+                      style="display: block; width: 66px; height: 66px; margin: 0 auto; border: 0;"
                     />
                   </td>
                 </tr>
@@ -91,9 +91,9 @@ export function generatePasswordResetEmailHtml(name: string, resetUrl: string): 
         </table>
 
         <!-- Main Floating Card -->
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 560px; background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #ebd9b5; box-shadow: 0 8px 30px rgba(60, 45, 20, 0.08);">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 640px; background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #ebd9b5; box-shadow: 0 8px 30px rgba(60, 45, 20, 0.08);">
           <tr>
-            <td style="padding: 36px 36px 32px 36px;">
+            <td style="padding: 38px 42px 34px 42px;">
               <!-- Lock Badge -->
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
@@ -184,7 +184,7 @@ export function generatePasswordResetEmailHtml(name: string, resetUrl: string): 
         </table>
 
         <!-- Footer Outside Card -->
-        <table role="presentation" width="100%" style="max-width: 560px; margin-top: 24px;">
+        <table role="presentation" width="100%" style="max-width: 640px; margin-top: 24px;">
           <tr>
             <td align="center">
               <!-- Contact Links (Clickable: Maps, Call, Email) -->
@@ -220,7 +220,7 @@ export function generatePasswordResetEmailHtml(name: string, resetUrl: string): 
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 14px;">
                 <tr>
                   <td align="center">
-                    <div style="width: 88%; max-width: 480px; height: 1px; background-color: #dfd7c7;"></div>
+                    <div style="width: 88%; max-width: 560px; height: 1px; background-color: #dfd7c7;"></div>
                   </td>
                 </tr>
               </table>

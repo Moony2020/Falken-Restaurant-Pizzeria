@@ -29,7 +29,7 @@ async function LoginGate() {
     <div className="flex min-h-dvh flex-col justify-between bg-[#faf8f3] text-ink selection:bg-gold/20">
       {/* Login Card */}
       <main className="my-auto flex flex-col items-center justify-center px-4 py-12 sm:px-6">
-        <div className="w-full max-w-md rounded-3xl border border-line bg-white p-8 shadow-card sm:p-10">
+        <div className="w-full max-w-lg rounded-3xl border border-line bg-white p-8 shadow-card sm:p-11">
           {/* Falken Crest & Header (Non-clickable branding) */}
           <div className="flex flex-col items-center text-center select-none">
             <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gold/15 text-gold-deep ring-1 ring-gold/30 shadow-xs">
