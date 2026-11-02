@@ -45,8 +45,8 @@ export function generatePasswordResetEmailHtml(name: string, resetUrl: string): 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Återställ ditt lösenord – Falken Restaurang & Pizzeria</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #0b0d10; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1c1917; line-height: 1.6;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0b0d10; background: #0b0d10 radial-gradient(circle at 50% 100px, #252019 0%, #131518 55%, #0b0d10 100%); padding: 36px 15px 44px 15px;">
+<body style="margin: 0; padding: 0; background-color: #f7f4ed; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1c1917; line-height: 1.6;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f7f4ed; padding: 36px 15px 44px 15px;">
     <tr>
       <td align="center">
         <!-- Top Brand Header (matches Admin Login icon & typography) -->
@@ -56,7 +56,7 @@ export function generatePasswordResetEmailHtml(name: string, resetUrl: string): 
               <!-- Admin Falcon Emblem Badge (exact same icon from admin login page) -->
               <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin: 0 auto 12px auto;">
                 <tr>
-                  <td align="center" style="width: 56px; height: 56px; border-radius: 18px; background-color: #f7edd9; border: 1.5px solid #d5b46e; text-align: center; vertical-align: middle;">
+                  <td align="center" style="width: 56px; height: 56px; border-radius: 18px; background-color: #ffffff; border: 1.5px solid #d5b46e; text-align: center; vertical-align: middle; box-shadow: 0 2px 8px rgba(60, 45, 20, 0.06);">
                     <img
                       src="${origin}/images/falken-admin-emblem.png"
                       width="48"
@@ -69,21 +69,21 @@ export function generatePasswordResetEmailHtml(name: string, resetUrl: string): 
               </table>
 
               <!-- Brand Name -->
-              <div style="font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; font-size: 26px; font-weight: 600; color: #fbf9f4; letter-spacing: 0.18em; text-transform: uppercase; margin: 0 0 4px 0; text-align: center;">
+              <div style="font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; font-size: 26px; font-weight: 600; color: #1c1917; letter-spacing: 0.18em; text-transform: uppercase; margin: 0 0 4px 0; text-align: center;">
                 FALKEN
               </div>
-              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10px; font-weight: 600; color: #d4af37; letter-spacing: 0.35em; text-transform: uppercase; margin: 0 0 12px 0; text-align: center;">
+              <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10px; font-weight: 600; color: #a17826; letter-spacing: 0.35em; text-transform: uppercase; margin: 0 0 12px 0; text-align: center;">
                 Restaurang &amp; Pizzeria
               </div>
 
               <!-- Italian Flag Accent Line -->
               <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin: 0 auto;">
                 <tr>
-                  <td width="32" height="1" style="background-color: rgba(212, 175, 55, 0.45); line-height: 1px; font-size: 1px;">&nbsp;</td>
+                  <td width="32" height="1" style="background-color: #d5b46e; line-height: 1px; font-size: 1px;">&nbsp;</td>
                   <td width="12" height="3" style="background-color: #009246; border-radius: 2px 0 0 2px; line-height: 3px; font-size: 1px;">&nbsp;</td>
                   <td width="12" height="3" style="background-color: #ffffff; line-height: 3px; font-size: 1px;">&nbsp;</td>
                   <td width="12" height="3" style="background-color: #ce2b37; border-radius: 0 2px 2px 0; line-height: 3px; font-size: 1px;">&nbsp;</td>
-                  <td width="32" height="1" style="background-color: rgba(212, 175, 55, 0.45); line-height: 1px; font-size: 1px;">&nbsp;</td>
+                  <td width="32" height="1" style="background-color: #d5b46e; line-height: 1px; font-size: 1px;">&nbsp;</td>
                 </tr>
               </table>
             </td>
@@ -91,7 +91,7 @@ export function generatePasswordResetEmailHtml(name: string, resetUrl: string): 
         </table>
 
         <!-- Main Floating Card -->
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 560px; background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid rgba(212, 175, 55, 0.28); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 560px; background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #ebd9b5; box-shadow: 0 8px 30px rgba(60, 45, 20, 0.08);">
           <tr>
             <td style="padding: 36px 36px 32px 36px;">
               <!-- Lock Badge -->
@@ -192,25 +192,25 @@ export function generatePasswordResetEmailHtml(name: string, resetUrl: string): 
                 <tr>
                   <!-- Location (Opens Google Maps) -->
                   <td align="center" style="padding: 4px 10px;">
-                    <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #e5ded2; text-decoration: none;">
-                      <span style="color: #d4af37; font-size: 14px; margin-right: 4px;">📍</span>
-                      <span style="color: #e5ded2;">${site.address.street}, ${site.address.city}</span>
+                    <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #4a4237; text-decoration: none;">
+                      <span style="color: #b88628; font-size: 14px; margin-right: 4px;">📍</span>
+                      <span style="color: #4a4237;">${site.address.street}, ${site.address.city}</span>
                     </a>
                   </td>
-                  <td style="color: #665b4c; font-size: 12px; padding: 0 4px;">|</td>
+                  <td style="color: #c7beaf; font-size: 12px; padding: 0 4px;">|</td>
                   <!-- Phone (Opens Call / tel:) -->
                   <td align="center" style="padding: 4px 10px;">
-                    <a href="${site.phoneHref}" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #e5ded2; text-decoration: none;">
-                      <span style="color: #d4af37; font-size: 14px; margin-right: 4px;">📞</span>
-                      <span style="color: #e5ded2;">${site.phone}</span>
+                    <a href="${site.phoneHref}" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #4a4237; text-decoration: none;">
+                      <span style="color: #b88628; font-size: 14px; margin-right: 4px;">📞</span>
+                      <span style="color: #4a4237;">${site.phone}</span>
                     </a>
                   </td>
-                  <td style="color: #665b4c; font-size: 12px; padding: 0 4px;">|</td>
+                  <td style="color: #c7beaf; font-size: 12px; padding: 0 4px;">|</td>
                   <!-- Email (Opens Mail client / mailto:) -->
                   <td align="center" style="padding: 4px 10px;">
-                    <a href="mailto:${site.email}" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #e5ded2; text-decoration: none;">
-                      <span style="color: #d4af37; font-size: 14px; margin-right: 4px;">✉️</span>
-                      <span style="color: #e5ded2;">${site.email}</span>
+                    <a href="mailto:${site.email}" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #4a4237; text-decoration: none;">
+                      <span style="color: #b88628; font-size: 14px; margin-right: 4px;">✉️</span>
+                      <span style="color: #4a4237;">${site.email}</span>
                     </a>
                   </td>
                 </tr>
@@ -220,13 +220,13 @@ export function generatePasswordResetEmailHtml(name: string, resetUrl: string): 
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 14px;">
                 <tr>
                   <td align="center">
-                    <div style="width: 88%; max-width: 480px; height: 1px; background-color: rgba(212, 175, 55, 0.25);"></div>
+                    <div style="width: 88%; max-width: 480px; height: 1px; background-color: #dfd7c7;"></div>
                   </td>
                 </tr>
               </table>
 
               <!-- Copyright -->
-              <p style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; color: #9c9384; text-align: center;">
+              <p style="margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; color: #8c8273; text-align: center;">
                 &copy; ${new Date().getFullYear()} Falken Restaurang &amp; Pizzeria. Alla r&auml;ttigheter f&ouml;rbeh&aring;llna.
               </p>
             </td>
