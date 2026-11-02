@@ -70,12 +70,14 @@
 }
 
 html {
+  min-width: 360px;
   scroll-behavior: smooth;
   scroll-padding-top: 8.5rem;
   overflow-x: clip;
 }
 
 body {
+  min-width: 360px;
   background: var(--color-ivory);
   color: var(--color-ink);
   font-family: var(--font-sans);
@@ -138,6 +140,7 @@ html:has(dialog[open]) {
 
 @media (prefers-reduced-motion: reduce) {
   html {
+  min-width: 360px;
     scroll-behavior: auto;
   }
   *,

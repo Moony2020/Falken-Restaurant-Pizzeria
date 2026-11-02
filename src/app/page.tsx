@@ -23,7 +23,7 @@ export default function HomePage() {
     <>
       <section aria-labelledby="hero-title" className="bg-[linear-gradient(to_bottom,var(--color-ink-2)_0,var(--color-ink-2)_70%,var(--color-ivory)_70%)]">
         <div className="mx-auto w-full max-w-[1760px] px-3 pb-2 pt-2 sm:px-5 sm:pt-3 lg:px-7">
-          <div className="relative isolate flex min-h-[23.5rem] items-center overflow-hidden rounded-[1.5rem] bg-[#1a1d22] px-7 py-8 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)] ring-1 ring-white/10 sm:min-h-[25.5rem] sm:px-12 sm:py-10 lg:min-h-[27rem] lg:px-14 xl:min-h-[29rem] xl:px-16">
+          <div className="relative isolate flex min-h-[23.5rem] items-center overflow-hidden rounded-[1.5rem] bg-[#1a1d22] px-5 py-6 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)] ring-1 ring-white/10 sm:min-h-[25.5rem] sm:px-12 sm:py-10 lg:min-h-[27rem] lg:px-14 xl:min-h-[29rem] xl:px-16">
             
             {/* Background hero photo with pizza perfectly on the right and warm restaurant wood on the left */}
             <div className="pointer-events-none absolute inset-0 z-0 select-none overflow-hidden">
@@ -47,14 +47,14 @@ export default function HomePage() {
             {/* Left Content (2 lines title, comfortable spacing, original elegant typography) */}
             <div className="relative z-10 max-w-xl animate-rise lg:max-w-2xl">
               <OpenStatus />
-              <h1 id="hero-title" className="mt-3 font-display text-[2.2rem] font-medium uppercase leading-[1.06] text-ivory drop-shadow-md sm:text-4xl lg:text-[2.6rem] xl:text-[3.2rem]">
+              <h1 id="hero-title" className="mt-2.5 font-display text-[1.85rem] font-medium uppercase leading-[1.08] text-ivory drop-shadow-md sm:mt-3 sm:text-4xl lg:text-[2.6rem] xl:text-[3.2rem]">
                 Äkta smak i
                 <span className="block text-gold">hjärtat av Vintrosa</span>
               </h1>
-              <p className="mt-3.5 max-w-md text-sm leading-relaxed text-ivory/90 drop-shadow-sm sm:text-base">
+              <p className="mt-2 max-w-md text-xs leading-relaxed text-ivory/90 drop-shadow-sm sm:mt-3.5 sm:text-base">
                 Över 90 rätter – pizza, kebab, hamburgare och à la carte. Beställ för avhämtning eller slå dig ner hos oss.
               </p>
-              <div className="mt-6 flex flex-wrap items-center gap-3">
+              <div className="mt-4 flex flex-wrap items-center gap-2.5 sm:mt-6 sm:gap-3">
                 <Link href="/meny" className={buttonClass("gold")}>
                   Se menyn
                 </Link>
