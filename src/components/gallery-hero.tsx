@@ -5,7 +5,7 @@ export function GalleryHero() {
     <section className="relative w-full overflow-hidden bg-ink py-16 sm:py-24 md:py-28">
       {/* Background Image: Gallery Hero */}
       <Image
-        src="/images/gallery/gallery-hero.png"
+        src="/images/gallery/gallery-hero.webp"
         alt="Falken Restaurang & Pizzeria – Galleri"
         fill
         priority
