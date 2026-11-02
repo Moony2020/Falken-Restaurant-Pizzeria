@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useSyncExternalStore } from "react";
-import { dagensLunch, menuHeroImage, site } from "@/data/site";
+import { dagensLunch, site } from "@/data/site";
 import type { MenuLoadFailure } from "@/lib/menu-client";
 import { reloadMenu, useMenu } from "@/lib/menu-store";
 import type {
@@ -10,14 +10,11 @@ import type {
   PublicProduct,
 } from "@/lib/menu-types";
 import { kr } from "@/lib/pricing";
-import { OpenStatus } from "@/components/open-status";
-import { PageBanner } from "@/components/page-banner";
-import { BannerArt } from "@/components/banner-art";
+import { MenuHero } from "@/components/menu-hero";
 import {
   ArrowIcon,
   ClockIcon,
   PhoneIcon,
-  SearchIcon,
 } from "@/components/icons";
 import { ProductCard, ingredientText } from "./product-card";
 
@@ -94,34 +91,7 @@ export function MenuBrowser() {
 
   return (
     <>
-      <PageBanner
-        eyebrow="Avhämtning"
-        title="Meny & Beställ"
-        text="Välj din rätt, anpassa efter smak och hämta hos oss i Vintrosa. Alla priser anges i kronor."
-        aside={<BannerArt image={menuHeroImage} />}
-      >
-        <div className="relative mt-8 w-full max-w-xl">
-          <label htmlFor="menu-search" className="sr-only">
-            Sök i menyn
-          </label>
-          <SearchIcon
-            className="pointer-events-none absolute left-5 top-1/2 z-10 size-5 -translate-y-1/2 text-gold"
-            aria-hidden="true"
-          />
-          <input
-            id="menu-search"
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Sök rätt, ingrediens eller nummer"
-            disabled={!menu}
-            className="min-h-14 w-full rounded-full border border-ivory/20 bg-ivory/10 pl-13 pr-5 text-[0.95rem] text-ivory backdrop-blur transition placeholder:text-ivory/55 focus:border-gold focus:bg-ivory/15 disabled:opacity-60"
-          />
-        </div>
-        <div className="mt-4">
-          <OpenStatus />
-        </div>
-      </PageBanner>
+      <MenuHero query={query} setQuery={setQuery} disabled={!menu} />
 
       <div className="sticky top-16 z-30 border-b border-line bg-ivory/95 backdrop-blur sm:top-20">
         <nav

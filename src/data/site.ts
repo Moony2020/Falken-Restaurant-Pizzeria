@@ -79,7 +79,7 @@ export const hoursDisplay: Record<Season, { days: string; time: string }[]> = {
 };
 
 /** Path under /public of a real photo for the menu page banner (a round crop of a pizza works best). While null, an illustration is shown. */
-export const menuHeroImage: string | null = "/images/hero/pizza-circle.jpg";
+export const menuHeroImage: string | null = "/images/menu/menu-hero.webp";
 
 /** Path under /public of a real photo for the contact page banner. While null, an illustration is shown. */
 export const contactHeroImage: string | null = "/images/hero/falken-kontakt.jpg";
