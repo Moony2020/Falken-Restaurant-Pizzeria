@@ -49,8 +49,53 @@ export const formatMinutes = (m: number): string =>
 
 export type OpenStatus = { isOpen: boolean; label: string };
 
-export function getOpenStatus(date: Date, season: Season): OpenStatus {
+export type CustomDayHours = {
+  open: string | number;
+  close: string | number;
+  closed?: boolean;
+};
+
+export type CustomWeeklyHours = Record<number, CustomDayHours>;
+
+export const DEFAULT_HOURS: Record<Season, Record<number, Hours>> = HOURS;
+
+function parseToMinutes(val: string | number): number {
+  if (typeof val === "number") return val * 60;
+  const [h, m] = String(val).split(":").map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+export function getOpenStatus(
+  date: Date,
+  season: Season = "vinter",
+  customWeeklyHours?: CustomWeeklyHours | null,
+): OpenStatus {
   const { weekday, minutes } = stockholmNow(date);
+
+  if (customWeeklyHours && customWeeklyHours[weekday]) {
+    const today = customWeeklyHours[weekday];
+    if (today.closed) {
+      const nextW = (weekday + 1) % 7;
+      const nextDay = customWeeklyHours[nextW] ?? HOURS[season][nextW];
+      const nextOpenStr = typeof nextDay.open === "number" ? formatMinutes(nextDay.open * 60) : String(nextDay.open);
+      return { isOpen: false, label: `Stängt idag · öppnar imorgon ${nextOpenStr}` };
+    }
+
+    const open = parseToMinutes(today.open);
+    const close = parseToMinutes(today.close);
+
+    if (minutes >= open && minutes < close) {
+      return { isOpen: true, label: `Öppet nu · stänger ${formatMinutes(close)}` };
+    }
+    if (minutes < open) {
+      return { isOpen: false, label: `Stängt · öppnar ${formatMinutes(open)}` };
+    }
+    const tomorrowW = (weekday + 1) % 7;
+    const tomorrow = customWeeklyHours[tomorrowW] ?? HOURS[season][tomorrowW];
+    const tomorrowOpen = parseToMinutes(tomorrow.open);
+    return { isOpen: false, label: `Stängt · öppnar imorgon ${formatMinutes(tomorrowOpen)}` };
+  }
+
   const today = HOURS[season][weekday];
   const open = today.open * 60;
   const close = today.close * 60;

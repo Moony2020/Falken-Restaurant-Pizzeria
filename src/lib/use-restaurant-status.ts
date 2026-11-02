@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore, useCallback } from "react";
 import { CURRENT_SEASON } from "@/data/site";
-import { getOpenStatus } from "@/lib/hours";
+import { getOpenStatus, type CustomWeeklyHours, type Season } from "@/lib/hours";
 import { useNow } from "@/lib/use-now";
 import type { RestaurantStatusResponse } from "@/app/api/restaurant/status/route";
 
@@ -14,12 +14,16 @@ export interface RestaurantStatus {
   label: string;
   scheduleLabel: string;
   closeReason: "manual" | "schedule" | null;
+  season?: Season;
+  hours?: CustomWeeklyHours;
 }
 
 // Global cached state
 let cachedSettings: {
   onlineOrderingEnabled: boolean;
   manualOverride: "open" | "closed" | null;
+  season?: Season;
+  hours?: CustomWeeklyHours;
 } = { onlineOrderingEnabled: true, manualOverride: null };
 
 let fetchPromise: Promise<void> | null = null;
@@ -64,6 +68,8 @@ export function fetchRestaurantStatus(): Promise<void> {
         cachedSettings = {
           onlineOrderingEnabled: data.onlineOrderingEnabled,
           manualOverride: data.manualOverride ?? null,
+          season: data.season,
+          hours: data.hours,
         };
         notify();
       }
@@ -123,7 +129,12 @@ function subscribe(listener: () => void) {
 }
 
 const getSnapshot = () => cachedSettings;
-const serverSnapshot: { onlineOrderingEnabled: boolean; manualOverride: "open" | "closed" | null } = {
+const serverSnapshot: {
+  onlineOrderingEnabled: boolean;
+  manualOverride: "open" | "closed" | null;
+  season?: Season;
+  hours?: CustomWeeklyHours;
+} = {
   onlineOrderingEnabled: true,
   manualOverride: null,
 };
@@ -154,7 +165,8 @@ export function useRestaurantStatus(): {
     return { status: null, loading: true, reload };
   }
 
-  const scheduleStatus = getOpenStatus(new Date(now), CURRENT_SEASON);
+  const season = settings.season || CURRENT_SEASON;
+  const scheduleStatus = getOpenStatus(new Date(now), season, settings.hours);
   const isOpenBySchedule = scheduleStatus.isOpen;
 
   let isOpen: boolean;
@@ -165,7 +177,11 @@ export function useRestaurantStatus(): {
     isOpen = true;
     closeReason = null;
     label = "Öppet nu";
-  } else if (settings.manualOverride === "closed" || !settings.onlineOrderingEnabled) {
+  } else if (settings.manualOverride === "closed") {
+    isOpen = false;
+    closeReason = "manual";
+    label = "Stängt för beställningar";
+  } else if (!settings.onlineOrderingEnabled && isOpenBySchedule) {
     isOpen = false;
     closeReason = "manual";
     label = "Stängt för beställningar";
@@ -186,6 +202,8 @@ export function useRestaurantStatus(): {
       label,
       scheduleLabel: scheduleStatus.label,
       closeReason,
+      season,
+      hours: settings.hours,
     },
     loading: false,
     reload,

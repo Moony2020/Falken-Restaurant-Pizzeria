@@ -13,6 +13,7 @@ import { getOpenStatus } from "@/lib/hours";
 import { useNow } from "@/lib/use-now";
 import { notifyStatusChange } from "@/lib/use-restaurant-status";
 import { EyeIcon, EyeOffIcon } from "@/components/icons";
+import { AdminHoursTab } from "@/components/admin/admin-hours-tab";
 
 // --- Falcon Emblem SVG ---
 function FalconEmblem({ className = "h-8 w-8 text-[#b88e4d]" }: { className?: string }) {
@@ -1689,6 +1690,8 @@ export function AdminDashboard({
                 </form>
               </div>
             </div>
+          ) : activeTab === "oppettider" ? (
+            <AdminHoursTab />
           ) : (
             /* Fallback generic view for other tabs */
             <div className="rounded-2xl border border-[#e7e1d5] bg-white p-8 shadow-xs text-center space-y-4">

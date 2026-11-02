@@ -1,6 +1,6 @@
 import { connection } from "next/server";
 import { CURRENT_SEASON } from "@/data/site";
-import { getOpenStatus } from "@/lib/hours";
+import { getOpenStatus, type CustomWeeklyHours, type Season } from "@/lib/hours";
 import { connectDb } from "@/server/db";
 import { json } from "@/server/http";
 import { RestaurantSettingsModel } from "@/server/models/restaurant-settings";
@@ -14,20 +14,24 @@ export interface RestaurantStatusResponse {
   scheduleLabel: string;
   closeReason: "manual" | "schedule" | null;
   serverTime: string;
+  season?: Season;
+  hours?: CustomWeeklyHours;
+  announcement?: string;
 }
 
 export async function GET() {
   await connection();
   try {
     await connectDb();
-    const settings = await RestaurantSettingsModel.findById("restaurant")
-      .select("onlineOrderingEnabled manualOverride")
-      .lean();
+    const settings = await RestaurantSettingsModel.findById("restaurant").lean();
     const onlineOrderingEnabled = settings?.onlineOrderingEnabled ?? true;
     const manualOverride = settings?.manualOverride ?? null;
+    const season = (settings?.season as Season) || CURRENT_SEASON;
+    const customHours = (settings?.hours as CustomWeeklyHours) ?? null;
+    const announcement = settings?.announcement ?? "";
 
     const now = new Date();
-    const scheduleStatus = getOpenStatus(now, CURRENT_SEASON);
+    const scheduleStatus = getOpenStatus(now, season, customHours);
     const isOpenBySchedule = scheduleStatus.isOpen;
 
     let isOpen: boolean;
@@ -38,7 +42,11 @@ export async function GET() {
       isOpen = true;
       closeReason = null;
       label = "Öppet nu";
-    } else if (manualOverride === "closed" || !onlineOrderingEnabled) {
+    } else if (manualOverride === "closed") {
+      isOpen = false;
+      closeReason = "manual";
+      label = "Stängt för beställningar";
+    } else if (!onlineOrderingEnabled && isOpenBySchedule) {
       isOpen = false;
       closeReason = "manual";
       label = "Stängt för beställningar";
@@ -59,6 +67,9 @@ export async function GET() {
       scheduleLabel: scheduleStatus.label,
       closeReason,
       serverTime: now.toISOString(),
+      season,
+      hours: customHours ?? undefined,
+      announcement,
     };
 
     return json(responseData, 200, {

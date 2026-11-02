@@ -172,7 +172,11 @@ export async function setOnlineOrdering(options: boolean | OrderingUpdateOptions
     manualOverride = isScheduleOpen ? "closed" : null;
   }
 
-  const enabled = targetState;
+  // Keep onlineOrderingEnabled true unless explicitly set to false via options.enabled
+  const enabled =
+    typeof options !== "boolean" && options.enabled !== undefined
+      ? options.enabled
+      : true;
 
   const settings = await RestaurantSettingsModel.findOneAndUpdate(
     { _id: "restaurant" },
