@@ -184,3 +184,37 @@ export function FalconEmblem({ className = "h-8 w-8 text-[#b88e4d]" }: { classNa
     </svg>
   );
 }
+
+export const StepPizzaIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 21.5L3.5 6a15.2 15.2 0 0 1 17 0L12 21.5Z" />
+    <path d="M4.5 7.5a13.5 13.5 0 0 1 15 0" />
+    <circle cx="12" cy="11" r="1" fill="currentColor" />
+    <circle cx="9.5" cy="15" r="0.9" fill="currentColor" />
+    <circle cx="14" cy="16" r="0.9" fill="currentColor" />
+  </Icon>
+);
+
+export const StepCustomizeIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M4 8h8M16 8h4M4 16h4M12 16h8" />
+    <circle cx="14" cy="8" r="2" />
+    <circle cx="10" cy="16" r="2" />
+  </Icon>
+);
+
+export const StepCalendarIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <rect x="3" y="4" width="18" height="18" rx="3" />
+    <path d="M16 2v4M8 2v4M3 10h18" />
+    <path d="M8 14h2M14 14h2M8 18h2M14 18h2" />
+  </Icon>
+);
+
+export const StepBagIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M6 8h12l1.5 12a2 2 0 0 1-2 2H6.5a2 2 0 0 1-2-2L6 8Z" />
+    <path d="M9 10V6a3 3 0 0 1 6 0v4" />
+  </Icon>
+);
+

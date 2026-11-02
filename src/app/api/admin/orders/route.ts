@@ -5,7 +5,6 @@ import { json, serverError } from "../../../../server/http.ts";
 
 export async function GET(request: Request) {
   try {
-    request.headers.get("cookie");
     const config = getAdminAuthConfig();
     await connectDb();
     const auth = await requireAdmin(request, config);

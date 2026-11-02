@@ -1,18 +1,44 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowIcon, ClockIcon, MailIcon, PhoneIcon, PinIcon } from "@/components/icons";
+import {
+  ArrowIcon,
+  ClockIcon,
+  MailIcon,
+  PhoneIcon,
+  PinIcon,
+  StepPizzaIcon,
+  StepCustomizeIcon,
+  StepCalendarIcon,
+  StepBagIcon,
+} from "@/components/icons";
 import { OpenStatus } from "@/components/open-status";
 import { FeaturedDishes } from "@/components/featured-dishes";
 import { HomeWelcome } from "@/components/home-welcome";
+import { DagensLunchBanner } from "@/components/dagens-lunch-banner";
 import { buttonClass, eyebrow } from "@/components/ui";
-import { CURRENT_SEASON, dagensLunch, hoursDisplay, mapsUrl, site } from "@/data/site";
-import { kr } from "@/lib/pricing";
+import { CURRENT_SEASON, hoursDisplay, mapsUrl, site } from "@/data/site";
 
 const steps = [
-  { title: "Välj din rätt", text: "Bläddra bland pizzor, kebab, grillat och sallader." },
-  { title: "Anpassa", text: "Välj storlek, ta bort ingredienser och lämna önskemål till köket." },
-  { title: "Välj hämtningstid", text: "Hämta när det passar dig medan maten är nylagad." },
-  { title: "Hämta och njut", text: "Kom förbi Skolgatan 4 i Vintrosa – vi har det klart." },
+  {
+    title: "1. Välj din rätt",
+    text: "Bläddra bland pizzor, kebab, grillat och sallader.",
+    Icon: StepPizzaIcon,
+  },
+  {
+    title: "2. Anpassa",
+    text: "Välj storlek, ta bort ingredienser och lämna önskemål till köket.",
+    Icon: StepCustomizeIcon,
+  },
+  {
+    title: "3. Välj hämtningstid",
+    text: "Hämta när det passar dig medan maten är nylagad.",
+    Icon: StepCalendarIcon,
+  },
+  {
+    title: "4. Hämta och njut",
+    text: "Kom förbi Skolgatan 4 i Vintrosa – vi har det klart.",
+    Icon: StepBagIcon,
+  },
 ];
 
 export default function HomePage() {
@@ -82,36 +108,26 @@ export default function HomePage() {
 
       <HomeWelcome />
 
-      <section aria-labelledby="lunch-title" className="wrap py-16 sm:py-20">
-        <div className="grid items-center gap-8 overflow-hidden rounded-[1.75rem] bg-ink px-7 py-10 text-ivory sm:px-12 md:grid-cols-[1fr_auto]">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold">Vardagar {dagensLunch.time}</p>
-            <h2 id="lunch-title" className="mt-2 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-5xl">
-              Dagens lunch
-            </h2>
-            <p className="mt-3 max-w-xl text-[0.95rem] leading-relaxed text-ivory/75">
-              Pizza, kebabtallrik, schnitzel, sallader och mer. {dagensLunch.includes}
-            </p>
-            <Link href="/meny#lunch" className={`${buttonClass("outline-light")} mt-6`}>
-              Se lunchmenyn
-            </Link>
-          </div>
-          <p className="font-display text-7xl font-semibold tabular-nums text-gold sm:text-8xl">{kr(dagensLunch.price)}</p>
-        </div>
-      </section>
+      <DagensLunchBanner />
 
-      <section aria-labelledby="how-title" className="bg-cream py-16 sm:py-20">
+      {/* Så enkelt är det - Beställ för avhämtning with gold outline icons */}
+      <section aria-labelledby="how-title" className="bg-[#fbf9f5] py-16 sm:py-20 border-t border-[#ede6da]">
         <div className="wrap">
-          <p className={eyebrow}>Beställ för avhämtning</p>
-          <h2 id="how-title" className="mt-1 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-5xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold-deep">Beställ för avhämtning</p>
+          <h2 id="how-title" className="mt-1 font-display text-2xl font-normal uppercase min-[440px]:text-3xl sm:text-5xl tracking-wide text-ink">
             Så enkelt är det
           </h2>
-          <ol className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {steps.map((s, i) => (
-              <li key={s.title} className="relative rounded-2xl border border-line bg-white p-6">
-                <span className="font-display text-5xl font-medium text-gold">{i + 1}</span>
-                <h3 className="mt-2 text-2xl font-semibold">{s.title}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-muted">{s.text}</p>
+          <ol className="mt-8 sm:mt-10 grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {steps.map((s) => (
+              <li
+                key={s.title}
+                className="relative rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white p-6 sm:p-7 shadow-sm transition-all duration-300 hover:shadow-md"
+              >
+                <div className="flex items-center justify-start">
+                  <s.Icon className="size-8 sm:size-9 text-gold-deep" />
+                </div>
+                <h3 className="mt-4 font-display text-xl sm:text-2xl font-medium text-ink">{s.title}</h3>
+                <p className="mt-2 text-xs sm:text-sm leading-relaxed text-muted">{s.text}</p>
               </li>
             ))}
           </ol>

@@ -138,14 +138,14 @@ export const gallery: GalleryItem[] = [
     src: "/images/gallery/utsidan.webp",
   },
   {
-    id: "filemignon",
-    title: "Filé Mignon",
+    id: "oxfile-planka",
+    title: "Oxfilé på planka",
     kind: "mat",
     art: "alacarte",
     seed: 8,
     size: "wide",
-    caption: "À la carte.",
-    src: "/images/dishes/alacarte/oxfile-planka.webp",
+    caption: "Grillad oxfilé med hemlagad bearnaise och duchessemos.",
+    src: "/images/gallery/oxfile-planka.webp",
   },
   {
     id: "restaurangen",
