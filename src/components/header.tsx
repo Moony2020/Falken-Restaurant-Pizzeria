@@ -31,61 +31,96 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-40 bg-ink-2 text-ivory">
-      <div className="mx-auto flex h-16 w-full max-w-[1760px] items-center justify-between gap-3 pl-3 sm:pl-5 lg:pl-7 pr-1 sm:pr-2 lg:pr-7 sm:h-20">
-        <Logo />
-
-        <nav aria-label="Huvudmeny" className="hidden lg:block">
-          <ul className="flex items-center gap-9">
-            {nav.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  aria-current={isActive(item.href) ? "page" : undefined}
-                  className={`text-[0.82rem] font-medium uppercase tracking-[0.14em] transition-colors hover:text-gold ${
-                    isActive(item.href) ? "text-gold" : "text-ivory"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        <div className="flex items-center gap-1.5 sm:gap-2.5">
-          <Link
-            href="/meny"
-            className="hidden min-h-9 sm:min-h-9.5 items-center rounded-full bg-gold px-3.5 sm:px-4 text-[0.74rem] font-semibold uppercase tracking-[0.08em] text-ink transition hover:bg-gold-light sm:inline-flex"
-          >
-            Beställ online
-          </Link>
-          <button
-            type="button"
-            onClick={openCart}
-            aria-label={cartCount > 0 ? `Öppna varukorgen, ${cartCount} rätter` : "Öppna varukorgen"}
-            className="relative grid size-11 place-items-center rounded-full transition hover:bg-ink-3"
-          >
-            <CartIcon className="size-6" />
-            {cartCount > 0 && (
-              <span
-                aria-hidden="true"
-                className="absolute right-1 top-0 grid min-w-5 place-items-center rounded-full bg-gold px-1 text-[0.7rem] font-bold leading-5 text-ink"
-              >
-                {cartCount}
-              </span>
-            )}
-          </button>
+      <div className="mx-auto w-full max-w-[1760px] px-3 sm:px-5 lg:px-7">
+        
+        {/* Mobile Header (< lg): 3-Pillar Symmetrical Luxury Layout [ ☰ Hamburger | Centered Logo | 🛒 Cart ] */}
+        <div className="grid grid-cols-[44px_1fr_44px] items-center h-16 sm:h-20 lg:hidden">
+          {/* Left: Hamburger menu toggle */}
           <button
             type="button"
             onClick={() => setMenuOpen((o) => !o)}
             aria-expanded={menuOpen}
             aria-controls="mobile-nav"
             aria-label={menuOpen ? "Stäng menyn" : "Öppna menyn"}
-            className="grid size-11 place-items-center rounded-full transition hover:bg-ink-3 lg:hidden"
+            className="grid size-11 place-items-center rounded-full transition hover:bg-ink-3 -ml-1 text-ivory"
           >
             {menuOpen ? <CloseIcon className="size-6" /> : <MenuIcon className="size-6" />}
           </button>
+
+          {/* Center: Centered Logo & Emblem */}
+          <div className="flex items-center justify-center min-w-0">
+            <Logo />
+          </div>
+
+          {/* Right: Cart Button */}
+          <div className="flex items-center justify-end">
+            <button
+              type="button"
+              onClick={openCart}
+              aria-label={cartCount > 0 ? `Öppna varukorgen, ${cartCount} rätter` : "Öppna varukorgen"}
+              className="relative grid size-11 place-items-center rounded-full transition hover:bg-ink-3 -mr-1"
+            >
+              <CartIcon className="size-6" />
+              {cartCount > 0 && (
+                <span
+                  aria-hidden="true"
+                  className="absolute right-1 top-0 grid min-w-5 place-items-center rounded-full bg-gold px-1 text-[0.7rem] font-bold leading-5 text-ink"
+                >
+                  {cartCount}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
+
+        {/* Desktop Header (>= lg): Classic High-Converting Balance [ Logo | Nav Links | CTA + Cart ] */}
+        <div className="hidden lg:flex h-20 items-center justify-between gap-6">
+          <Logo />
+
+          <nav aria-label="Huvudmeny">
+            <ul className="flex items-center gap-9">
+              {nav.map((item) => (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    aria-current={isActive(item.href) ? "page" : undefined}
+                    className={`text-[0.82rem] font-medium uppercase tracking-[0.14em] transition-colors hover:text-gold ${
+                      isActive(item.href) ? "text-gold" : "text-ivory"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/meny"
+              className="inline-flex min-h-10 items-center rounded-full bg-gold px-4.5 text-[0.76rem] font-semibold uppercase tracking-[0.08em] text-ink transition hover:bg-gold-light"
+            >
+              Beställ online
+            </Link>
+            <button
+              type="button"
+              onClick={openCart}
+              aria-label={cartCount > 0 ? `Öppna varukorgen, ${cartCount} rätter` : "Öppna varukorgen"}
+              className="relative grid size-11 place-items-center rounded-full transition hover:bg-ink-3"
+            >
+              <CartIcon className="size-6" />
+              {cartCount > 0 && (
+                <span
+                  aria-hidden="true"
+                  className="absolute right-1 top-0 grid min-w-5 place-items-center rounded-full bg-gold px-1 text-[0.7rem] font-bold leading-5 text-ink"
+                >
+                  {cartCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
       </div>
 
       {menuOpen && (
