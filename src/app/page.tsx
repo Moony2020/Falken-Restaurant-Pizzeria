@@ -97,8 +97,8 @@ export default function HomePage() {
               Utvalda rätter
             </h2>
           </div>
-          <Link href="/meny" className="hidden items-center gap-2 text-sm font-semibold text-gold-deep underline-offset-4 hover:underline sm:inline-flex">
-            Hela menyn <ArrowIcon className="size-4" />
+          <Link href="/meny" className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-gold-deep underline-offset-4 hover:underline shrink-0 pb-1">
+            Hela menyn <ArrowIcon className="size-3.5 sm:size-4" />
           </Link>
         </div>
         <FeaturedDishes />
