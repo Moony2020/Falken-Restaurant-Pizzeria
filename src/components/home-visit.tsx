@@ -47,7 +47,7 @@ export function HomeVisit() {
     <div aria-labelledby="visit-title" className="grid gap-6 lg:grid-cols-12 items-stretch">
       
       {/* Card 1: Hitta hit (Location, Contact & Direct Actions) */}
-      <div className="lg:col-span-6 relative overflow-hidden rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white p-6 sm:p-8 lg:p-9 shadow-sm transition-all duration-300 hover:shadow-md flex flex-col justify-between">
+      <div className="lg:col-span-6 relative overflow-hidden rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white px-3 py-5 sm:p-8 lg:p-9 shadow-sm transition-all duration-300 hover:shadow-md flex flex-col justify-between">
         
         {/* Subtle Watermark Falcon Emblem */}
         <div className="pointer-events-none absolute -right-6 -bottom-6 select-none text-gold/[0.07]" aria-hidden="true">
@@ -163,7 +163,7 @@ export function HomeVisit() {
       </div>
 
       {/* Card 2: Öppettider (Live Status & Highlighting Today) */}
-      <div className="lg:col-span-6 relative overflow-hidden rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white p-6 sm:p-8 lg:p-9 shadow-sm transition-all duration-300 hover:shadow-md flex flex-col justify-between">
+      <div className="lg:col-span-6 relative overflow-hidden rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white px-3 py-5 sm:p-8 lg:p-9 shadow-sm transition-all duration-300 hover:shadow-md flex flex-col justify-between">
         
         {/* Subtle Watermark Falcon Emblem */}
         <div className="pointer-events-none absolute -right-6 -bottom-6 select-none text-gold/[0.07]" aria-hidden="true">
@@ -211,24 +211,24 @@ export function HomeVisit() {
               return (
                 <div
                   key={row.days}
-                  className={`flex items-center justify-between py-2.5 px-3.5 rounded-xl transition-all duration-200 ${
+                  className={`flex items-center justify-between py-2 sm:py-2.5 px-2 sm:px-3.5 rounded-xl transition-all duration-200 ${
                     isToday
                       ? "bg-gold/15 border border-gold/40 shadow-xs"
                       : "border border-transparent hover:bg-[#fbf9f5]"
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    <span className={`text-sm ${isToday ? "font-bold text-ink" : "font-medium text-ink/85"}`}>
+                  <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
+                    <span className={`text-xs sm:text-sm whitespace-nowrap ${isToday ? "font-bold text-ink" : "font-medium text-ink/85"}`}>
                       {row.days}
                     </span>
                     {isToday && (
-                      <span className="rounded-full bg-gold px-2 py-0.5 text-[0.62rem] font-bold uppercase tracking-wider text-ink shadow-xs">
+                      <span className="rounded-full bg-gold px-1.5 sm:px-2 py-0.5 text-[0.6rem] sm:text-[0.62rem] font-bold uppercase tracking-wider text-ink shadow-xs shrink-0">
                         Idag
                       </span>
                     )}
                   </div>
 
-                  <span className={`tabular-nums text-sm ${isToday ? "font-bold text-ink" : "font-medium text-muted"}`}>
+                  <span className={`tabular-nums text-xs sm:text-sm shrink-0 whitespace-nowrap ${isToday ? "font-bold text-ink" : "font-medium text-muted"}`}>
                     {row.time}
                   </span>
                 </div>

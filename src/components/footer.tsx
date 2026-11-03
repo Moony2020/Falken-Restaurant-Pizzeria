@@ -12,24 +12,26 @@ export function Footer() {
           <p className="max-w-xs text-sm leading-relaxed text-muted-dark">
             Pizza, kebab och à la carte i Vintrosa. Beställ för avhämtning eller slå dig ner hos oss.
           </p>
-          <div className="flex items-center gap-3 pt-1">
+          <div className="flex items-center gap-3 pt-2">
             <a
               href={site.social.facebook}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Följ Falken på Facebook"
-              className="size-10 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-ivory/80 transition-all hover:border-gold hover:bg-gold/10 hover:text-gold hover:scale-105"
+              className="group flex size-10 items-center justify-center rounded-full border border-gold/40 bg-white/5 text-gold transition-all duration-300 hover:border-gold hover:bg-gold hover:text-ink hover:scale-105 shadow-sm"
+              title="Följ Falken på Facebook"
             >
-              <FacebookIcon className="size-5" />
+              <FacebookIcon className="size-5 transition-transform group-hover:scale-110" />
             </a>
             <a
               href={site.social.instagram}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Följ Falken på Instagram"
-              className="size-10 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-ivory/80 transition-all hover:border-gold hover:bg-gold/10 hover:text-gold hover:scale-105"
+              className="group flex size-10 items-center justify-center rounded-full border border-gold/40 bg-white/5 text-gold transition-all duration-300 hover:border-gold hover:bg-gold hover:text-ink hover:scale-105 shadow-sm"
+              title="Följ Falken på Instagram"
             >
-              <InstagramIcon className="size-5" />
+              <InstagramIcon className="size-5 transition-transform group-hover:scale-110" />
             </a>
           </div>
         </div>
@@ -88,9 +90,8 @@ export function Footer() {
       </div>
 
       <div className="border-t border-ink-3">
-        <div className="wrap flex flex-col gap-2 py-6 text-xs text-muted-dark sm:flex-row sm:justify-between">
+        <div className="wrap py-6 text-center text-xs text-muted-dark">
           <p>© {site.legalName}. Alla rättigheter förbehållna.</p>
-          <p>Avhämtning · Skolgatan 4, Vintrosa</p>
         </div>
       </div>
     </footer>

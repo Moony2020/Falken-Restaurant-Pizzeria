@@ -62,7 +62,7 @@ export function FeaturedDishes() {
     return (
       <ul className="mt-8 flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:grid xl:grid-cols-3 xl:gap-4 xl:overflow-visible xl:pb-0">
         {menuSeed.filter((product) => product.featured).slice(0, 3).map((product) => (
-          <li key={product.id} className="flex w-[84vw] max-w-[24rem] shrink-0 snap-start gap-4 rounded-2xl border border-line bg-white p-3.5 shadow-card sm:w-[24rem] sm:p-4 xl:w-full xl:max-w-none">
+          <li key={product.id} className="flex w-[84vw] min-w-[300px] max-w-[24rem] shrink-0 snap-start gap-4 rounded-2xl border border-line bg-white p-3.5 shadow-card sm:w-[24rem] sm:p-4 xl:w-full xl:max-w-none">
             <div className="relative size-24 shrink-0 overflow-hidden rounded-xl sm:size-28 md:size-32">
               {product.image ? <Image src={product.image} alt={product.name} fill sizes="(max-width: 640px) 96px, 128px" className="object-cover" /> : null}
             </div>
