@@ -145,7 +145,7 @@ export const gallery: GalleryItem[] = [
     seed: 8,
     size: "wide",
     caption: "Grillad oxfilé med hemlagad bearnaise och duchessemos.",
-    src: "/images/gallery/oxfile-planka.webp",
+    src: "/images/gallery/oxfile-planka.webp?v=2",
   },
   {
     id: "restaurangen",
