@@ -183,16 +183,16 @@ export function ContactHero() {
               </Link>
             </div>
 
-            {/* Action Buttons */}
-            <div className="mt-7 flex flex-wrap items-center gap-3.5 sm:mt-8 sm:gap-4">
+            {/* Action Buttons: 2 equal buttons side-by-side on all screens with compact mobile sizing */}
+            <div className="mt-7 flex items-center gap-2.5 sm:gap-4 sm:mt-8">
               {/* Primary: Ring restaurangen */}
               <a
                 href={site.phoneHref}
-                className="inline-flex items-center justify-center gap-2.5 rounded-full bg-gradient-to-r from-[#c69f58] to-[#b78d42] px-6 py-3.5 text-sm font-semibold text-white shadow-md shadow-amber-950/10 transition-all duration-200 hover:from-[#b89148] hover:to-[#a77e34] hover:shadow-lg active:scale-[0.98] sm:px-7 sm:text-[0.92rem]"
+                className="inline-flex flex-1 sm:flex-initial sm:min-w-[210px] min-h-10 sm:min-h-12 items-center justify-center gap-1.5 sm:gap-2.5 rounded-full border border-transparent bg-gradient-to-r from-[#c69f58] to-[#b78d42] px-3 sm:px-7 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-white shadow-md shadow-amber-950/10 transition-all duration-200 hover:from-[#b89148] hover:to-[#a77e34] hover:shadow-lg active:scale-[0.98] whitespace-nowrap"
               >
                 <svg
                   viewBox="0 0 24 24"
-                  className="size-4 shrink-0 fill-current"
+                  className="size-3.5 sm:size-4 shrink-0 fill-current"
                   aria-hidden="true"
                 >
                   <path d="M6.62 10.79a15.053 15.053 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 011 1V20a1 1 0 01-1 1C10.61 21 3 13.39 3 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.46.57 3.58a1 1 0 01-.24 1.01l-2.2 2.2z" />
@@ -205,11 +205,11 @@ export function ContactHero() {
                 href={mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2.5 rounded-full border border-[#c5a059] bg-white px-6 py-3.5 text-sm font-semibold text-stone-800 shadow-sm transition-all duration-200 hover:border-[#b88e44] hover:bg-[#faf5eb] hover:text-stone-900 hover:shadow active:scale-[0.98] sm:px-7 sm:text-[0.92rem]"
+                className="inline-flex flex-1 sm:flex-initial sm:min-w-[210px] min-h-10 sm:min-h-12 items-center justify-center gap-1.5 sm:gap-2.5 rounded-full border border-[#c5a059] bg-white px-3 sm:px-7 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-stone-800 shadow-sm transition-all duration-200 hover:border-[#b88e44] hover:bg-[#faf5eb] hover:text-stone-900 hover:shadow active:scale-[0.98] whitespace-nowrap"
               >
                 <svg
                   viewBox="0 0 24 24"
-                  className="size-4 shrink-0 text-[#a67c38]"
+                  className="size-3.5 sm:size-4 shrink-0 text-[#a67c38]"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"

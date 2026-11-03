@@ -142,21 +142,21 @@ export function HomeVisit() {
           </div>
         </div>
 
-        {/* Action Buttons (Stacked on mobile so text never wraps, side-by-side on sm+) */}
-        <div className="relative z-10 mt-7 pt-5 border-t border-[#ede6da] flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
+        {/* Action Buttons: Side-by-side on all screens with compact sizing */}
+        <div className="relative z-10 mt-6 pt-4 border-t border-[#ede6da] flex items-center gap-2 sm:gap-3">
           <a
             href={site.phoneHref}
-            className="inline-flex w-full sm:flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold via-[#d4af37] to-gold-deep text-ink font-semibold text-xs sm:text-sm px-5 py-3 shadow-sm transition-all duration-200 hover:shadow-md hover:brightness-105 active:scale-[0.98] whitespace-nowrap"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 sm:gap-2 rounded-full bg-gradient-to-r from-gold via-[#d4af37] to-gold-deep text-ink font-semibold text-xs sm:text-sm px-2 sm:px-4 py-2.5 sm:py-3 min-h-10 sm:min-h-11 shadow-sm transition-all duration-200 hover:shadow-md hover:brightness-105 active:scale-[0.98] whitespace-nowrap"
           >
-            <PhoneIcon className="size-4 shrink-0" /> Ring och beställ
+            <PhoneIcon className="size-3.5 sm:size-4 shrink-0" /> Ring och beställ
           </a>
           <a
             href={mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex w-full sm:flex-1 items-center justify-center gap-2 rounded-full border border-[#ede6da] bg-white px-5 py-3 text-xs sm:text-sm font-semibold text-ink transition-all duration-200 hover:border-gold hover:bg-[#fbf9f5] active:scale-[0.98] whitespace-nowrap"
+            className="inline-flex flex-1 items-center justify-center gap-1.5 sm:gap-2 rounded-full border border-[#ede6da] bg-white px-2 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-ink min-h-10 sm:min-h-11 transition-all duration-200 hover:border-gold hover:bg-[#fbf9f5] active:scale-[0.98] whitespace-nowrap"
           >
-            <PinIcon className="size-4 text-gold-deep shrink-0" /> Vägbeskrivning
+            <PinIcon className="size-3.5 sm:size-4 text-gold-deep shrink-0" /> Vägbeskrivning
           </a>
         </div>
 
