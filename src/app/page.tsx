@@ -44,7 +44,7 @@ export default function HomePage() {
     <>
       <section aria-labelledby="hero-title" className="bg-[linear-gradient(to_bottom,var(--color-ink-2)_0%,rgba(28,31,36,0.85)_40%,rgba(28,31,36,0.25)_78%,var(--color-ivory)_100%)]">
         <div className="mx-auto w-full max-w-[1760px] px-3 pb-2 pt-2 sm:px-5 sm:pt-3 lg:px-7">
-          <div className="relative isolate flex min-h-[23.5rem] items-center overflow-hidden rounded-[1.5rem] bg-[#1a1d22] px-5 py-6 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)] ring-1 ring-white/10 sm:min-h-[25.5rem] sm:px-12 sm:py-10 lg:min-h-[27rem] lg:px-14 xl:min-h-[29rem] xl:px-16">
+          <div className="relative isolate flex min-h-[23.5rem] items-center overflow-hidden rounded-[1.5rem] bg-[#1a1d22] px-5 py-6 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)] ring-1 ring-white/10 sm:min-h-[25.5rem] sm:px-12 sm:py-10 lg:min-h-[calc(27rem+15px)] lg:px-14 xl:min-h-[calc(29rem+15px)] xl:px-16">
             
             {/* Background hero photo with pizza perfectly on the right and warm restaurant wood on the left */}
             <div className="pointer-events-none absolute inset-0 z-0 select-none overflow-hidden">
@@ -89,8 +89,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section aria-labelledby="featured-title" className="mx-auto w-full max-w-[1760px] px-3 pb-8 pt-10 sm:px-5 sm:pb-12 sm:pt-12 lg:px-7 lg:pb-14 lg:pt-14">
-        <div className="flex items-end justify-between gap-6" data-reveal="fade-up">
+      <section aria-labelledby="featured-title" className="mx-auto w-full max-w-[1760px] px-3 pb-8 pt-10 sm:px-5 sm:pb-12 sm:pt-12 lg:px-7 lg:pb-14 lg:pt-[41px]">
+        <div className="flex items-end justify-between gap-6">
           <div>
             <p className={eyebrow}>Från köket</p>
             <h2 id="featured-title" className="mt-1 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-5xl">
