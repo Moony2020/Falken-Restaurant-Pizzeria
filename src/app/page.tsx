@@ -11,6 +11,8 @@ import { OpenStatus } from "@/components/open-status";
 import { FeaturedDishes } from "@/components/featured-dishes";
 import { HomeWelcome } from "@/components/home-welcome";
 import { DagensLunchBanner } from "@/components/dagens-lunch-banner";
+import { HomeCulinaryGrid } from "@/components/home-culinary-grid";
+import { HomeReviews } from "@/components/home-reviews";
 import { HomeVisit } from "@/components/home-visit";
 import { buttonClass, eyebrow } from "@/components/ui";
 
@@ -105,6 +107,10 @@ export default function HomePage() {
       <HomeWelcome />
 
       <DagensLunchBanner />
+
+      <HomeCulinaryGrid />
+
+      <HomeReviews />
 
       {/* Så enkelt är det & Besök oss (Unified warm cream section with reduced spacing & elegant divider line) */}
       <section className="bg-[#fbf9f5] border-t border-[#ede6da] pt-12 pb-16 sm:pt-16 sm:pb-20">

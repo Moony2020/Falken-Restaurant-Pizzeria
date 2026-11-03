@@ -17,6 +17,10 @@ export const site = {
     city: "Vintrosa",
     country: "Sverige",
   },
+  social: {
+    facebook: "https://www.facebook.com/FalkenVintrosa/?locale=sv_SE",
+    instagram: "https://www.instagram.com/falkenvintrosa/",
+  },
 } as const;
 
 export const mapsUrl =

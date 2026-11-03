@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CURRENT_SEASON, hoursDisplay, mapsUrl, nav, site } from "@/data/site";
-import { MailIcon, PhoneIcon, PinIcon } from "./icons";
+import { FacebookIcon, InstagramIcon, MailIcon, PhoneIcon, PinIcon } from "./icons";
 import { Logo } from "./logo";
 
 export function Footer() {
@@ -12,6 +12,26 @@ export function Footer() {
           <p className="max-w-xs text-sm leading-relaxed text-muted-dark">
             Pizza, kebab och à la carte i Vintrosa. Beställ för avhämtning eller slå dig ner hos oss.
           </p>
+          <div className="flex items-center gap-3 pt-1">
+            <a
+              href={site.social.facebook}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Följ Falken på Facebook"
+              className="size-10 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-ivory/80 transition-all hover:border-gold hover:bg-gold/10 hover:text-gold hover:scale-105"
+            >
+              <FacebookIcon className="size-5" />
+            </a>
+            <a
+              href={site.social.instagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Följ Falken på Instagram"
+              className="size-10 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-ivory/80 transition-all hover:border-gold hover:bg-gold/10 hover:text-gold hover:scale-105"
+            >
+              <InstagramIcon className="size-5" />
+            </a>
+          </div>
         </div>
 
         <nav aria-label="Sidor">
