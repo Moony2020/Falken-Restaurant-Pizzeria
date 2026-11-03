@@ -52,8 +52,17 @@ export function HomeCulinaryGrid() {
             </p>
           </div>
 
-          {/* Social Follow Badges */}
+          {/* Social Follow Badges (Facebook first, then Instagram) */}
           <div className="flex flex-wrap items-center gap-3 shrink-0">
+            <a
+              href={site.social.facebook}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-gold/40 bg-gold/10 px-4 py-2 text-xs font-semibold text-ink transition-all duration-200 hover:bg-gold hover:border-gold hover:shadow-sm"
+            >
+              <FacebookIcon className="size-4 text-gold-deep" />
+              <span>Facebook</span>
+            </a>
             <a
               href={site.social.instagram}
               target="_blank"
@@ -62,15 +71,6 @@ export function HomeCulinaryGrid() {
             >
               <InstagramIcon className="size-4 text-gold-deep" />
               <span>@falkenvintrosa</span>
-            </a>
-            <a
-              href={site.social.facebook}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-full border border-[#ede6da] bg-[#fbf9f5] px-4 py-2 text-xs font-semibold text-ink transition-all duration-200 hover:border-gold hover:bg-white hover:shadow-sm"
-            >
-              <FacebookIcon className="size-4 text-gold-deep" />
-              <span>Facebook</span>
             </a>
           </div>
         </div>
@@ -125,3 +125,4 @@ export function HomeCulinaryGrid() {
     </section>
   );
 }
+
