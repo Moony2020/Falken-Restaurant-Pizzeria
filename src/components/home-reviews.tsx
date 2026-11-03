@@ -1,33 +1,38 @@
-import { FalconEmblem } from "@/components/icons";
+import { ArrowIcon, FalconEmblem, GoogleIcon } from "@/components/icons";
 
 interface Review {
   quote: string;
   author: string;
   role: string;
+  detail?: string;
   source: string;
 }
 
+const reviewsGoogleUrl = "https://www.google.com/search?q=Restaurang+Falcken+Recensioner";
+
 const reviews: Review[] = [
   {
-    quote:
-      "Otroligt goda pizzor och fantastisk oxfiléplanka. Alltid varm och personlig service i en genuint mysig restaurangmiljö.",
-    author: "Marcus Lindqvist",
-    role: "Lokal gäst i Vintrosa",
-    source: "Google Recension",
+    quote: "Mycket bra lunchmat och trevlig personal.",
+    author: "Christian Granath",
+    role: "Lokal gäst",
+    detail: "Service: 5/5 • Mat: 4/5",
+    source: "Google-recension",
   },
   {
     quote:
-      "Bästa matstället i trakten! Fräscha råvaror, generösa portioner och perfekt stämning oavsett om man äter här eller tar med hem.",
-    author: "Sara & Johan",
-    role: "Återkommande familj",
-    source: "Google Recension",
-  },
-  {
-    quote:
-      "Dagens lunch är svårslagen – vällagat från grunden med krispig pizzasallad, hembakat bröd och kaffe på maten. Fem stjärnor!",
-    author: "Erik Nilsson",
+      "God svensk husmanskost med 3 olika alternativ, stor salladsbuffé och dricka. Hälsar glatt när man kommer till kassan.",
+    author: "Robert Fält",
     role: "Lunchgäst",
-    source: "Google Recension",
+    detail: "4 recensioner • 29 foton",
+    source: "Google-recension",
+  },
+  {
+    quote:
+      "Själva salladen var fräsch och maten smakade bra. Lokalen fungerar toppen för en god och snabb lunch.",
+    author: "Ulf Söderström",
+    role: "Local Guide",
+    detail: "1 800+ recensioner",
+    source: "Google-recension",
   },
 ];
 
@@ -48,15 +53,23 @@ export function HomeReviews() {
             Älskat av <span className="text-gold-deep italic lowercase font-serif tracking-normal">Vintrosa</span>
           </h2>
           
-          {/* Trust badge */}
-          <div className="mt-3.5 inline-flex items-center gap-2 rounded-full border border-gold/30 bg-white px-4 py-1.5 text-xs font-medium text-ink shadow-xs">
-            <span className="text-gold-deep tracking-widest font-bold">★★★★★</span>
+          {/* Real Google Rating Badge from Google Business Profile */}
+          <a
+            href={reviewsGoogleUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group mt-4 inline-flex items-center gap-2.5 rounded-full border border-gold/30 bg-white px-4 py-2 text-xs font-medium text-ink shadow-xs transition-all duration-200 hover:border-gold hover:shadow-sm"
+          >
+            <GoogleIcon className="size-4 shrink-0" />
+            <span className="font-bold text-ink">4,4 / 5</span>
+            <span className="text-gold-deep tracking-wider font-bold">★★★★★</span>
             <span className="text-line" aria-hidden="true">|</span>
-            <span className="text-muted">4.6 på Google • Över 200 nöjda gäster</span>
-          </div>
+            <span className="text-muted group-hover:text-gold-deep transition-colors">340 recensioner på Google</span>
+            <ArrowIcon className="size-3 text-muted transition-transform group-hover:translate-x-0.5 group-hover:text-gold-deep" />
+          </a>
         </div>
 
-        {/* Reviews Grid */}
+        {/* Real Reviews Grid */}
         <div className="grid gap-6 md:grid-cols-3">
           {reviews.map((r, i) => (
             <div
@@ -74,8 +87,8 @@ export function HomeReviews() {
                   {"★★★★★"}
                 </div>
 
-                {/* Quote */}
-                <p className="mt-4 text-xs sm:text-sm text-ink/85 leading-relaxed italic font-serif text-[0.98rem]">
+                {/* Real Quote */}
+                <p className="mt-4 text-sm sm:text-base text-ink/85 leading-relaxed italic font-serif">
                   &ldquo;{r.quote}&rdquo;
                 </p>
               </div>
@@ -84,14 +97,30 @@ export function HomeReviews() {
               <div className="relative z-10 mt-6 pt-4 border-t border-[#ede6da] flex items-center justify-between">
                 <div>
                   <p className="text-xs sm:text-sm font-semibold text-ink">{r.author}</p>
-                  <p className="text-[0.7rem] text-muted">{r.role}</p>
+                  <p className="text-[0.7rem] text-muted">
+                    {r.role} {r.detail && `• ${r.detail}`}
+                  </p>
                 </div>
-                <span className="text-[0.68rem] font-medium text-gold-deep bg-gold/10 px-2 py-0.5 rounded-full border border-gold/20">
-                  {r.source}
+                <span className="inline-flex items-center gap-1 text-[0.68rem] font-medium text-gold-deep bg-gold/10 px-2.5 py-1 rounded-full border border-gold/20">
+                  <GoogleIcon className="size-3" />
+                  <span>Google</span>
                 </span>
               </div>
             </div>
           ))}
+        </div>
+
+        {/* CTA to view all reviews on Google */}
+        <div className="mt-8 text-center">
+          <a
+            href={reviewsGoogleUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-gold-deep hover:underline"
+          >
+            <span>Läs alla 340 recensioner på Google</span>
+            <ArrowIcon className="size-3.5" />
+          </a>
         </div>
 
       </div>
