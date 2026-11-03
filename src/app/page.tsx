@@ -89,7 +89,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section aria-labelledby="featured-title" className="mx-auto w-full max-w-[1760px] px-3 pb-16 pt-10 sm:px-5 sm:pb-20 sm:pt-12 lg:px-7 lg:pt-14">
+      <section aria-labelledby="featured-title" className="mx-auto w-full max-w-[1760px] px-3 pb-8 pt-10 sm:px-5 sm:pb-12 sm:pt-12 lg:px-7 lg:pb-14 lg:pt-14">
         <div className="flex items-end justify-between gap-6">
           <div>
             <p className={eyebrow}>Från köket</p>

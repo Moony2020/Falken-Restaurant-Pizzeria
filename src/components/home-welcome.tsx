@@ -11,7 +11,7 @@ import { eyebrow } from "@/components/ui";
 
 export function HomeWelcome() {
   return (
-    <section aria-labelledby="welcome-title" className="bg-[#fbf9f5] py-12 sm:py-20 border-y border-[#ede6da]">
+    <section aria-labelledby="welcome-title" className="bg-[#fbf9f5] pt-7 pb-12 sm:pt-11 sm:pb-16 lg:pt-12 lg:pb-20 border-y border-[#ede6da]">
       <div className="mx-auto w-full max-w-[1760px] px-3 sm:px-5 lg:px-7">
         
         {/* Top Header: Editorial Title & Story */}
