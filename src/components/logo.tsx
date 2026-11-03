@@ -21,7 +21,7 @@ export function Logo({ tone = "light" }: { tone?: "light" | "dark" }) {
         </span>
       </div>
       <span
-        className={`mt-1 text-center text-[0.46rem] font-medium uppercase tracking-[0.38em] sm:text-[0.54rem] sm:tracking-[0.44em] translate-x-2.5 sm:translate-x-3 ${sub}`}
+        className={`mt-1 text-center text-[0.46rem] font-medium uppercase tracking-[0.38em] sm:text-[0.54rem] sm:tracking-[0.44em] translate-x-[13px] sm:translate-x-[15px] ${sub}`}
       >
         Restaurang &amp; Pizzeria
       </span>
