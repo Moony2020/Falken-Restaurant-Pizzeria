@@ -15,7 +15,7 @@ export function HomeWelcome() {
       <div className="mx-auto w-full max-w-[1760px] px-3 sm:px-5 lg:px-7">
         
         {/* Top Header: Editorial Title & Story */}
-        <div className="mx-auto max-w-3xl text-center mb-8 sm:mb-12">
+        <div className="mx-auto max-w-3xl text-center mb-8 sm:mb-12" data-reveal="fade-up">
           <div className="inline-flex items-center justify-center gap-2 mb-2 sm:mb-3">
             <span className="h-px w-8 bg-gold/60" />
             <FalconEmblem className="size-4 sm:size-5 text-gold shrink-0" />
@@ -36,11 +36,11 @@ export function HomeWelcome() {
         </div>
 
         {/* Refined Feature Showcase: Photo on Left with Small Glassy Card, "MER ÄN BARA MAT" on Right */}
-        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white shadow-sm transition-all duration-300 hover:shadow-md">
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white shadow-sm transition-all duration-300 hover:shadow-md" data-reveal="fade-up">
           <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch">
             
             {/* Left Side (50%): Photo with Small Floating Glassy Card */}
-            <div className="lg:col-span-6 relative min-h-[320px] sm:min-h-[400px] lg:min-h-[490px] w-full overflow-hidden bg-[#1a1d22]">
+            <div className="lg:col-span-6 relative min-h-[320px] sm:min-h-[400px] lg:min-h-[490px] w-full overflow-hidden bg-[#1a1d22]" data-reveal="scale-up" data-delay="100">
               <Image
                 src="/images/gallery/restaurant1.webp"
                 alt="Restaurang Falken interiör och matsal i Vintrosa"
@@ -50,7 +50,7 @@ export function HomeWelcome() {
               />
 
               {/* Small Glassy Card in bottom-left corner */}
-              <div className="absolute bottom-3.5 left-3.5 sm:bottom-5 sm:left-5 z-10 max-w-[260px] sm:max-w-[310px]">
+              <div className="absolute bottom-3.5 left-3.5 sm:bottom-5 sm:left-5 z-10 max-w-[260px] sm:max-w-[310px]" data-reveal="fade-up" data-delay="200">
                 <div className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-black/60 backdrop-blur-xl border border-gold/35 p-3.5 sm:p-4 text-ivory shadow-2xl transition-all duration-300 hover:border-gold/55 hover:bg-black/65">
                   {/* Subtle Falcon Watermark */}
                   <div className="pointer-events-none absolute -right-2 -bottom-2 select-none text-gold/15" aria-hidden="true">
@@ -80,7 +80,7 @@ export function HomeWelcome() {
                 <FalconEmblem className="size-48 sm:size-64 lg:size-72" />
               </div>
 
-              <div className="relative z-10">
+              <div className="relative z-10" data-reveal="fade-up" data-delay="150">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold-deep">
                   Vår restaurang
                 </p>

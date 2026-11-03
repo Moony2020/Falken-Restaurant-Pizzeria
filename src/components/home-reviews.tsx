@@ -54,7 +54,7 @@ export function HomeReviews() {
       <div className="mx-auto w-full max-w-[1760px] px-3 sm:px-5 lg:px-7">
         
         {/* Section Header with Live Google Badge & Navigation Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6" data-reveal="fade-up">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold-deep">
               Vad våra gäster säger
@@ -108,6 +108,7 @@ export function HomeReviews() {
         {/* Responsive Horizontal Scroll Carousel (Generous width on mobile, 3-cols on Desktop) */}
         <div
           ref={scrollRef}
+          data-reveal="fade-up"
           className="flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory pb-4 pt-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:grid lg:grid-cols-3 lg:overflow-visible lg:pb-0"
         >
           {reviews.map((r, i) => (
@@ -150,7 +151,7 @@ export function HomeReviews() {
         </div>
 
         {/* CTA to view all reviews on Google */}
-        <div className="mt-8 text-center">
+        <div className="mt-8 text-center" data-reveal="fade-up" data-delay="150">
           <a
             href={reviewsGoogleUrl}
             target="_blank"

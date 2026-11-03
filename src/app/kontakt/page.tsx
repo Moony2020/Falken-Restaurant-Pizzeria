@@ -89,14 +89,14 @@ export default function KontaktPage() {
             {site.legalName}
           </h2>
           <ul className="mt-8 space-y-3">
-            {contacts.map(({ icon: Icon, label, value, href, external }) => (
+            {contacts.map(({ icon: Icon, label, value, href, external }, idx) => (
               <li key={label}>
                 <a
                   href={href}
                   {...(external
                     ? { target: "_blank", rel: "noopener noreferrer" }
                     : {})}
-                  className="group flex items-center gap-4 rounded-2xl border border-line bg-white p-4 shadow-card transition hover:border-gold"
+                  className="group flex items-center gap-4 rounded-2xl border border-line bg-white p-4 shadow-card transition hover:border-gold" data-reveal="fade-up" data-delay={(idx * 100).toString()}
                 >
                   <span className="grid size-12 shrink-0 place-items-center rounded-full bg-cream text-gold-deep transition group-hover:bg-gold group-hover:text-ink">
                     <Icon className="size-5" />
@@ -131,6 +131,7 @@ export default function KontaktPage() {
         <section
           id="oppettider"
           aria-labelledby="hours-title"
+          data-reveal="fade-up"
           className="scroll-mt-32 rounded-2xl bg-ink p-7 text-ivory sm:p-10"
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -224,7 +225,7 @@ export default function KontaktPage() {
         </div>
       </section>
 
-      <section aria-labelledby="faq-title" className="bg-cream py-16 sm:py-20">
+      <section aria-labelledby="faq-title" className="bg-cream py-16 sm:py-20" data-reveal="fade-up">
         <div className="wrap">
           <p className={eyebrow}>Vanliga frågor</p>
           <h2

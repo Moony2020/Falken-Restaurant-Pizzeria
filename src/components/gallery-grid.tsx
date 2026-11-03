@@ -127,9 +127,11 @@ export function GalleryGrid() {
             : "grid-cols-2 lg:grid-cols-3"
         }`}
       >
-        {items.map((item) => (
+        {items.map((item, idx) => (
           <li
             key={item.id}
+            data-reveal="fade-up"
+            data-delay={((idx % 4) * 80).toString()}
             className={
               filter === "alla" ? sizeClass[item.size] : "aspect-[4/3]"
             }

@@ -47,7 +47,7 @@ export function HomeVisit() {
     <div aria-labelledby="visit-title" className="grid gap-6 lg:grid-cols-12 items-stretch">
       
       {/* Card 1: Hitta hit (Location, Contact & Direct Actions) */}
-      <div className="lg:col-span-6 relative overflow-hidden rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white px-3 py-5 sm:p-8 lg:p-9 shadow-sm transition-all duration-300 hover:shadow-md flex flex-col justify-between">
+      <div className="lg:col-span-6 relative overflow-hidden rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white px-3 py-5 sm:p-8 lg:p-9 shadow-sm transition-all duration-300 hover:shadow-md flex flex-col justify-between" data-reveal="fade-up">
         
         {/* Subtle Watermark Falcon Emblem */}
         <div className="pointer-events-none absolute -right-6 -bottom-6 select-none text-gold/[0.07]" aria-hidden="true">
@@ -163,7 +163,7 @@ export function HomeVisit() {
       </div>
 
       {/* Card 2: Öppettider (Live Status & Highlighting Today) */}
-      <div className="lg:col-span-6 relative overflow-hidden rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white px-3 py-5 sm:p-8 lg:p-9 shadow-sm transition-all duration-300 hover:shadow-md flex flex-col justify-between">
+      <div className="lg:col-span-6 relative overflow-hidden rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white px-3 py-5 sm:p-8 lg:p-9 shadow-sm transition-all duration-300 hover:shadow-md flex flex-col justify-between" data-reveal="fade-up" data-delay="120">
         
         {/* Subtle Watermark Falcon Emblem */}
         <div className="pointer-events-none absolute -right-6 -bottom-6 select-none text-gold/[0.07]" aria-hidden="true">

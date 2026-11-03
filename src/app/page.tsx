@@ -90,7 +90,7 @@ export default function HomePage() {
       </section>
 
       <section aria-labelledby="featured-title" className="mx-auto w-full max-w-[1760px] px-3 pb-8 pt-10 sm:px-5 sm:pb-12 sm:pt-12 lg:px-7 lg:pb-14 lg:pt-14">
-        <div className="flex items-end justify-between gap-6">
+        <div className="flex items-end justify-between gap-6" data-reveal="fade-up">
           <div>
             <p className={eyebrow}>Från köket</p>
             <h2 id="featured-title" className="mt-1 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-5xl">
@@ -117,16 +117,16 @@ export default function HomePage() {
         <div className="wrap">
           
           {/* Så enkelt är det */}
-          <div aria-labelledby="how-title">
+          <div aria-labelledby="how-title" data-reveal="fade-up">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold-deep">Beställ för avhämtning</p>
             <h2 id="how-title" className="mt-1 font-display text-2xl font-normal uppercase min-[440px]:text-3xl sm:text-5xl tracking-wide text-ink">
               Så enkelt är det
             </h2>
             <ol className="mt-6 sm:mt-8 grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {steps.map((s) => (
+              {steps.map((s, idx) => (
                 <li
                   key={s.title}
-                  className="relative rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white p-6 sm:p-7 shadow-sm transition-all duration-300 hover:shadow-md"
+                  className="relative rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white p-6 sm:p-7 shadow-sm transition-all duration-300 hover:shadow-md" data-reveal="fade-up" data-delay={(idx * 100).toString()}
                 >
                   <div className="flex items-center justify-start">
                     <s.Icon className="size-8 sm:size-9 text-gold-deep" />
@@ -139,7 +139,7 @@ export default function HomePage() {
           </div>
 
           {/* Elegant Divider Line between sections (reduces dead space & creates cohesive flow) */}
-          <div className="my-10 sm:my-14 h-px w-full bg-[#ede6da]" aria-hidden="true" />
+          <div className="my-10 sm:my-14 h-px w-full bg-[#ede6da]" aria-hidden="true" data-reveal="fade-in" />
 
           {/* Hitta hit & Öppettider (Luxury Redesigned Experience) */}
           <HomeVisit />

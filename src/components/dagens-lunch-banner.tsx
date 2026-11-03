@@ -7,10 +7,10 @@ import { kr } from "@/lib/pricing";
 export function DagensLunchBanner() {
   return (
     <section aria-labelledby="lunch-title" className="mx-auto w-full max-w-[1760px] px-3 py-10 sm:px-5 sm:py-16 lg:px-7">
-      <div className="relative isolate overflow-hidden rounded-2xl sm:rounded-3xl bg-[#121316] text-ivory border border-white/10 shadow-2xl">
+      <div className="relative isolate overflow-hidden rounded-2xl sm:rounded-3xl bg-[#121316] text-ivory border border-white/10 shadow-2xl" data-reveal="fade-up">
         
         {/* Content & Price Layout */}
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between p-6 sm:p-8 md:p-10 lg:py-12 lg:pl-12 lg:pr-6 lg:mr-[320px] xl:mr-[390px]">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between p-6 sm:p-8 md:p-10 lg:py-12 lg:pl-12 lg:pr-6 lg:mr-[320px] xl:mr-[390px]" data-reveal="fade-right" data-delay="100">
           <div className="max-w-xl">
             <p className="text-[0.72rem] sm:text-xs font-semibold uppercase tracking-[0.24em] text-gold">
               Vardagar {dagensLunch.time}
@@ -54,7 +54,7 @@ export function DagensLunchBanner() {
         {/* Full-Height Salad Plate photo on the right:
             - hidden on mobile & tablets (< lg), COMPLETELY REMOVED so no cut-off slivers appear!
             - on lg+ desktop: absolute inset-y-0 right-0 spanning 100% of card height with NO top/bottom gaps! */}
-        <div className="hidden lg:block absolute inset-y-0 right-0 w-[320px] xl:w-[390px] overflow-hidden pointer-events-none select-none">
+        <div className="hidden lg:block absolute inset-y-0 right-0 w-[320px] xl:w-[390px] overflow-hidden pointer-events-none select-none" data-reveal="fade-left" data-delay="150">
           <Image
             src="/images/dishes/falken-lunch-salad.webp"
             alt="Fräsch sallad ingår i Dagens Lunch hos Falken"

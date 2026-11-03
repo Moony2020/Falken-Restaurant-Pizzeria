@@ -41,10 +41,10 @@ export default function GalleriPage() {
         <GalleryGrid />
 
         <ul className="mt-14 grid gap-4 md:grid-cols-3">
-          {facts.map((f) => (
+          {facts.map((f, idx) => (
             <li
               key={f.title}
-              className="rounded-2xl border border-line bg-white p-6 shadow-card"
+              className="rounded-2xl border border-line bg-white p-6 shadow-card" data-reveal="fade-up" data-delay={(idx * 100).toString()}
             >
               <h2 className="font-display text-xl font-semibold uppercase tracking-wide">
                 {f.title}
@@ -62,7 +62,7 @@ export default function GalleriPage() {
           ))}
         </ul>
 
-        <div className="mt-10 overflow-hidden rounded-3xl bg-ink px-6 py-12 text-ivory sm:px-12">
+        <div className="mt-10 overflow-hidden rounded-3xl bg-ink px-6 py-12 text-ivory sm:px-12" data-reveal="fade-up">
           <div className="flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
             <div className="max-w-xl">
               <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold">

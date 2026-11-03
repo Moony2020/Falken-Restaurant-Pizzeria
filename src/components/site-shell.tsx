@@ -7,6 +7,7 @@ import { Footer } from "@/components/footer";
 import { CartDrawer } from "@/components/order/cart-drawer";
 import { ProductDialog } from "@/components/order/product-dialog";
 import { Toast } from "@/components/order/toast";
+import { ScrollObserver } from "@/components/scroll-observer";
 
 export function SiteShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -38,6 +39,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <ProductDialog />
       <CartDrawer />
       <Toast />
+      <ScrollObserver />
     </>
   );
 }

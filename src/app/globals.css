@@ -150,6 +150,11 @@ html:has(dialog[open]) {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+  html.js-reveal [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
 }
 
 /* Native <select> with the arrow drawn inside the field, a comfortable distance from the border. */
@@ -186,3 +191,64 @@ html:has(dialog[open]) {
   }
 }
 
+
+
+/* ==========================================================================
+   Smooth Luxury Scroll-Reveal System
+   ========================================================================== */
+
+/* Only activate hidden initial state when JS is verified running on client */
+html.js-reveal [data-reveal] {
+  opacity: 0;
+  will-change: opacity, transform;
+  transition-property: opacity, transform;
+  transition-duration: 0.65s;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Initial variants before reveal */
+html.js-reveal [data-reveal="fade-up"],
+html.js-reveal [data-reveal=""] {
+  transform: translate3d(0, 24px, 0);
+}
+
+html.js-reveal [data-reveal="fade-in"] {
+  transform: translate3d(0, 0, 0);
+}
+
+html.js-reveal [data-reveal="scale-up"] {
+  transform: scale3d(0.96, 0.96, 1);
+}
+
+html.js-reveal [data-reveal="fade-left"] {
+  transform: translate3d(-24px, 0, 0);
+}
+
+html.js-reveal [data-reveal="fade-right"] {
+  transform: translate3d(24px, 0, 0);
+}
+
+/* Revealed state (hardware-accelerated, silky smooth) */
+html.js-reveal [data-reveal].is-revealed {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale3d(1, 1, 1);
+}
+
+/* Preset staggered delays for cascading grids / lists */
+html.js-reveal [data-delay="50"] { transition-delay: 50ms; }
+html.js-reveal [data-delay="60"] { transition-delay: 60ms; }
+html.js-reveal [data-delay="80"] { transition-delay: 80ms; }
+html.js-reveal [data-delay="100"] { transition-delay: 100ms; }
+html.js-reveal [data-delay="120"] { transition-delay: 120ms; }
+html.js-reveal [data-delay="150"] { transition-delay: 150ms; }
+html.js-reveal [data-delay="160"] { transition-delay: 160ms; }
+html.js-reveal [data-delay="180"] { transition-delay: 180ms; }
+html.js-reveal [data-delay="200"] { transition-delay: 200ms; }
+html.js-reveal [data-delay="240"] { transition-delay: 240ms; }
+html.js-reveal [data-delay="250"] { transition-delay: 250ms; }
+html.js-reveal [data-delay="260"] { transition-delay: 260ms; }
+html.js-reveal [data-delay="300"] { transition-delay: 300ms; }
+html.js-reveal [data-delay="320"] { transition-delay: 320ms; }
+html.js-reveal [data-delay="350"] { transition-delay: 350ms; }
+html.js-reveal [data-delay="400"] { transition-delay: 400ms; }
+html.js-reveal [data-delay="500"] { transition-delay: 500ms; }

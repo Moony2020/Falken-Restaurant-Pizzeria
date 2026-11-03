@@ -15,7 +15,12 @@ export function ingredientText(product: PublicProduct): string {
   return product.ingredients.map((s, i) => (i === 0 ? s : s.toLowerCase())).join(", ");
 }
 
-export function ProductCard({ product, featured = false }: { product: PublicProduct; featured?: boolean }) {
+export interface ProductCardProps extends React.HTMLAttributes<HTMLLIElement> {
+  product: PublicProduct;
+  featured?: boolean;
+}
+
+export function ProductCard({ product, featured = false, className = "", ...props }: ProductCardProps) {
   const { openProduct } = useOrder();
   const { status: restaurantStatus } = useRestaurantStatus();
   const multi = product.variants.length > 1;
@@ -30,7 +35,8 @@ export function ProductCard({ product, featured = false }: { product: PublicProd
         featured
           ? "flex w-[84vw] min-w-[300px] max-w-[24rem] sm:w-[24rem] sm:max-w-none shrink-0 snap-start gap-3.5 p-3.5 sm:gap-4 sm:p-4 xl:w-auto xl:max-w-none"
           : "flex gap-2.5 p-2.5 sm:gap-4 sm:p-3.5"
-      }`}
+      } ${className}`}
+      {...props}
     >
       <div className={featured ? "flex flex-col shrink-0 w-24 sm:w-28 md:w-32" : "relative size-20 shrink-0 overflow-hidden rounded-xl sm:size-28 md:size-32"}>
         <div className="relative aspect-square w-full overflow-hidden rounded-xl">

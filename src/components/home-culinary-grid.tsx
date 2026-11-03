@@ -36,7 +36,7 @@ export function HomeCulinaryGrid() {
       <div className="mx-auto w-full max-w-[1760px] px-3 sm:px-5 lg:px-7">
         
         {/* Editorial Header & Social Follow */}
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10 sm:mb-12">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-10 sm:mb-12" data-reveal="fade-up">
           <div className="max-w-2xl">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold-deep">
               Matglädje & gemenskap
@@ -81,7 +81,7 @@ export function HomeCulinaryGrid() {
             <Link
               key={idx}
               href="/galleri"
-              className="group relative overflow-hidden rounded-2xl border border-[#ede6da] bg-[#1a1d22] aspect-[4/5] shadow-sm transition-all duration-300 hover:shadow-lg hover:border-gold/50"
+              className="group relative overflow-hidden rounded-2xl border border-[#ede6da] bg-[#1a1d22] aspect-[4/5] shadow-sm transition-all duration-300 hover:shadow-lg hover:border-gold/50" data-reveal="fade-up" data-delay={(idx * 100).toString()}
             >
               <Image
                 src={item.image}

@@ -98,7 +98,7 @@ export function ContactHero() {
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-12 xl:gap-16">
           {/* Left Column: Heading, intro text, live status, quick info cards & action buttons */}
-          <div className="lg:col-span-7 xl:col-span-7">
+          <div className="lg:col-span-7 xl:col-span-7" data-reveal="fade-up">
             {/* Eyebrow */}
             <p className="text-[0.72rem] font-semibold uppercase tracking-[0.28em] text-[#a17a38] sm:text-xs">
               VÄLKOMMEN
@@ -225,7 +225,7 @@ export function ContactHero() {
           </div>
 
           {/* Right Column: Hero photo with luxury rounded gold border */}
-          <div className="lg:col-span-5 xl:col-span-5">
+          <div className="lg:col-span-5 xl:col-span-5" data-reveal="fade-left" data-delay="150">
             <div className="relative mx-auto w-full max-w-lg lg:max-w-none">
               <div className="relative overflow-hidden rounded-[2rem] border-[3px] border-[#c5a059] shadow-2xl shadow-stone-800/15 sm:rounded-[2.4rem] sm:border-[3.5px] lg:rounded-[2.8rem]">
                 <div className="relative aspect-[4/3] w-full sm:aspect-[16/11] lg:aspect-[4/3]">
