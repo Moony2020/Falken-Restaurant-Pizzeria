@@ -1,6 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowIcon, FalconEmblem } from "@/components/icons";
+import {
+  ArrowIcon,
+  FalconEmblem,
+  FeatureFoodIcon,
+  FeatureAmbianceIcon,
+  FeatureLocationIcon,
+} from "@/components/icons";
 import { eyebrow } from "@/components/ui";
 
 export function HomeWelcome() {
@@ -29,60 +35,78 @@ export function HomeWelcome() {
           </p>
         </div>
 
-        {/* Panoramic Restaurant Atmosphere with Floating Glassmorphism Card */}
-        <div className="relative group overflow-hidden rounded-2xl sm:rounded-3xl bg-[#1a1d22] shadow-xl ring-1 ring-black/5 min-h-[420px] sm:min-h-[480px] lg:min-h-[520px] flex flex-col justify-between p-4 sm:p-8 lg:p-10">
-          
-          {/* Full-bleed background photo */}
-          <Image
-            src="/images/gallery/restaurant1.webp"
-            alt="Restaurang Falken interiör och matsal i Vintrosa"
-            fill
-            sizes="(min-width: 1760px) 1760px, 100vw"
-            className="object-cover object-center transition-transform duration-700 group-hover:scale-[1.02]"
-          />
+        {/* Refined Feature Banner Card: Restaurant Photo on Left, "MER ÄN BARA MAT" on Right */}
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white shadow-sm transition-all duration-300 hover:shadow-md">
+          <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch">
+            
+            {/* Left Side (50%): Warm Restaurant Photo */}
+            <div className="lg:col-span-6 relative min-h-[300px] sm:min-h-[380px] lg:min-h-[480px] w-full overflow-hidden bg-[#1a1d22]">
+              <Image
+                src="/images/gallery/restaurant1.webp"
+                alt="Restaurang Falken interiör och matsal i Vintrosa"
+                fill
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="object-cover object-center transition-transform duration-700 hover:scale-[1.02]"
+              />
+            </div>
 
-          {/* Top Left Badge */}
-          <div className="relative z-10">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur-md px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-gold border border-gold/30 shadow-md">
-              <span className="size-1.5 rounded-full bg-gold animate-pulse" />
-              Vår Restaurang
-            </span>
-          </div>
-
-          {/* Bottom Left Floating Glassmorphism Card */}
-          <div className="relative z-10 max-w-lg mt-auto">
-            <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-black/50 backdrop-blur-xl border border-gold/30 p-6 sm:p-8 text-ivory shadow-2xl transition-all duration-300 hover:border-gold/50 hover:bg-black/55">
+            {/* Right Side (50%): "MER ÄN BARA MAT", 3 Badges, CTA Button */}
+            <div className="lg:col-span-6 relative p-6 sm:p-9 lg:p-12 xl:p-14 flex flex-col justify-center bg-white overflow-hidden">
               
-              {/* Subtle Falcon Watermark in the bottom-right of the glass card */}
-              <div className="pointer-events-none absolute -right-3 -bottom-3 select-none text-gold/15" aria-hidden="true">
-                <FalconEmblem className="size-28 sm:size-36" />
+              {/* Watermark Falcon Silhouette */}
+              <div className="pointer-events-none absolute -right-6 -top-6 sm:-right-8 sm:-top-8 select-none text-gold/[0.08]" aria-hidden="true">
+                <FalconEmblem className="size-48 sm:size-64 lg:size-80" />
               </div>
 
               <div className="relative z-10">
-                <p className="text-[0.7rem] sm:text-xs font-semibold uppercase tracking-[0.22em] text-gold">
-                  Stämningsfull atmosfär
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-gold-deep">
+                  Vår restaurang
                 </p>
-                <h3 className="mt-1.5 font-display text-xl sm:text-2xl lg:text-3xl font-medium tracking-wide text-ivory">
-                  En trivsam kväll i Vintrosa
+                <h3 className="mt-2 font-display text-2xl sm:text-3xl lg:text-[2.35rem] font-normal uppercase tracking-wide text-ink leading-tight">
+                  Mer än bara mat
                 </h3>
-                <p className="mt-2.5 text-xs sm:text-sm text-ivory/85 leading-relaxed">
-                  Slå dig ner i vår ombonade matsal på Skolgatan 4 för en god middag, en snabb lunch eller en trevlig helgkväll.
+                <p className="mt-3.5 text-xs sm:text-sm lg:text-[0.95rem] leading-relaxed text-muted max-w-lg">
+                  En trivsam restaurang i Vintrosa där god mat, varm service och en avslappnad atmosfär möts. Perfekt för både vardag och helg.
                 </p>
-                
-                <div className="mt-5 pt-3.5 border-t border-white/10 flex items-center justify-between">
+
+                {/* 3 Circular Value Badges matching user mockup */}
+                <div className="mt-8 pt-6 border-t border-[#ede6da] grid grid-cols-3 gap-2 sm:gap-4 items-center">
+                  <div className="flex flex-col items-center text-center">
+                    <div className="size-11 sm:size-12 rounded-full border border-gold/40 bg-gold/5 flex items-center justify-center text-gold-deep transition-transform duration-300 hover:scale-105">
+                      <FeatureFoodIcon className="size-5 sm:size-6" />
+                    </div>
+                    <span className="mt-2 text-[0.75rem] sm:text-xs font-medium text-ink">God mat</span>
+                  </div>
+
+                  <div className="flex flex-col items-center text-center border-x border-[#ede6da]/80 px-1 sm:px-2">
+                    <div className="size-11 sm:size-12 rounded-full border border-gold/40 bg-gold/5 flex items-center justify-center text-gold-deep transition-transform duration-300 hover:scale-105">
+                      <FeatureAmbianceIcon className="size-5 sm:size-6" />
+                    </div>
+                    <span className="mt-2 text-[0.75rem] sm:text-xs font-medium text-ink">Trevlig miljö</span>
+                  </div>
+
+                  <div className="flex flex-col items-center text-center">
+                    <div className="size-11 sm:size-12 rounded-full border border-gold/40 bg-gold/5 flex items-center justify-center text-gold-deep transition-transform duration-300 hover:scale-105">
+                      <FeatureLocationIcon className="size-5 sm:size-6" />
+                    </div>
+                    <span className="mt-2 text-[0.75rem] sm:text-xs font-medium text-ink">Centralt i Vintrosa</span>
+                  </div>
+                </div>
+
+                {/* Call To Action Button */}
+                <div className="mt-8 sm:mt-10">
                   <Link
                     href="/galleri"
-                    className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-gold hover:text-gold-light transition-colors group/link"
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold via-[#d4af37] to-gold-deep text-ink font-semibold text-xs sm:text-sm px-7 py-3 shadow-sm transition-all duration-200 hover:shadow-md hover:brightness-105 active:scale-[0.98]"
                   >
-                    <span>Upptäck vår miljö</span>
-                    <ArrowIcon className="size-4 transition-transform group-hover/link:translate-x-1" />
+                    Se galleriet <ArrowIcon className="size-4" />
                   </Link>
                 </div>
               </div>
 
             </div>
-          </div>
 
+          </div>
         </div>
 
       </div>
