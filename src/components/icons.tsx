@@ -218,3 +218,29 @@ export const StepBagIcon = (p: IconProps) => (
   </Icon>
 );
 
+export const FeatureFoodIcon = (p: IconProps) => (
+  <Icon {...p}>
+    {/* Fork on the left */}
+    <path d="M6 3v5a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V3M8 10v11" />
+    {/* Knife/Spoon on the right */}
+    <path d="M15 3c2 0 3 1.5 3 4.5s-1.5 4.5-3 4.5M15 3v18" />
+  </Icon>
+);
+
+export const FeatureAmbianceIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </Icon>
+);
+
+export const FeatureLocationIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 21s-6-5.5-6-10.5a6 6 0 0 1 12 0c0 5-6 10.5-6 10.5Z" />
+    <circle cx="12" cy="10.5" r="2.2" />
+  </Icon>
+);
+
+

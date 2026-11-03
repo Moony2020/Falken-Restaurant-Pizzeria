@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowIcon, FalconEmblem, PinIcon } from "@/components/icons";
+import { ArrowIcon, FalconEmblem } from "@/components/icons";
 import { eyebrow } from "@/components/ui";
 
 export function HomeWelcome() {
@@ -29,94 +29,60 @@ export function HomeWelcome() {
           </p>
         </div>
 
-        {/* Compact, Balanced Visual Grid (increased comfortable height in one column on mobile) */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6 items-stretch">
+        {/* Panoramic Restaurant Atmosphere with Floating Glassmorphism Card */}
+        <div className="relative group overflow-hidden rounded-2xl sm:rounded-3xl bg-[#1a1d22] shadow-xl ring-1 ring-black/5 min-h-[420px] sm:min-h-[480px] lg:min-h-[520px] flex flex-col justify-between p-4 sm:p-8 lg:p-10">
           
-          {/* Card 1: Restaurant Atmosphere (restaurant1.webp) */}
-          <div className="md:col-span-7 relative group overflow-hidden rounded-2xl sm:rounded-3xl bg-[#1a1d22] shadow-lg ring-1 ring-black/5 h-[310px] sm:h-[350px] md:h-96 lg:h-[420px]">
-            <Image
-              src="/images/gallery/restaurant1.webp"
-              alt="Restaurang Falken interiör och matsal i Vintrosa"
-              fill
-              loading="eager"
-              sizes="(min-width: 768px) 58vw, 100vw"
-              className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.02]"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-            
-            <div className="absolute top-3.5 left-3.5 sm:top-5 sm:left-5">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur-md px-3 py-1 text-[0.68rem] sm:text-xs font-semibold uppercase tracking-[0.16em] text-gold border border-gold/30">
-                <span className="size-1.5 rounded-full bg-gold animate-pulse" />
-                Vår Restaurang
-              </span>
-            </div>
+          {/* Full-bleed background photo */}
+          <Image
+            src="/images/gallery/restaurant1.webp"
+            alt="Restaurang Falken interiör och matsal i Vintrosa"
+            fill
+            sizes="(min-width: 1760px) 1760px, 100vw"
+            className="object-cover object-center transition-transform duration-700 group-hover:scale-[1.02]"
+          />
 
-            <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6 lg:p-8 text-ivory">
-              <p className="text-[0.68rem] sm:text-xs font-semibold uppercase tracking-[0.2em] text-gold">Stämningsfull atmosfär</p>
-              <h3 className="mt-1 font-display text-lg sm:text-2xl lg:text-3xl font-medium">En trivsam kväll i Vintrosa</h3>
-              <p className="mt-1 sm:mt-2 text-[0.78rem] sm:text-xs lg:text-sm text-ivory/80 max-w-lg leading-relaxed line-clamp-2 sm:line-clamp-none">
-                Slå dig ner i vår ombonade matsal på Skolgatan 4 för en god middag, en snabb lunch eller trevlig helgkväll.
-              </p>
-            </div>
-          </div>
-
-          {/* Card 2: Culinary Craftsmanship (falken-oxfile-planka.webp) */}
-          <div className="md:col-span-5 relative group overflow-hidden rounded-2xl sm:rounded-3xl bg-[#1a1d22] shadow-lg ring-1 ring-black/5 h-[310px] sm:h-[350px] md:h-96 lg:h-[420px]">
-            <Image
-              src="/images/gallery/falken-oxfile-planka.webp"
-              alt="Oxfilé på planka hos Restaurang Falken"
-              fill
-              sizes="(min-width: 768px) 42vw, 100vw"
-              className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.02]"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
-            
-            <div className="absolute top-3.5 left-3.5 sm:top-5 sm:left-5">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur-md px-3 py-1 text-[0.68rem] sm:text-xs font-semibold uppercase tracking-[0.16em] text-gold border border-gold/30">
-                Från Köket
-              </span>
-            </div>
-
-            <div className="absolute inset-x-0 bottom-0 p-4 sm:p-6 lg:p-8 text-ivory">
-              <p className="text-[0.68rem] sm:text-xs font-semibold uppercase tracking-[0.2em] text-gold">Klassisk À la Carte</p>
-              <h3 className="mt-1 font-display text-lg sm:text-2xl lg:text-3xl font-medium">Oxfilé på planka & grill</h3>
-              <p className="mt-1 sm:mt-2 text-[0.78rem] sm:text-xs lg:text-sm text-ivory/80 max-w-md leading-relaxed line-clamp-2 sm:line-clamp-none">
-                Grillad oxfilé med hemlagad bearnaisesås, rödvinssås och spritsat duchessemos.
-              </p>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Bottom Refined Quick Links Bar */}
-        <div className="mt-6 sm:mt-8 flex flex-wrap items-center justify-between gap-4 rounded-xl sm:rounded-2xl border border-line bg-white px-5 py-4 sm:px-7 sm:py-5 shadow-sm">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs sm:text-sm text-muted">
-            <span className="flex items-center gap-2">
-              <span className="size-1.5 rounded-full bg-gold" /> Stenugnsbakad pizza
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="size-1.5 rounded-full bg-gold" /> Över 90 rätter
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="size-1.5 rounded-full bg-gold" /> Avhämtning & servering
+          {/* Top Left Badge */}
+          <div className="relative z-10">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-black/60 backdrop-blur-md px-3.5 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-gold border border-gold/30 shadow-md">
+              <span className="size-1.5 rounded-full bg-gold animate-pulse" />
+              Vår Restaurang
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Link
-              href="/galleri"
-              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-gold-deep hover:underline"
-            >
-              Se bildgalleriet <ArrowIcon className="size-3.5" />
-            </Link>
-            <span className="text-line" aria-hidden="true">|</span>
-            <Link
-              href="/kontakt"
-              className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-ink hover:text-gold-deep"
-            >
-              <PinIcon className="size-3.5 text-gold-deep" /> Hitta hit
-            </Link>
+          {/* Bottom Left Floating Glassmorphism Card */}
+          <div className="relative z-10 max-w-lg mt-auto">
+            <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-black/50 backdrop-blur-xl border border-gold/30 p-6 sm:p-8 text-ivory shadow-2xl transition-all duration-300 hover:border-gold/50 hover:bg-black/55">
+              
+              {/* Subtle Falcon Watermark in the bottom-right of the glass card */}
+              <div className="pointer-events-none absolute -right-3 -bottom-3 select-none text-gold/15" aria-hidden="true">
+                <FalconEmblem className="size-28 sm:size-36" />
+              </div>
+
+              <div className="relative z-10">
+                <p className="text-[0.7rem] sm:text-xs font-semibold uppercase tracking-[0.22em] text-gold">
+                  Stämningsfull atmosfär
+                </p>
+                <h3 className="mt-1.5 font-display text-xl sm:text-2xl lg:text-3xl font-medium tracking-wide text-ivory">
+                  En trivsam kväll i Vintrosa
+                </h3>
+                <p className="mt-2.5 text-xs sm:text-sm text-ivory/85 leading-relaxed">
+                  Slå dig ner i vår ombonade matsal på Skolgatan 4 för en god middag, en snabb lunch eller en trevlig helgkväll.
+                </p>
+                
+                <div className="mt-5 pt-3.5 border-t border-white/10 flex items-center justify-between">
+                  <Link
+                    href="/galleri"
+                    className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-gold hover:text-gold-light transition-colors group/link"
+                  >
+                    <span>Upptäck vår miljö</span>
+                    <ArrowIcon className="size-4 transition-transform group-hover/link:translate-x-1" />
+                  </Link>
+                </div>
+              </div>
+
+            </div>
           </div>
+
         </div>
 
       </div>
