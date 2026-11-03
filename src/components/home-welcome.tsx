@@ -29,11 +29,11 @@ export function HomeWelcome() {
           </p>
         </div>
 
-        {/* Compact, Balanced Visual Grid (Restrained height on mobile so images NEVER blow up) */}
+        {/* Compact, Balanced Visual Grid (increased comfortable height in one column on mobile) */}
         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-6 items-stretch">
           
           {/* Card 1: Restaurant Atmosphere (restaurant1.webp) */}
-          <div className="md:col-span-7 relative group overflow-hidden rounded-2xl sm:rounded-3xl bg-[#1a1d22] shadow-lg ring-1 ring-black/5 h-56 sm:h-72 md:h-96 lg:h-[420px]">
+          <div className="md:col-span-7 relative group overflow-hidden rounded-2xl sm:rounded-3xl bg-[#1a1d22] shadow-lg ring-1 ring-black/5 h-[310px] sm:h-[350px] md:h-96 lg:h-[420px]">
             <Image
               src="/images/gallery/restaurant1.webp"
               alt="Restaurang Falken interiör och matsal i Vintrosa"
@@ -60,8 +60,8 @@ export function HomeWelcome() {
             </div>
           </div>
 
-          {/* Card 2: Culinary Craftsmanship (oxfile-planka.webp) */}
-          <div className="md:col-span-5 relative group overflow-hidden rounded-2xl sm:rounded-3xl bg-[#1a1d22] shadow-lg ring-1 ring-black/5 h-52 sm:h-64 md:h-96 lg:h-[420px]">
+          {/* Card 2: Culinary Craftsmanship (falken-oxfile-planka.webp) */}
+          <div className="md:col-span-5 relative group overflow-hidden rounded-2xl sm:rounded-3xl bg-[#1a1d22] shadow-lg ring-1 ring-black/5 h-[310px] sm:h-[350px] md:h-96 lg:h-[420px]">
             <Image
               src="/images/gallery/falken-oxfile-planka.webp"
               alt="Oxfilé på planka hos Restaurang Falken"
