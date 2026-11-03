@@ -2,10 +2,6 @@ import Link from "next/link";
 import Image from "next/image";
 import {
   ArrowIcon,
-  ClockIcon,
-  MailIcon,
-  PhoneIcon,
-  PinIcon,
   StepPizzaIcon,
   StepCustomizeIcon,
   StepCalendarIcon,
@@ -15,8 +11,8 @@ import { OpenStatus } from "@/components/open-status";
 import { FeaturedDishes } from "@/components/featured-dishes";
 import { HomeWelcome } from "@/components/home-welcome";
 import { DagensLunchBanner } from "@/components/dagens-lunch-banner";
+import { HomeVisit } from "@/components/home-visit";
 import { buttonClass, eyebrow } from "@/components/ui";
-import { CURRENT_SEASON, hoursDisplay, mapsUrl, site } from "@/data/site";
 
 const steps = [
   {
@@ -139,60 +135,8 @@ export default function HomePage() {
           {/* Elegant Divider Line between sections (reduces dead space & creates cohesive flow) */}
           <div className="my-10 sm:my-14 h-px w-full bg-[#ede6da]" aria-hidden="true" />
 
-          {/* Hitta hit & Öppettider */}
-          <div aria-labelledby="visit-title" className="grid gap-6 lg:grid-cols-2">
-            <div className="rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white p-6 sm:p-8 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold-deep">Välkommen in</p>
-              <h2 id="visit-title" className="mt-1 font-display text-2xl font-normal uppercase min-[440px]:text-3xl sm:text-4xl text-ink">
-                Hitta hit
-              </h2>
-              <address className="mt-6 space-y-4 not-italic">
-                <p className="flex gap-3">
-                  <PinIcon className="mt-0.5 size-5 shrink-0 text-gold-deep" />
-                  <span>
-                    {site.legalName}
-                    <br />
-                    {site.address.street}, {site.address.zip} {site.address.city}
-                  </span>
-                </p>
-                <a href={site.phoneHref} className="flex items-center gap-3 hover:text-gold-deep">
-                  <PhoneIcon className="size-5 shrink-0 text-gold-deep" />
-                  {site.phone}
-                </a>
-                <a href={`mailto:${site.email}`} className="flex items-center gap-3 break-all hover:text-gold-deep">
-                  <MailIcon className="size-5 shrink-0 text-gold-deep" />
-                  {site.email}
-                </a>
-              </address>
-              <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className={`${buttonClass("ink")} mt-8`}>
-                Visa på kartan
-              </a>
-            </div>
-
-            <div className="rounded-2xl sm:rounded-3xl border border-[#ede6da] bg-white p-6 sm:p-8 shadow-sm">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold-deep">Öppettider</p>
-              <h2 className="mt-1 font-display text-2xl font-normal uppercase min-[440px]:text-3xl sm:text-4xl text-ink">
-                Vi har öppet
-              </h2>
-              <dl className="mt-6 divide-y divide-line">
-                {hoursDisplay[CURRENT_SEASON].map((row) => (
-                  <div key={row.days} className="flex justify-between gap-4 py-3 text-[0.95rem]">
-                    <dt className="font-medium">{row.days}</dt>
-                    <dd className="tabular-nums text-muted">{row.time}</dd>
-                  </div>
-                ))}
-              </dl>
-              <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-                <span className="flex items-center gap-2 text-sm">
-                  <ClockIcon className="size-5 text-gold-deep" />
-                  <OpenStatus tone="light" />
-                </span>
-                <Link href="/kontakt#oppettider" className="text-sm font-semibold text-gold-deep underline underline-offset-4">
-                  Sommartider
-                </Link>
-              </div>
-            </div>
-          </div>
+          {/* Hitta hit & Öppettider (Luxury Redesigned Experience) */}
+          <HomeVisit />
 
         </div>
       </section>
