@@ -10,11 +10,25 @@ import { useOrder } from "./order/order-provider";
 
 const emptySubscribe = () => () => {};
 
+function subscribeScroll(callback: () => void) {
+  window.addEventListener("scroll", callback, { passive: true });
+  return () => window.removeEventListener("scroll", callback);
+}
+
+function getScrollSnapshot() {
+  return window.scrollY > 15;
+}
+
+function getServerScrollSnapshot() {
+  return false;
+}
+
 export function Header() {
   const pathname = usePathname();
   const { count, openCart } = useOrder();
   const [menuOpen, setMenuOpen] = useState(false);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const isScrolled = useSyncExternalStore(subscribeScroll, getScrollSnapshot, getServerScrollSnapshot);
 
   const cartCount = mounted ? count : 0;
 
@@ -30,7 +44,13 @@ export function Header() {
   }, [menuOpen]);
 
   return (
-    <header className="sticky top-0 z-40 bg-ink-2 text-ivory">
+    <header
+      className={`sticky top-0 z-40 text-ivory transition-all duration-300 ${
+        isScrolled
+          ? "bg-ink-2/85 backdrop-blur-md border-b border-white/[0.08] shadow-md"
+          : "bg-ink-2 border-b border-transparent shadow-none"
+      }`}
+    >
       <div className="mx-auto w-full max-w-[1760px] px-3 sm:px-5 lg:px-7">
         
         {/* Mobile Header (< lg): 3-Pillar Symmetrical Luxury Layout [ ☰ Hamburger | Centered Logo | 🛒 Cart ] */}

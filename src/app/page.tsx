@@ -42,7 +42,7 @@ const steps = [
 export default function HomePage() {
   return (
     <>
-      <section aria-labelledby="hero-title" className="bg-[linear-gradient(to_bottom,var(--color-ink-2)_0,var(--color-ink-2)_70%,var(--color-ivory)_70%)]">
+      <section aria-labelledby="hero-title" className="bg-[linear-gradient(to_bottom,var(--color-ink-2)_0%,rgba(28,31,36,0.85)_40%,rgba(28,31,36,0.25)_78%,var(--color-ivory)_100%)]">
         <div className="mx-auto w-full max-w-[1760px] px-3 pb-2 pt-2 sm:px-5 sm:pt-3 lg:px-7">
           <div className="relative isolate flex min-h-[23.5rem] items-center overflow-hidden rounded-[1.5rem] bg-[#1a1d22] px-5 py-6 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)] ring-1 ring-white/10 sm:min-h-[25.5rem] sm:px-12 sm:py-10 lg:min-h-[27rem] lg:px-14 xl:min-h-[29rem] xl:px-16">
             
