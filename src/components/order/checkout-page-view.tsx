@@ -119,7 +119,7 @@ export function CheckoutPageView() {
   if (!mounted) {
     return (
       <section className="min-h-[calc(100vh-14rem)] bg-ivory py-8 text-ink sm:py-12">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-7xl px-2.5 sm:px-6 lg:px-8">
           <div className="mb-6 flex items-center gap-2">
             <span className="h-4 w-32 animate-pulse rounded bg-cream" />
           </div>
@@ -186,7 +186,7 @@ export function CheckoutPageView() {
 
   return (
     <section className="bg-ivory text-ink min-h-[calc(100vh-14rem)] py-8 sm:py-12">
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto w-full max-w-7xl px-2.5 sm:px-6 lg:px-8">
         {/* Back navigation */}
         <div className="mb-6">
           <Link
@@ -219,7 +219,7 @@ export function CheckoutPageView() {
 
           {/* Right Column (5 cols): Sticky Order Summary */}
           <div className="lg:sticky lg:top-28 lg:col-span-5 xl:col-span-5">
-            <aside aria-label="Beställningsöversikt" className="overflow-hidden rounded-2xl border border-line bg-white p-6 shadow-card sm:p-7">
+            <aside aria-label="Beställningsöversikt" className="overflow-hidden rounded-2xl border border-line bg-white px-3.5 py-5 sm:p-7 shadow-card">
               <div className="flex items-center justify-between border-b border-line pb-4">
                 <h2 className="font-display text-2xl font-semibold text-ink">Din Beställning</h2>
                 <span className="rounded-full bg-cream px-3 py-1 text-xs font-semibold text-gold-deep border border-line">
@@ -475,7 +475,7 @@ function CheckoutForm({
       )}
 
       {/* Step 1: Kontaktuppgifter */}
-      <section className="rounded-2xl border border-line bg-white p-6 shadow-card sm:p-8">
+      <section className="rounded-2xl border border-line bg-white px-3.5 py-5 sm:p-8 shadow-card">
         <div className="flex items-center gap-3 border-b border-line pb-4">
           <span className="grid size-7 place-items-center rounded-full bg-gold text-xs font-bold text-ink">
             1
@@ -564,7 +564,7 @@ function CheckoutForm({
       </section>
 
       {/* Step 2: Betalningsmetod */}
-      <section className="rounded-2xl border border-line bg-white p-6 shadow-card sm:p-8">
+      <section className="rounded-2xl border border-line bg-white px-3.5 py-5 sm:p-8 shadow-card">
         <div className="flex items-center gap-3 border-b border-line pb-4">
           <span className="grid size-7 place-items-center rounded-full bg-gold text-xs font-bold text-ink">
             2
@@ -580,13 +580,13 @@ function CheckoutForm({
           {/* Option 1: Cash / Pay on Pickup */}
           <label
             onClick={() => onPaymentMethodChange("cash")}
-            className={`relative flex cursor-pointer items-center justify-between rounded-xl border-2 p-4 transition ${
+            className={`relative flex cursor-pointer items-center justify-between rounded-xl border-2 p-3 sm:p-4 transition ${
               paymentMethod === "cash"
                 ? "border-gold bg-cream/40 shadow-sm"
                 : "border-line bg-white hover:border-gold-deep/40"
             }`}
           >
-            <div className="flex items-center gap-3.5">
+            <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
               <input
                 type="radio"
                 name="payment_method"
@@ -595,8 +595,8 @@ function CheckoutForm({
                 onChange={() => onPaymentMethodChange("cash")}
                 className="size-4 accent-gold"
               />
-              <div>
-                <p className="text-sm font-semibold text-ink">Betala på plats (Kontant eller kort)</p>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-ink leading-snug">Betala på plats (Kontant eller kort)</p>
                 <p className="text-xs text-muted">Betala i restaurangen när du hämtar din mat hos oss på Skolgatan 4</p>
               </div>
             </div>
@@ -608,13 +608,13 @@ function CheckoutForm({
           {/* Option 2: Card / Stripe */}
           <label
             onClick={() => onPaymentMethodChange("card")}
-            className={`relative flex cursor-pointer items-center justify-between rounded-xl border-2 p-4 transition ${
+            className={`relative flex cursor-pointer items-center justify-between rounded-xl border-2 p-3 sm:p-4 transition ${
               paymentMethod === "card"
                 ? "border-gold bg-cream/40 shadow-sm"
                 : "border-line bg-white hover:border-gold-deep/40"
             }`}
           >
-            <div className="flex items-center gap-3.5">
+            <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
               <input
                 type="radio"
                 name="payment_method"
@@ -623,8 +623,8 @@ function CheckoutForm({
                 onChange={() => onPaymentMethodChange("card")}
                 className="size-4 accent-gold"
               />
-              <div>
-                <p className="text-sm font-semibold text-ink">Betala online med kort</p>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-ink leading-snug">Betala online med kort</p>
                 <p className="text-xs text-muted">Visa, Mastercard • Snabb och säker betalning direkt via Stripe</p>
               </div>
             </div>
@@ -635,8 +635,8 @@ function CheckoutForm({
           </label>
 
           {/* Option 3: Swish (coming soon) */}
-          <div className="relative flex cursor-not-allowed items-center justify-between rounded-xl border border-line/60 bg-cream/30 p-4 opacity-75">
-            <div className="flex items-center gap-3.5">
+          <div className="relative flex cursor-not-allowed items-center justify-between rounded-xl border border-line/60 bg-cream/30 p-3 sm:p-4 opacity-75">
+            <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
               <input
                 type="radio"
                 name="payment_method"
@@ -657,15 +657,15 @@ function CheckoutForm({
 
         {/* Trust Badges */}
         <div className="mt-8 grid grid-cols-3 gap-3 border-t border-line pt-6 text-center">
-          <div className="rounded-xl border border-line bg-cream/40 p-3">
+          <div className="rounded-xl border border-line bg-cream/40 p-2 sm:p-3">
             <p className="text-[11px] font-bold uppercase tracking-wider text-gold-deep">Säker hantering</p>
             <p className="mt-0.5 text-[10px] text-muted">256-bit SSL</p>
           </div>
-          <div className="rounded-xl border border-line bg-cream/40 p-3">
+          <div className="rounded-xl border border-line bg-cream/40 p-2 sm:p-3">
             <p className="text-[11px] font-bold uppercase tracking-wider text-gold-deep">Valfri betalning</p>
             <p className="mt-0.5 text-[10px] text-muted">Kort eller på plats</p>
           </div>
-          <div className="rounded-xl border border-line bg-cream/40 p-3">
+          <div className="rounded-xl border border-line bg-cream/40 p-2 sm:p-3">
             <p className="text-[11px] font-bold uppercase tracking-wider text-gold-deep">Färsk Garanti</p>
             <p className="mt-0.5 text-[10px] text-muted">Lagas vid beställning</p>
           </div>

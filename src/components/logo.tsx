@@ -7,17 +7,23 @@ export function Logo({ tone = "light" }: { tone?: "light" | "dark" }) {
   return (
     <Link
       href="/"
-      className="group inline-flex items-center gap-2.5 sm:gap-3 leading-none transition-opacity hover:opacity-90"
+      className="group inline-flex flex-col items-center leading-none transition-opacity hover:opacity-90"
       aria-label="Falken – startsidan"
     >
-      <FalconEmblem className={`size-7 sm:size-8 shrink-0 transition-transform duration-300 group-hover:scale-105 ${sub}`} />
-      <span className="flex flex-col items-start leading-none">
-        <span className={`font-display text-[1.45rem] font-medium tracking-[0.16em] sm:text-[1.85rem] ${main}`}>
+      <div className="inline-flex items-center gap-2 sm:gap-2.5">
+        <FalconEmblem
+          className={`size-6 sm:size-7 shrink-0 transition-transform duration-300 group-hover:scale-105 ${sub}`}
+        />
+        <span
+          className={`font-display text-[1.35rem] font-medium tracking-[0.18em] sm:text-[1.75rem] ${main}`}
+        >
           FALKEN
         </span>
-        <span className={`mt-1 text-[0.5rem] font-medium uppercase tracking-[0.42em] sm:text-[0.56rem] sm:tracking-[0.48em] ${sub}`}>
-          Restaurang &amp; Pizzeria
-        </span>
+      </div>
+      <span
+        className={`mt-1 text-center text-[0.46rem] font-medium uppercase tracking-[0.38em] sm:text-[0.54rem] sm:tracking-[0.44em] translate-x-2.5 sm:translate-x-3 ${sub}`}
+      >
+        Restaurang &amp; Pizzeria
       </span>
     </Link>
   );
