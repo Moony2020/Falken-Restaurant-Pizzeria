@@ -56,7 +56,7 @@ export function DagensLunchBanner() {
             - on lg+ desktop: absolute inset-y-0 right-0 spanning 100% of card height with NO top/bottom gaps! */}
         <div className="hidden lg:block absolute inset-y-0 right-0 w-[320px] xl:w-[390px] overflow-hidden pointer-events-none select-none">
           <Image
-            src="/images/dishes/lunch-salad.webp?v=2"
+            src="/images/dishes/falken-lunch-salad.webp"
             alt="Fräsch sallad ingår i Dagens Lunch hos Falken"
             fill
             sizes="(min-width: 1280px) 390px, 320px"

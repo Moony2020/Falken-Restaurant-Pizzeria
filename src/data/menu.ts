@@ -207,14 +207,14 @@ function getDishImage(category: CategoryId, slugId: string, name: string, ingred
 
   if (category === "barn") {
     if (s.includes("pannkaka")) return "/images/dishes/alacarte/pannkaka.webp";
-    return "/images/dishes/alacarte/oxfile-planka.webp?v=2";
+    return "/images/dishes/alacarte/falken-oxfile-planka.webp";
   }
 
   if (category === "alacarte") {
     if (s.includes("schnitzel") || s.includes("rodspatta") || s.includes("spätta") || s.includes("salmone") || s.includes("lax")) {
       return "/images/dishes/alacarte/schnitzel.webp";
     }
-    return "/images/dishes/alacarte/oxfile-planka.webp?v=2";
+    return "/images/dishes/alacarte/falken-oxfile-planka.webp";
   }
 
   return undefined;

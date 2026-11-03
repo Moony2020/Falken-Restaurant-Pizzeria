@@ -63,7 +63,7 @@ export function HomeWelcome() {
           {/* Card 2: Culinary Craftsmanship (oxfile-planka.webp) */}
           <div className="md:col-span-5 relative group overflow-hidden rounded-2xl sm:rounded-3xl bg-[#1a1d22] shadow-lg ring-1 ring-black/5 h-52 sm:h-64 md:h-96 lg:h-[420px]">
             <Image
-              src="/images/gallery/oxfile-planka.webp?v=2"
+              src="/images/gallery/falken-oxfile-planka.webp"
               alt="Oxfilé på planka hos Restaurang Falken"
               fill
               sizes="(min-width: 768px) 42vw, 100vw"
