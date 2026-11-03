@@ -142,21 +142,21 @@ export function HomeVisit() {
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="relative z-10 mt-7 pt-5 border-t border-[#ede6da] flex flex-wrap items-center gap-3">
+        {/* Action Buttons (Stacked on mobile so text never wraps, side-by-side on sm+) */}
+        <div className="relative z-10 mt-7 pt-5 border-t border-[#ede6da] flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
           <a
             href={site.phoneHref}
-            className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold via-[#d4af37] to-gold-deep text-ink font-semibold text-xs sm:text-sm px-5 py-3 shadow-sm transition-all duration-200 hover:shadow-md hover:brightness-105 active:scale-[0.98]"
+            className="inline-flex w-full sm:flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold via-[#d4af37] to-gold-deep text-ink font-semibold text-xs sm:text-sm px-5 py-3 shadow-sm transition-all duration-200 hover:shadow-md hover:brightness-105 active:scale-[0.98] whitespace-nowrap"
           >
-            <PhoneIcon className="size-4" /> Ring och beställ
+            <PhoneIcon className="size-4 shrink-0" /> Ring och beställ
           </a>
           <a
             href={mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex flex-1 min-w-[140px] items-center justify-center gap-2 rounded-full border border-[#ede6da] bg-white px-5 py-3 text-xs sm:text-sm font-semibold text-ink transition-all duration-200 hover:border-gold hover:bg-[#fbf9f5] active:scale-[0.98]"
+            className="inline-flex w-full sm:flex-1 items-center justify-center gap-2 rounded-full border border-[#ede6da] bg-white px-5 py-3 text-xs sm:text-sm font-semibold text-ink transition-all duration-200 hover:border-gold hover:bg-[#fbf9f5] active:scale-[0.98] whitespace-nowrap"
           >
-            <PinIcon className="size-4 text-gold-deep" /> Vägbeskrivning
+            <PinIcon className="size-4 text-gold-deep shrink-0" /> Vägbeskrivning
           </a>
         </div>
 
