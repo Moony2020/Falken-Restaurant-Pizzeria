@@ -163,8 +163,16 @@ export type OrderDoc = {
     reason?: string;
   }[];
   needsReview?: { reason?: string; detail?: string; at?: Date };
+  createdAt?: Date;
+  updatedAt?: Date;
 };
 
+if (models.Order) {
+  const pmEnum = (models.Order.schema.path("paymentMethod") as { enumValues?: string[] } | undefined)?.enumValues;
+  if (!pmEnum || !pmEnum.includes("swish")) {
+    delete (models as Record<string, unknown>).Order;
+  }
+}
 export const OrderModel = (models.Order as Model<OrderDoc> | undefined) ?? model<OrderDoc>("Order", orderSchema);
 
 // ---- Payments -------------------------------------------------------------
@@ -203,4 +211,10 @@ export type PaymentDoc = {
   refundedSek: number;
 };
 
+if (models.Payment) {
+  const provEnum = (models.Payment.schema.path("provider") as { enumValues?: string[] } | undefined)?.enumValues;
+  if (!provEnum || !provEnum.includes("swish")) {
+    delete (models as Record<string, unknown>).Payment;
+  }
+}
 export const PaymentModel = (models.Payment as Model<PaymentDoc> | undefined) ?? model<PaymentDoc>("Payment", paymentSchema);

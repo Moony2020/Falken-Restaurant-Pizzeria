@@ -3,6 +3,7 @@ import type { PaymentProvider } from "./models/constants.ts";
 import { OrderModel } from "./models/order.ts";
 import { PaymentModel } from "./models/order.ts";
 import { audit, flagForReview, transitionOrder, type OrderLean } from "./order-transitions.ts";
+import { createNotificationForOrder } from "./notifications-service.ts";
 
 // Turning a CONFIRMED payment into an order outcome. "Confirmed" means a provider adapter has already verified it
 // (webhook signature checked, or the provider's API asked directly). Nothing a browser says ever reaches this code.
@@ -79,6 +80,7 @@ export async function applyVerifiedPayment(payment: VerifiedPayment, now: Date =
       // The order may have been paid by someone else between our read and the update: check who won.
       if (String(t.order.paymentId) !== String(record._id)) continue;
       await recordPaid(record._id, payment);
+      void createNotificationForOrder(id).catch(() => {});
       return { outcome: t.changed ? "paid" : "already_paid", orderId: id };
     }
 

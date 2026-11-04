@@ -28,6 +28,7 @@ import {
 } from "@/lib/checkout";
 import { getOpenStatus, getPickupSlotInstants } from "@/lib/hours";
 import { kr } from "@/lib/pricing";
+import { SwishModal } from "./swish-modal.tsx";
 import { useNow } from "@/lib/use-now";
 import { useRestaurantStatus } from "@/lib/use-restaurant-status";
 import {
@@ -48,7 +49,7 @@ type CheckoutDraft = {
   phone?: string;
   pickup?: string;
   note?: string;
-  paymentMethod?: "cash" | "card";
+  paymentMethod?: "cash" | "card" | "swish";
 };
 
 const DRAFT_STORAGE_KEY = "falken.checkout.draft.v1";
@@ -93,14 +94,14 @@ export function CheckoutPageView() {
   const isClosed = !restaurantStatus ? false : !restaurantStatus.isOpen;
   const changes = pricing.status === "ready" ? priceChanges(lines, pricing.lines) : [];
   const canPay = pricing.status === "ready" && changes.length === 0 && !isClosed;
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">(() => {
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "swish">(() => {
     const draft = readDraft();
-    return draft.paymentMethod === "card" || draft.paymentMethod === "cash"
+    return draft.paymentMethod === "card" || draft.paymentMethod === "cash" || draft.paymentMethod === "swish"
       ? draft.paymentMethod
       : "cash";
   });
 
-  const handlePaymentMethodChange = (m: "cash" | "card") => {
+  const handlePaymentMethodChange = (m: "cash" | "card" | "swish") => {
     setPaymentMethod(m);
     const draft = readDraft();
     saveDraft({ ...draft, paymentMethod: m });
@@ -319,6 +320,8 @@ export function CheckoutPageView() {
                     ? "Beställningar stängda"
                     : paymentMethod === "cash"
                     ? "Bekräfta beställning"
+                    : paymentMethod === "swish"
+                    ? "Betala med Swish"
                     : "Gå till betalning"}
                   <ArrowIcon className="size-4" />
                 </button>
@@ -328,6 +331,8 @@ export function CheckoutPageView() {
               <p className="mt-4 text-center text-xs leading-relaxed text-muted">
                 {paymentMethod === "cash"
                   ? "Du betalar kontant eller med kort när du hämtar maten."
+                  : paymentMethod === "swish"
+                  ? "Swish-betalning hanteras säkert via officiella Swish Simulator (MSS)."
                   : "Kortbetalning hanteras krypterat och säkert via Stripe."}
               </p>
             </aside>
@@ -347,8 +352,8 @@ function CheckoutForm({
 }: {
   lines: CartLine[];
   totalSek: number | null;
-  paymentMethod: "cash" | "card";
-  onPaymentMethodChange: (m: "cash" | "card") => void;
+  paymentMethod: "cash" | "card" | "swish";
+  onPaymentMethodChange: (m: "cash" | "card" | "swish") => void;
   onBack: () => void;
 }) {
   const router = useRouter();
@@ -365,6 +370,7 @@ function CheckoutForm({
   const [touched, setTouched] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [failure, setFailure] = useState<OrderResult | null>(null);
+  const [swishOrder, setSwishOrder] = useState<{ publicId: string; totalSek: number; accessToken?: string } | null>(null);
   const sending = useRef(false);
 
   // Auto-save form inputs so page refresh retains all typed values
@@ -429,7 +435,7 @@ function CheckoutForm({
       contact,
       pickupAt: selectedPickup,
       expectedTotalSek: totalSek,
-      paymentMethod: paymentMethod === "cash" ? "pay_on_pickup" : "card",
+      paymentMethod: paymentMethod === "cash" ? "pay_on_pickup" : paymentMethod === "swish" ? "swish" : "card",
     });
 
     if (result.kind === "created" || result.kind === "replayed") {
@@ -444,6 +450,17 @@ function CheckoutForm({
           return;
         }
         checkoutStore.setNotice(startPaymentFailureSv(pay));
+        sending.current = false;
+        setSubmitting(false);
+        return;
+      }
+
+      if (paymentMethod === "swish") {
+        setSwishOrder({
+          publicId: result.order.publicId,
+          totalSek: result.order.totalSek,
+          accessToken: checkout.accessToken,
+        });
         sending.current = false;
         setSubmitting(false);
         return;
@@ -634,25 +651,33 @@ function CheckoutForm({
             </div>
           </label>
 
-          {/* Option 3: Swish (coming soon) */}
-          <div className="relative flex cursor-not-allowed items-center justify-between rounded-xl border border-line/60 bg-cream/30 p-3 sm:p-4 opacity-75">
+          {/* Option 3: Swish */}
+          <label
+            onClick={() => onPaymentMethodChange("swish")}
+            className={`relative flex cursor-pointer items-center justify-between rounded-xl border-2 p-3 sm:p-4 transition ${
+              paymentMethod === "swish"
+                ? "border-gold bg-cream/40 shadow-sm"
+                : "border-line bg-white hover:border-gold-deep/40"
+            }`}
+          >
             <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
               <input
                 type="radio"
                 name="payment_method"
                 value="swish"
-                disabled
-                className="size-4"
+                checked={paymentMethod === "swish"}
+                onChange={() => onPaymentMethodChange("swish")}
+                className="size-4 accent-gold"
               />
-              <div className="flex items-center gap-3">
-                <SwishLogo className="h-6 w-auto" />
-                <span className="hidden sm:inline text-xs text-muted">• Betala enkelt med Swish</span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-ink leading-snug">Betala direkt med Swish</p>
+                <p className="text-xs text-muted">Snabb och säker mobilbetalning • Testläge (MSS)</p>
               </div>
             </div>
-            <span className="rounded-full bg-cream px-2.5 py-0.5 text-[11px] font-medium text-muted border border-line shrink-0">
-              kommer snart
-            </span>
-          </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <SwishLogo className="h-6 w-auto" />
+            </div>
+          </label>
         </div>
 
         {/* Trust Badges */}
@@ -693,9 +718,24 @@ function CheckoutForm({
             ? "Behandlar beställning…"
             : paymentMethod === "cash"
             ? `Bekräfta beställning · ${totalSek ? kr(totalSek) : ""}`
+            : paymentMethod === "swish"
+            ? `Betala med Swish · ${totalSek ? kr(totalSek) : ""}`
             : `Gå till kortbetalning · ${totalSek ? kr(totalSek) : ""}`}
         </button>
       </div>
+
+      {swishOrder && (
+        <SwishModal
+          isOpen={!!swishOrder}
+          publicId={swishOrder.publicId}
+          totalSek={swishOrder.totalSek}
+          accessToken={swishOrder.accessToken}
+          onClose={() => setSwishOrder(null)}
+          onSuccess={(id) => {
+            router.replace(`/bestallning/${encodeURIComponent(id)}`);
+          }}
+        />
+      )}
     </form>
   );
 }
@@ -710,11 +750,13 @@ function OrderCreatedView({
   order: PublicOrder;
   token?: string;
   notice?: string;
-  paymentMethod?: "card" | "cash";
+  paymentMethod?: "card" | "cash" | "swish";
   onClose: () => void;
 }) {
   const [paying, setPaying] = useState(false);
-  const isCash = paymentMethod === "cash";
+  const isCash = paymentMethod === "cash" || order.paymentMethod === "pay_on_pickup";
+  const isSwish = paymentMethod === "swish" || order.paymentMethod === "swish";
+  const [swishOpen, setSwishOpen] = useState(() => isSwish);
   const paymentNeedsAttention = Boolean(notice);
 
   const pay = async () => {
@@ -769,6 +811,8 @@ function OrderCreatedView({
             <p className="font-semibold text-ink">
               {isCash
                 ? "Beställning bekräftad · Betala vid avhämtning"
+                : isSwish
+                ? "Väntar på Swish-betalning"
                 : paymentNeedsAttention
                 ? "Betalningen behöver åtgärdas"
                 : "Väntar på kortbetalning"}
@@ -777,6 +821,8 @@ function OrderCreatedView({
           <p className="mt-2 text-ink/80">
             {isCash
               ? "Tack för din beställning! Köket tillagar nu din mat så den är nylagad och redo vid din hämtningstid. Du betalar kontant eller med kort i kassan."
+              : isSwish
+              ? "Din beställning är sparad. Betala med Swish för att bekräfta den och skicka till köket."
               : "Din beställning är sparad. Betala med kort för att bekräfta den och skicka till köket."}
           </p>
         </div>
@@ -841,6 +887,39 @@ function OrderCreatedView({
             >
               Gör en ny beställning
             </button>
+          </>
+        ) : isSwish ? (
+          <>
+            <button
+              type="button"
+              onClick={() => setSwishOpen(true)}
+              className="flex min-h-12 w-full items-center justify-center rounded-xl bg-gold text-sm font-semibold text-ink transition hover:bg-gold-light"
+            >
+              Betala {kr(order.totalSek)} med Swish
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                clearDraft();
+                onClose();
+              }}
+              className="flex min-h-11 w-full items-center justify-center rounded-xl border border-line text-sm font-medium text-muted transition hover:bg-cream hover:text-ink"
+            >
+              Påbörja en ny beställning
+            </button>
+            {swishOpen && (
+              <SwishModal
+                isOpen={swishOpen}
+                publicId={order.publicId}
+                totalSek={order.totalSek}
+                accessToken={token}
+                onClose={() => setSwishOpen(false)}
+                onSuccess={(id) => {
+                  checkoutStore.dismissOrder();
+                  window.location.replace(`/bestallning/${encodeURIComponent(id)}`);
+                }}
+              />
+            )}
           </>
         ) : (
           <>

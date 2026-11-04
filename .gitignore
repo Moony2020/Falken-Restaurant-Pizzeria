@@ -23,6 +23,11 @@
 # misc
 .DS_Store
 *.pem
+*.p12
+*.key
+*.crt
+certs/
+*.zip
 
 # debug
 npm-debug.log*
@@ -41,3 +46,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .playwright-mcp/
+scratch/

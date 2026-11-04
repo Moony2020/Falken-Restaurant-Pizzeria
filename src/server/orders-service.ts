@@ -8,6 +8,7 @@ import { RestaurantSettingsModel } from "./models/restaurant-settings.ts";
 import { deriveAccessToken } from "./order-access.ts";
 import { ORDER_EXPIRY_MINUTES } from "./payments-config.ts";
 import { priceCart, type PricedLine, type PricingIssue } from "./pricing-engine.ts";
+import { createNotificationForOrder } from "./notifications-service.ts";
 
 type OrderErrorCode = "invalid_request" | "pricing" | "pickup_unavailable" | "idempotency_conflict" | "price_changed" | "ordering_closed";
 
@@ -176,6 +177,9 @@ export async function createOrder(body: unknown, now: Date = new Date(), options
       ...(isPayOnPickup ? {} : { paymentExpiresAt: new Date(now.getTime() + ORDER_EXPIRY_MINUTES * 60_000) }),
       statusHistory: [{ at: now, to: fulfillmentStatus, actorType: "customer", reason: isPayOnPickup ? "order_confirmed_pay_on_pickup" : "order_created" }],
     });
+    if (isPayOnPickup) {
+      void createNotificationForOrder(created._id).catch(() => {});
+    }
     return withToken(toPublicOrder(created.toObject()), false);
   } catch (err) {
     // Two identical requests raced: the unique index let one win; return that order to the other.

@@ -18,6 +18,13 @@ const schema = z.object({
   PAYMENTS_MODE: z.literal("test", { error: "PAYMENTS_MODE must be 'test' in this phase" }).default("test"),
   STRIPE_SECRET_KEY: stripeSecret,
   STRIPE_WEBHOOK_SECRET: z.string().regex(/^whsec_[A-Za-z0-9]+$/, "STRIPE_WEBHOOK_SECRET must look like whsec_…").optional(),
+  SWISH_ENABLED: z.enum(["true", "false"]).optional(),
+  SWISH_PAYEE_ALIAS: z.string().regex(/^[0-9]{10,13}$/, "SWISH_PAYEE_ALIAS must be 10-13 digits").optional(),
+  SWISH_CERT_PATH: z.string().optional(),
+  SWISH_KEY_PATH: z.string().optional(),
+  SWISH_CA_PATH: z.string().optional(),
+  SWISH_PASSPHRASE: z.string().optional(),
+  SWISH_BASE_URL: z.string().optional(),
 });
 
 export type PaymentsConfig = {
@@ -25,6 +32,15 @@ export type PaymentsConfig = {
   enabled: boolean;
   siteUrl?: string;
   stripe: { secretKey: string; webhookSecret?: string } | null;
+  swish: {
+    enabled: boolean;
+    payeeAlias: string;
+    certPath: string;
+    keyPath: string;
+    caPath: string;
+    passphrase?: string;
+    baseUrl: string;
+  } | null;
 };
 
 const LIVE_PATTERNS = [/(^|[^a-z])(sk|rk|pk)_live_/i];
@@ -37,6 +53,13 @@ export function getPaymentsConfig(source: Record<string, string | undefined> = p
     PAYMENTS_MODE: source.PAYMENTS_MODE || undefined,
     STRIPE_SECRET_KEY: source.STRIPE_SECRET_KEY || undefined,
     STRIPE_WEBHOOK_SECRET: source.STRIPE_WEBHOOK_SECRET || undefined,
+    SWISH_ENABLED: source.SWISH_ENABLED || undefined,
+    SWISH_PAYEE_ALIAS: source.SWISH_PAYEE_ALIAS || undefined,
+    SWISH_CERT_PATH: source.SWISH_CERT_PATH || undefined,
+    SWISH_KEY_PATH: source.SWISH_KEY_PATH || undefined,
+    SWISH_CA_PATH: source.SWISH_CA_PATH || undefined,
+    SWISH_PASSPHRASE: source.SWISH_PASSPHRASE || undefined,
+    SWISH_BASE_URL: source.SWISH_BASE_URL || undefined,
   };
 
   // A live credential anywhere is refused outright, with a message that doesn't repeat the value.
@@ -58,6 +81,18 @@ export function getPaymentsConfig(source: Record<string, string | undefined> = p
     enabled: c.PAYMENTS_ENABLED === "true",
     siteUrl: c.SITE_URL?.replace(/\/+$/, ""),
     stripe: c.STRIPE_SECRET_KEY ? { secretKey: c.STRIPE_SECRET_KEY, webhookSecret: c.STRIPE_WEBHOOK_SECRET } : null,
+    swish:
+      c.SWISH_ENABLED === "true" || source.SWISH_ENABLED === "true" || source.SWISH_PAYEE_ALIAS || (c.PAYMENTS_ENABLED === "true" && c.SWISH_ENABLED !== "false")
+        ? {
+            enabled: c.SWISH_ENABLED !== "false",
+            payeeAlias: c.SWISH_PAYEE_ALIAS ?? "1234679304",
+            certPath: c.SWISH_CERT_PATH ?? "certs/swish/client_cert/Swish_Merchant_TestCertificate_1234679304.pem",
+            keyPath: c.SWISH_KEY_PATH ?? "certs/swish/client_cert/Swish_Merchant_TestCertificate_1234679304.key",
+            caPath: c.SWISH_CA_PATH ?? "certs/swish/client_cert/Swish_TLS_RootCA.pem",
+            passphrase: c.SWISH_PASSPHRASE ?? "swish",
+            baseUrl: c.SWISH_BASE_URL ?? "https://mss.cpc.getswish.net",
+          }
+        : null,
   };
 }
 

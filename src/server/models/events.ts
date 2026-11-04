@@ -51,6 +51,12 @@ export type WebhookEventDoc = {
   lastError?: string;
 };
 
+if (models.WebhookEvent) {
+  const provEnum = (models.WebhookEvent.schema.path("provider") as { enumValues?: string[] } | undefined)?.enumValues;
+  if (!provEnum || !provEnum.includes("swish")) {
+    delete (models as Record<string, unknown>).WebhookEvent;
+  }
+}
 export const WebhookEventModel =
   (models.WebhookEvent as Model<WebhookEventDoc> | undefined) ?? model<WebhookEventDoc>("WebhookEvent", webhookEventSchema);
 

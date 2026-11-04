@@ -23,11 +23,11 @@ export type FulfillmentStatus = (typeof FULFILLMENT_STATUS)[number];
 export const PAYMENT_STATUS = ["pending", "unpaid", "paid", "failed", "expired", "refunded"] as const;
 export type PaymentStatus = (typeof PAYMENT_STATUS)[number];
 
-export const PAYMENT_PROVIDER = ["stripe"] as const;
+export const PAYMENT_PROVIDER = ["stripe", "swish"] as const;
 export type PaymentProvider = (typeof PAYMENT_PROVIDER)[number];
 
 /** How the customer intends to pay. This is deliberately separate from paymentStatus. */
-export const PAYMENT_METHOD = ["card", "pay_on_pickup"] as const;
+export const PAYMENT_METHOD = ["card", "pay_on_pickup", "swish"] as const;
 export type PaymentMethod = (typeof PAYMENT_METHOD)[number];
 
 /** Roles for the restaurant's private administration area. */

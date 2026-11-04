@@ -6,7 +6,7 @@ export type PublicOrder = {
   publicId: string;
   status: string;
   paymentStatus: string;
-  paymentMethod: "card" | "pay_on_pickup";
+  paymentMethod: "card" | "pay_on_pickup" | "swish";
   totalSek: number;
   pickupAt: string;
   items: { productNameSnapshot: string; variantNameSnapshot: string; quantity: number; lineTotalSek: number }[];
@@ -38,7 +38,7 @@ export type OrderBody = {
   contact: { name: string; phone: string };
   pickupAt: string;
   expectedTotalSek: number;
-  paymentMethod: "card" | "pay_on_pickup";
+  paymentMethod: "card" | "pay_on_pickup" | "swish";
 };
 
 const inflight = new Map<string, Promise<OrderResult>>();

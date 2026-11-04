@@ -59,7 +59,7 @@ export type OrderStatusView = {
   publicId: string;
   status: string;
   paymentStatus: string;
-  paymentMethod: "card" | "pay_on_pickup";
+  paymentMethod: "card" | "pay_on_pickup" | "swish";
   totalSek: number;
   pickupAt: string;
   paidAt: string | null;

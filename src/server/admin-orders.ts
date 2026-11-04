@@ -33,6 +33,7 @@ export function adminVisibleOrderFilter(status: string = "ALL", q = ""): Filter 
     fulfillmentStatus: { $in: status === "ALL" ? visibleStatuses : [status] },
     $or: [
       { paymentMethod: "card", paymentProvider: "stripe", paymentStatus: "paid", paymentId: { $exists: true }, paidAt: { $exists: true } },
+      { paymentMethod: "swish", paymentProvider: "swish", paymentStatus: "paid", paymentId: { $exists: true }, paidAt: { $exists: true } },
       { paymentMethod: "pay_on_pickup", paymentStatus: { $in: ["unpaid", "paid"] } },
     ],
   };
@@ -71,13 +72,14 @@ export type AdminOrderSummary = ReturnType<typeof summary>;
 
 export async function listAdminOrders(input: z.infer<typeof adminOrderQuerySchema>) {
   const filter = adminVisibleOrderFilter(input.status, input.q);
-  const [rows, total] = await Promise.all([
+  const [rows, total, confirmedCount] = await Promise.all([
     OrderModel.find(filter).sort({ createdAt: -1, _id: -1 }).skip((input.page - 1) * input.limit).limit(input.limit)
       .select("publicId contact createdAt pickupAt fulfillmentStatus paymentStatus paymentMethod totalSek items acknowledgedAt")
       .lean(),
     OrderModel.countDocuments(filter),
+    OrderModel.countDocuments({ ...adminVisibleOrderFilter(), fulfillmentStatus: "CONFIRMED" }),
   ]);
-  return { orders: (rows as unknown as OrderRow[]).map(summary), total, page: input.page, limit: input.limit };
+  return { orders: (rows as unknown as OrderRow[]).map(summary), total, page: input.page, limit: input.limit, confirmedCount };
 }
 
 export async function getAdminOrder(publicId: string) {

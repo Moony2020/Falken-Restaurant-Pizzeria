@@ -348,6 +348,11 @@ function ConfirmationCard({
       </header>
 
       <div className="p-5 sm:p-8">
+        {order.paymentMethod === "swish" && (
+          <div className="mb-6 rounded-2xl border border-sky-300 bg-sky-50 px-4 py-3 text-center text-xs font-medium text-sky-900 shadow-xs">
+            🧪 Testbetalning godkänd av Swish Simulator (MSS) – inga riktiga pengar har dragits.
+          </div>
+        )}
         <dl className="grid overflow-hidden rounded-2xl border border-line bg-cream/45 sm:grid-cols-2 lg:grid-cols-4">
           <ConfirmationFact label="Ordernummer" value={order.publicId} mono />
           <ConfirmationFact label="Hämtningstid" value={`Idag kl. ${time}`} />

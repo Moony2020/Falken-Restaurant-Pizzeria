@@ -22,7 +22,7 @@ const throwsWithout = (fn: () => unknown, secret: string) => {
 describe("payments configuration (test mode only)", () => {
   test("empty configuration is valid: nothing connected yet", () => {
     const c = getPaymentsConfig({});
-    assert.deepEqual(c, { mode: "test", enabled: false, siteUrl: undefined, stripe: null });
+    assert.deepEqual(c, { mode: "test", enabled: false, siteUrl: undefined, stripe: null, swish: null });
   });
 
   test("Stripe TEST keys are accepted", () => {

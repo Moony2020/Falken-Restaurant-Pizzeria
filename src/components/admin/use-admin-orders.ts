@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { AdminOrderDetail, AdminOrderSummary } from "@/server/admin-orders";
 
-export type AdminOrdersResponse = { orders: AdminOrderSummary[]; total: number; page: number; limit: number };
+export type AdminOrdersResponse = { orders: AdminOrderSummary[]; total: number; page: number; limit: number; confirmedCount?: number };
 export type AdminOrderFilter = "ALL" | "CONFIRMED" | "ACKNOWLEDGED" | "PREPARING" | "READY_FOR_PICKUP" | "PICKED_UP";
 
 function csrfToken() {

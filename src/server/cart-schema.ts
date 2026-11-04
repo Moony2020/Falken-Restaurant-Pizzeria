@@ -34,7 +34,7 @@ export const orderRequestSchema = z.strictObject({
   }),
   pickupAt: z.iso.datetime({ offset: true }),
   /** The client may choose the payment route, but never a payment status or provider result. */
-  paymentMethod: z.enum(["card", "pay_on_pickup"]).default("card"),
+  paymentMethod: z.enum(["card", "pay_on_pickup", "swish"]).default("card"),
   /**
    * The total the customer saw and approved. It is never used as a price: the server recomputes everything
    * and refuses the order with 409 if its own total differs, so a stale cart can't be charged a new amount.

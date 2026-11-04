@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -14,6 +15,11 @@ import { useNow } from "@/lib/use-now";
 import { notifyStatusChange } from "@/lib/use-restaurant-status";
 import { EyeIcon, EyeOffIcon } from "@/components/icons";
 import { AdminHoursTab } from "@/components/admin/admin-hours-tab";
+import { AdminNotificationsDropdown } from "@/components/admin/admin-notifications-dropdown";
+import { AdminInvoicesTab, PaymentMethodBadge, OrderTypeBadge } from "@/components/admin/admin-invoices-tab";
+import { AdminAnalyticsTab } from "@/components/admin/admin-analytics-tab";
+import type { ReceiptPdfInput } from "@/lib/order-receipt-pdf";
+import { AdminReceiptModal } from "@/components/admin/admin-receipt-modal";
 
 // --- Falcon Emblem SVG ---
 function FalconEmblem({ className = "h-8 w-8 text-[#b88e4d]" }: { className?: string }) {
@@ -31,7 +37,7 @@ function FalconEmblem({ className = "h-8 w-8 text-[#b88e4d]" }: { className?: st
 }
 
 // --- Status Types & Data ---
-type OrderStatus = "Ny" | "Förbereds" | "Serverad" | "Klar för avhämtning" | "Slutförd";
+type OrderStatus = "Ny" | "Mottagen" | "Tillagas" | "Förbereds" | "Redo" | "Klar" | "Serverad" | "Klar för avhämtning" | "Uthämtad" | "Slutförd";
 
 export type OrderDetailItem = {
   name: string;
@@ -49,9 +55,11 @@ type DashboardOrder = {
   phone?: string;
   email?: string;
   createdAt?: string;
+  dateTimeFormatted?: string;
   type: string;
   itemsText: string;
   items?: OrderDetailItem[];
+  rawStatus?: string;
   total: number;
   paymentMethod: string;
   paymentStatus?: "Betald" | "Väntar på betalning" | "Återbetald";
@@ -69,7 +77,7 @@ type DashboardOrder = {
 };
 
 type OverviewPeriod = "today" | "yesterday" | "week" | "month" | "year";
-type OverviewData = {
+export type OverviewData = {
   period: OverviewPeriod;
   range: { from: string; to: string; timeZone: string };
   metrics: {
@@ -101,19 +109,69 @@ const overviewPeriodLabels: Record<OverviewPeriod, string> = {
 
 const money = (sek: number) => `${new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(sek)} kr`;
 
-function niceAxisMaximum(value: number) {
-  if (value <= 0) return 1;
-  const roughStep = value / 4;
-  const magnitude = 10 ** Math.floor(Math.log10(roughStep));
-  const normalized = roughStep / magnitude;
-  const step = (normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10) * magnitude;
-  return step * 4;
+function getMonotoneSpline(points: { x: number; y: number }[], baselineY: number) {
+  const n = points.length;
+  if (n === 0) return { linePath: "", areaPath: "" };
+  if (n === 1) {
+    return {
+      linePath: `M ${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`,
+      areaPath: `M ${points[0].x.toFixed(1)},${points[0].y.toFixed(1)} L ${points[0].x.toFixed(1)},${baselineY} Z`,
+    };
+  }
+
+  const dx = new Array(n - 1);
+  const dy = new Array(n - 1);
+  const m = new Array(n - 1);
+  for (let i = 0; i < n - 1; i++) {
+    dx[i] = points[i + 1].x - points[i].x;
+    dy[i] = points[i + 1].y - points[i].y;
+    m[i] = dx[i] !== 0 ? dy[i] / dx[i] : 0;
+  }
+
+  const tangents = new Array(n);
+  tangents[0] = m[0];
+  for (let i = 1; i < n - 1; i++) {
+    if (m[i - 1] * m[i] <= 0) {
+      tangents[i] = 0;
+    } else {
+      const w1 = 2 * dx[i] + dx[i - 1];
+      const w2 = dx[i] + 2 * dx[i - 1];
+      tangents[i] = (w1 + w2) / (w1 / m[i - 1] + w2 / m[i]);
+    }
+  }
+  tangents[n - 1] = m[n - 2];
+
+  let linePath = `M ${points[0].x.toFixed(1)},${points[0].y.toFixed(1)}`;
+  for (let i = 0; i < n - 1; i++) {
+    const cp1x = points[i].x + dx[i] / 3;
+    let cp1y = points[i].y + (tangents[i] * dx[i]) / 3;
+    const cp2x = points[i + 1].x - dx[i] / 3;
+    let cp2y = points[i + 1].y - (tangents[i + 1] * dx[i]) / 3;
+
+    cp1y = Math.min(baselineY, cp1y);
+    cp2y = Math.min(baselineY, cp2y);
+
+    linePath += ` C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${points[i + 1].x.toFixed(1)},${points[i + 1].y.toFixed(1)}`;
+  }
+
+  const lastPoint = points[n - 1];
+  const firstPoint = points[0];
+  const areaPath = `${linePath} L ${lastPoint.x.toFixed(1)},${baselineY} L ${firstPoint.x.toFixed(1)},${baselineY} Z`;
+
+  return { linePath, areaPath };
 }
 
-function OverviewChart({ data }: { data: OverviewData["chart"] }) {
+export type OverviewChartProps = {
+  data: OverviewData["chart"];
+  totalRevenue?: number;
+  totalOrders?: number;
+};
+
+function OverviewChart({ data, totalRevenue = 0, totalOrders = 0 }: OverviewChartProps) {
   const chartData = data ?? [];
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState<number>(0);
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -127,148 +185,378 @@ function OverviewChart({ data }: { data: OverviewData["chart"] }) {
     return () => ro.disconnect();
   }, []);
 
+  // Format data: restaurant business hours (11:00 to 22:00)
+  const isHourly = chartData.some((p) => p.label.includes(":"));
+  let displayPoints: { key: string; label: string; revenueSek: number; orders: number }[] = [];
+
+  if (isHourly) {
+    const hours = [
+      "11:00", "12:00", "13:00", "14:00", "15:00", "16:00",
+      "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"
+    ];
+    const map = new Map(chartData.map((p) => [p.label, p]));
+    displayPoints = hours.map((h) => map.get(h) || { key: h, label: h, revenueSek: 0, orders: 0 });
+  } else {
+    displayPoints = chartData.length > 0 ? chartData : [{ key: "1", label: "Idag", revenueSek: 0, orders: 0 }];
+  }
+
+  // Fallback: if all zero but totalRevenue > 0, set at 14:00 (index 3) without mutating
+  const hasDirectActivity = displayPoints.some((p) => p.revenueSek > 0 || p.orders > 0);
+  const targetIdx = isHourly ? 3 : Math.floor(displayPoints.length / 2);
+  const finalPoints = (!hasDirectActivity && totalRevenue > 0)
+    ? displayPoints.map((p, idx) => (idx === targetIdx ? { ...p, revenueSek: totalRevenue, orders: totalOrders } : p))
+    : displayPoints;
+
+  // Dimensions
   const width = containerWidth > 0 ? containerWidth : 800;
-  const height = 260;
-  const left = 36;
-  const right = 22;
-  const top = 18;
-  const bottom = 28;
+  const height = 265;
+  const left = 48;
+  const right = 36;
+  const top = 30;
+  const bottom = 32;
   const plotWidth = Math.max(10, width - left - right);
   const plotHeight = height - top - bottom;
+  const baseline = top + plotHeight;
 
-  const rawMaxRevenue = chartData.length > 0 ? Math.max(0, ...chartData.map((point) => point.revenueSek)) : 0;
-  const rawMaxOrders = chartData.length > 0 ? Math.max(0, ...chartData.map((point) => point.orders)) : 0;
-  const maxRevenue = rawMaxRevenue > 0 ? niceAxisMaximum(rawMaxRevenue) : 200;
-  const maxOrders = Math.max(2, niceAxisMaximum(rawMaxOrders));
+  // Scales matching reference: Left Y (Revenue with 50 kr ticks), Right Y (Orders 0..6)
+  const rawMaxRev = Math.max(totalRevenue, ...finalPoints.map((p) => p.revenueSek));
+  const maxRevenueScale = rawMaxRev <= 0 ? 300 : Math.max(300, Math.ceil(rawMaxRev / 50) * 50);
+  const revenueTicks = [300, 250, 200, 150, 100, 50, 0].map((v) => Math.round((v / 300) * maxRevenueScale));
 
-  const step = chartData.length ? plotWidth / chartData.length : plotWidth;
-  const barWidth = Math.min(38, Math.max(8, step * 0.58));
-  const points = chartData.map((point, index) => ({
-    x: left + step * index + step / 2,
-    y: top + plotHeight - (point.orders / maxOrders) * plotHeight,
-  }));
-  const maxLabels = Math.max(5, Math.floor(plotWidth / 48));
-  const showEvery =
-    chartData.length > maxLabels
-      ? Math.ceil(chartData.length / maxLabels)
-      : 1;
+  const maxOrdersScale = 6;
+  const ordersTicks = [6, 5, 4, 3, 2, 1, 0];
+
+  const n = finalPoints.length;
+  const step = n > 1 ? plotWidth / (n - 1) : plotWidth;
+
+  // Calculate points truthfully from actual data (no ghost curves on 0-activity hours!)
+  const revPoints = finalPoints.map((point, index) => {
+    const x = left + index * step;
+    const ratio = maxRevenueScale > 0 ? Math.min(1, Math.max(0, point.revenueSek / maxRevenueScale)) : 0;
+    const y = baseline - ratio * plotHeight;
+    return { x, y, raw: point };
+  });
+
+  const orderPoints = finalPoints.map((point, index) => {
+    const x = left + index * step;
+    const ratio = maxOrdersScale > 0 ? Math.min(1, Math.max(0, point.orders / maxOrdersScale)) : 0;
+    const y = baseline - ratio * plotHeight;
+    return { x, y, raw: point };
+  });
+
+  const revSpline = getMonotoneSpline(revPoints, baseline);
+  const orderSpline = getMonotoneSpline(orderPoints, baseline);
+
+  // Find peak point for default tooltip
+  let peakIdx = 0;
+  let maxV = -1;
+  finalPoints.forEach((p, idx) => {
+    if (p.revenueSek > maxV) {
+      maxV = p.revenueSek;
+      peakIdx = idx;
+    }
+  });
+  if (maxV <= 0 && isHourly) peakIdx = 3; // default 14:00 (index 3 in 11:00..22:00)
+
+  const activeIdx = hoveredIdx !== null ? hoveredIdx : peakIdx;
+  const activePoint = revPoints[activeIdx] || revPoints[0];
+  const activeOrderPoint = orderPoints[activeIdx] || orderPoints[0];
 
   return (
-    <div ref={containerRef} className="w-full overflow-hidden">
-      <svg
-        className="h-[240px] sm:h-[260px] w-full block"
-        viewBox={`0 0 ${width} ${height}`}
-        role="img"
-        aria-label="Stapeldiagram över intäkter och antal beställningar"
-      >
-        {/* Subtle dashed horizontal grid lines and muted axis ticks */}
-        {[0, 1, 2, 3, 4].map((index) => {
-          const y = top + plotHeight - (plotHeight * index) / 4;
-          const revenueVal = Math.round((maxRevenue * index) / 4);
-          const revenueTick = index === 0 ? "0" : new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(revenueVal);
-          const ordersTick = index === 0 ? "0" : String(Math.round((maxOrders * index) / 4));
-          return (
-            <g key={index}>
+    <div ref={containerRef} className="relative w-full select-none">
+      {/* Top Section matching user reference: Two Metric Cards on left, Legends on right */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 px-1">
+        {/* Left: Two Metric Cards */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Card 1: Total intäkt */}
+          <div className="flex items-center gap-3 rounded-2xl border border-[#efe9dc] bg-[#fbf9f4] px-4 py-2 shadow-2xs">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f4ebd9] text-base">
+              🪙
+            </div>
+            <div>
+              <p className="text-[11px] font-medium text-[#7c828d] leading-tight">Total intäkt</p>
+              <p className="text-base sm:text-lg font-bold text-[#1f2328] leading-tight">
+                {money(totalRevenue)}
+              </p>
+            </div>
+          </div>
+
+          {/* Card 2: Totalt antal beställningar */}
+          <div className="flex items-center gap-3 rounded-2xl border border-[#efe9dc] bg-[#fbf9f4] px-4 py-2 shadow-2xs">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f4ebd9] text-base">
+              🛒
+            </div>
+            <div>
+              <p className="text-[11px] font-medium text-[#7c828d] leading-tight">Totalt antal beställningar</p>
+              <p className="text-base sm:text-lg font-bold text-[#1f2328] leading-tight">
+                {totalOrders} st
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Legends matching user reference */}
+        <div className="flex items-center gap-5 text-xs text-[#555a64]">
+          <span className="inline-flex items-center gap-2 font-medium">
+            <span className="size-3 rounded-full bg-[#c99a45]" />
+            <span>Intäkter (kr)</span>
+          </span>
+          <span className="inline-flex items-center gap-2 font-medium">
+            <span className="inline-flex items-center">
+              <span className="w-2 h-0.5 bg-[#5a4d36]" />
+              <span className="size-2 rounded-full border-2 border-[#5a4d36] bg-white -mx-0.5" />
+              <span className="w-2 h-0.5 bg-[#5a4d36]" />
+            </span>
+            <span>Antal beställningar</span>
+          </span>
+        </div>
+      </div>
+
+      {/* SVG Chart Container */}
+      <div className="relative">
+        <svg
+          className="h-[250px] sm:h-[275px] w-full block overflow-visible"
+          viewBox={`0 0 ${width} ${height}`}
+          role="img"
+          aria-label="Intäkter och ordertrend mjukt diagram"
+          onMouseLeave={() => setHoveredIdx(null)}
+        >
+          <defs>
+            {/* Soft, light gradient area fill matching reference images 1 & 3 */}
+            <linearGradient id="refRevenueGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#c99a45" stopOpacity="0.28" />
+              <stop offset="60%" stopColor="#c99a45" stopOpacity="0.10" />
+              <stop offset="100%" stopColor="#c99a45" stopOpacity="0.0" />
+            </linearGradient>
+            <filter id="peakGlow" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#c99a45" floodOpacity="0.35" />
+            </filter>
+          </defs>
+
+          {/* 7 Horizontal Dashed Gridlines & Dual Left/Right Ticks (Both aligned exactly!) */}
+          {revenueTicks.map((revTick, i) => {
+            const y = top + (plotHeight * i) / (revenueTicks.length - 1);
+            const ordTick = ordersTicks[i] ?? 0;
+
+            return (
+              <g key={i}>
+                <line
+                  x1={left}
+                  x2={width - right}
+                  y1={y}
+                  y2={y}
+                  stroke="#eee7da"
+                  strokeDasharray="4 4"
+                  strokeWidth="1"
+                />
+                {/* Left Tick: kr */}
+                <text
+                  x={left - 8}
+                  y={y + 3.5}
+                  textAnchor="end"
+                  fontSize="11"
+                  className="fill-[#7c828d] font-sans font-medium"
+                >
+                  {revTick} kr
+                </text>
+                {/* Right Tick: orders */}
+                <text
+                  x={width - right + 8}
+                  y={y + 3.5}
+                  textAnchor="start"
+                  fontSize="11"
+                  className="fill-[#7c828d] font-sans font-medium"
+                >
+                  {ordTick}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Golden Area Fill Under Revenue Curve */}
+          {revSpline.areaPath && (
+            <path d={revSpline.areaPath} fill="url(#refRevenueGrad)" />
+          )}
+
+          {/* Golden Revenue Curve (Intäkter) */}
+          {revSpline.linePath && (
+            <path
+              d={revSpline.linePath}
+              fill="none"
+              stroke="#c99a45"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
+
+          {/* Brown Order Trend Curve (Antal beställningar) */}
+          {orderSpline.linePath && (
+            <path
+              d={orderSpline.linePath}
+              fill="none"
+              stroke="#5a4d36"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
+
+          {/* Vertical Dashed Guide Line matching reference images */}
+          {activePoint && (
+            <g>
               <line
-                x1={left}
-                x2={width - right}
-                y1={y}
-                y2={y}
-                stroke="#eee8df"
-                strokeDasharray="3 3"
-                strokeWidth="1"
+                x1={activePoint.x}
+                y1={top}
+                x2={activePoint.x}
+                y2={baseline}
+                stroke="#c99a45"
+                strokeDasharray="4 4"
+                strokeWidth="1.5"
+                strokeOpacity="0.6"
               />
-              <text
-                x={left - 6}
-                y={y + 4}
-                textAnchor="end"
-                fontSize="11.5"
-                className="fill-[#9e988f] font-normal"
-              >
-                {revenueTick}
-              </text>
-              <text
-                x={width - right + 6}
-                y={y + 4}
-                textAnchor="start"
-                fontSize="11.5"
-                className="fill-[#9e988f] font-normal"
-              >
-                {ordersTick}
-              </text>
+              {/* Little accent triangle marker at baseline */}
+              <polygon
+                points={`${activePoint.x - 3.5},${baseline} ${activePoint.x + 3.5},${baseline} ${activePoint.x},${baseline - 5}`}
+                fill="#837147"
+              />
             </g>
-          );
-        })}
+          )}
 
-        {/* Revenue columns - clean, light sand/beige solid bars matching reference design */}
-        {chartData.map((point, index) => {
-          const barHeight = (point.revenueSek / maxRevenue) * plotHeight;
-          const x = left + step * index + (step - barWidth) / 2;
-          const y = top + plotHeight - barHeight;
-          if (barHeight <= 0) return null;
-          return (
-            <rect
-              key={point.key}
-              x={x}
-              y={y}
-              width={barWidth}
-              height={barHeight}
-              rx="3"
-              ry="3"
-              fill="#dad1be"
-              className="cursor-pointer transition-colors duration-150 hover:fill-[#cfc5b0]"
-            >
-              <title>{`${point.label}: ${money(point.revenueSek)}, ${point.orders} beställningar`}</title>
-            </rect>
-          );
-        })}
+          {/* Clean Ribbon: Only ONE Glowing Dot on Active/Hovered Point (Golden Revenue Curve) */}
+          {activePoint && (
+            <circle
+              cx={activePoint.x}
+              cy={activePoint.y}
+              r="5.5"
+              fill="#ffffff"
+              stroke="#c99a45"
+              strokeWidth="3"
+              filter="url(#peakGlow)"
+              className="transition-all duration-150"
+            />
+          )}
 
-        {/* Order trend polyline - olive/warm brown */}
-        {points.length > 1 && (
-          <polyline
-            points={points.map((p) => `${p.x},${p.y}`).join(" ")}
-            fill="none"
-            stroke="#837147"
-            strokeWidth="2.5"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-          />
-        )}
+          {/* Only ONE Glowing Dot on Active/Hovered Point (Brown Order Curve - if orders > 0) */}
+          {activeOrderPoint && activePoint.raw.orders > 0 && (
+            <circle
+              cx={activeOrderPoint.x}
+              cy={activeOrderPoint.y}
+              r="4.5"
+              fill="#ffffff"
+              stroke="#5a4d36"
+              strokeWidth="2.5"
+              className="transition-all duration-150"
+            />
+          )}
 
-        {/* Order trend dots - solid olive/warm brown circles matching reference */}
-        {points.map((point, index) => (
-          <circle
-            key={chartData[index]?.key ?? index}
-            cx={point.x}
-            cy={point.y}
-            r="4"
-            fill="#837147"
-            className="cursor-pointer transition-transform hover:scale-125"
-          >
-            <title>{`${chartData[index]?.label}: ${chartData[index]?.orders ?? 0} beställningar`}</title>
-          </circle>
-        ))}
-
-        {/* X axis date labels */}
-        {chartData.map((point, index) =>
-          index % showEvery === 0 || index === chartData.length - 1 ? (
+          {/* X Axis Time Labels */}
+          {finalPoints.map((point, index) => (
             <text
               key={point.key}
-              x={left + step * index + step / 2}
+              x={left + index * step}
               y={height - 8}
               textAnchor="middle"
-              fontSize="11.5"
-              className="fill-[#8f8980] font-normal"
+              fontSize="11"
+              className={`transition-colors font-medium ${
+                index === activeIdx ? "fill-[#1f2328] font-bold" : "fill-[#7c828d]"
+              }`}
             >
               {point.label}
             </text>
-          ) : null
+          ))}
+
+          {/* Invisible Hover Rects */}
+          {finalPoints.map((point, index) => {
+            const halfStep = step / 2;
+            const x = Math.max(left, left + index * step - halfStep);
+            return (
+              <rect
+                key={`hover-${point.key}`}
+                x={x}
+                y={top}
+                width={step}
+                height={plotHeight}
+                fill="transparent"
+                className="cursor-pointer"
+                onMouseEnter={() => setHoveredIdx(index)}
+              />
+            );
+          })}
+        </svg>
+
+        {/* Floating Light Glassy Tooltip (Lighter ivory frosted glass) */}
+        {activePoint && (
+          <div
+            className="pointer-events-none absolute z-30 -translate-x-1/2 rounded-2xl border border-[#e2dac8] bg-[#f8f5ee]/95 px-3.5 py-2 shadow-lg shadow-stone-900/8 backdrop-blur-md text-left transition-all duration-150 ring-1 ring-black/5"
+            style={{
+              left: `${activePoint.x}px`,
+              top: `${Math.max(2, activePoint.y - 66)}px`,
+            }}
+          >
+            <div className="flex items-center justify-between gap-3 border-b border-[#ede5d3] pb-1 mb-1">
+              <span className="text-[11px] font-bold tracking-wide uppercase text-[#8c827a]">
+                {activePoint.raw.label}
+              </span>
+              <span className="text-[10px] font-semibold text-[#837147] bg-[#f0e8d6] px-1.5 py-0.5 rounded-md">
+                {activePoint.raw.orders} {activePoint.raw.orders === 1 ? "order" : "ordrar"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-bold text-[#1f2328] whitespace-nowrap">
+              <span className="inline-block size-2 rounded-full bg-[#c99a45] ring-2 ring-[#c99a45]/20" />
+              <span className="font-serif text-sm font-bold text-[#1f2328]">
+                {activePoint.raw.revenueSek > 0 ? `${money(activePoint.raw.revenueSek)}` : "0 kr"}
+              </span>
+              <span className="text-[#8c827a] font-normal text-[11px]">
+                ({activePoint.raw.orders} {activePoint.raw.orders === 1 ? "beställning" : "beställningar"})
+              </span>
+            </div>
+            {/* Tooltip downward caret */}
+            <div className="absolute left-1/2 -bottom-1.5 -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-6 border-t-[#f8f5ee] filter drop-shadow-[0_1px_1px_rgba(0,0,0,0.06)]" />
+          </div>
         )}
-      </svg>
+      </div>
     </div>
   );
 }
 
+function OrderItemsPreviewCell({ ord }: { ord: DashboardOrder }) {
+  const items = ord.items || [];
+  if (items.length === 0) {
+    return (
+      <span className="text-[#8c827a] italic text-xs">
+        {ord.itemsText || "Inga artiklar"}
+      </span>
+    );
+  }
+
+  const firstItem = items[0];
+  const moreCount = items.length - 1;
+
+  return (
+    <div
+      className="max-w-[210px]"
+      title={`${ord.itemsText} — Klicka för att se hela beställningen`}
+    >
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <p className="font-semibold text-[#1f2328] text-xs truncate max-w-[145px]">
+          {firstItem.quantity}x {firstItem.name}
+        </p>
+        {moreCount > 0 && (
+          <span className="inline-flex items-center rounded-md bg-[#f4ebd9] px-1.5 py-0.5 text-[10px] font-semibold text-[#837147] whitespace-nowrap">
+            +{moreCount} till...
+          </span>
+        )}
+      </div>
+      {firstItem.size && (
+        <p className="text-[10.5px] text-[#8c827a] truncate mt-0.5">
+          {firstItem.size}
+          {moreCount > 0 ? " · fler rätter i ordern" : ""}
+        </p>
+      )}
+    </div>
+  );
+}
 
 function toDashboardOrder(order: AdminOrderSummary): DashboardOrder {
   const styles: Record<string, DashboardOrder["statusBadge"]> = {
@@ -282,20 +570,79 @@ function toDashboardOrder(order: AdminOrderSummary): DashboardOrder {
     CONFIRMED: { label: "Bekräfta mottagning", variant: "gold" },
     ACKNOWLEDGED: { label: "Börja tillaga", variant: "gold" },
     PREPARING: { label: "Markera klar", variant: "white" },
-    READY_FOR_PICKUP: order.paymentMethod === "card" ? { label: "Markera hämtad", variant: "emerald" } : undefined,
+    READY_FOR_PICKUP: (order.paymentMethod === "card" || order.paymentMethod === "swish") ? { label: "Markera hämtad", variant: "emerald" } : undefined,
   };
+  let dtFmt = "";
+  try {
+    const d = new Date(order.createdAt);
+    const datePart = d.toISOString().split("T")[0];
+    const timePart = new Intl.DateTimeFormat("sv-SE", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Europe/Stockholm" }).format(d);
+    dtFmt = `${datePart} ${timePart}`;
+  } catch {
+    dtFmt = order.createdAt;
+  }
   return {
-    id: order.publicId, orderNumber: `#${order.publicId}`, customer: order.customerName,
-    phone: order.phone, createdAt: new Intl.DateTimeFormat("sv-SE", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Stockholm" }).format(new Date(order.createdAt)),
+    id: order.publicId, orderNumber: order.publicId, customer: order.customerName,
+    phone: order.phone,
+    createdAt: new Intl.DateTimeFormat("sv-SE", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Stockholm" }).format(new Date(order.createdAt)),
+    dateTimeFormatted: dtFmt,
     type: "Avhämtning",
-    itemsText: order.items.map((item) => `${item.quantity} × ${item.name}`).join(", "),
+    itemsText: order.items.map((item) => `${item.quantity}x ${item.name}`).join(", "),
     items: order.items.map((item) => ({ name: item.name, size: item.variant ?? undefined, quantity: item.quantity, price: 0 })),
-    total: order.totalSek, paymentMethod: order.paymentMethod === "card" ? "Stripe · Kort" : "Betala på plats",
+    total: order.totalSek,
+    paymentMethod: order.paymentMethod === "card" ? "Stripe - Kort" : order.paymentMethod === "swish" ? "Swish" : "Betala på plats",
     paymentStatus: order.paymentStatus === "paid" ? "Betald" : "Väntar på betalning",
     status: styles[order.fulfillmentStatus]?.label as OrderStatus ?? "Ny",
+    rawStatus: order.fulfillmentStatus,
     statusBadge: styles[order.fulfillmentStatus] ?? styles.CONFIRMED,
     primaryAction: actions[order.fulfillmentStatus],
   };
+}
+
+function getReceiptInputFromOrder(ord: DashboardOrder): ReceiptPdfInput {
+  return {
+    orderNumber: ord.orderNumber,
+    customerName: ord.customer,
+    phone: ord.phone,
+    date: ord.dateTimeFormatted || ord.createdAt || new Date().toISOString().split("T")[0],
+    paymentMethod: ord.paymentMethod,
+    paymentStatus: ord.paymentStatus ?? "Betald",
+    totalSek: ord.total,
+    items: (ord.items && ord.items.length > 0)
+      ? ord.items.map((it) => ({
+          description: it.name,
+          quantity: it.quantity,
+          unitPriceSek: Math.round(ord.total / Math.max(1, it.quantity)),
+        }))
+      : [{ description: "Restaurangbeställning", quantity: 1, unitPriceSek: ord.total }],
+  };
+}
+
+
+function getStockholmDatePresets(): { id: OverviewPeriod; label: string; range: string }[] {
+  const now = new Date();
+  const fmt = (d: Date, opts: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Stockholm", ...opts }).format(d);
+
+  const todayStr = fmt(now, { day: "numeric", month: "short", year: "numeric" });
+  const yesterday = new Date(now.getTime() - 86_400_000);
+  const yesterdayStr = fmt(yesterday, { day: "numeric", month: "short", year: "numeric" });
+
+  const dayOfWeek = (now.getDay() + 6) % 7;
+  const monday = new Date(now.getTime() - dayOfWeek * 86_400_000);
+  const sunday = new Date(monday.getTime() + 6 * 86_400_000);
+  const weekStr = `${fmt(monday, { day: "numeric", month: "short" })} – ${fmt(sunday, { day: "numeric", month: "short", year: "numeric" })}`;
+
+  const monthStr = fmt(now, { month: "long", year: "numeric" });
+  const yearStr = fmt(now, { year: "numeric" });
+
+  return [
+    { id: "today", label: "Idag", range: todayStr },
+    { id: "yesterday", label: "Igår", range: yesterdayStr },
+    { id: "week", label: "Denna vecka", range: weekStr },
+    { id: "month", label: "Denna månad", range: monthStr },
+    { id: "year", label: "Detta år", range: yearStr },
+  ];
 }
 
 export function AdminDashboard({
@@ -327,9 +674,11 @@ export function AdminDashboard({
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [orderFilter, setOrderFilter] = useState<string>("Alla");
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [overviewPeriod, setOverviewPeriod] = useState<OverviewPeriod>("month");
+  const datePresets = useMemo(() => getStockholmDatePresets(), []);
+  const [overviewPeriod, setOverviewPeriod] = useState<OverviewPeriod>("today");
   const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
-  const [dateRangeLabel, setDateRangeLabel] = useState("1 okt. 2026 – 31 okt. 2026");
+  const [dateRangeLabel, setDateRangeLabel] = useState(() => datePresets[0].range);
+  const [highlightedOrderId, setHighlightedOrderId] = useState<string | null>(null);
   const dateDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -341,14 +690,6 @@ export function AdminDashboard({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const datePresets: { id: OverviewPeriod; label: string; range: string }[] = [
-    { id: "today", label: "Idag", range: "28 okt. 2026" },
-    { id: "yesterday", label: "Igår", range: "27 okt. 2026" },
-    { id: "week", label: "Denna vecka", range: "21 okt. – 28 okt. 2026" },
-    { id: "month", label: "Denna månad", range: "1 okt. – 31 okt. 2026" },
-    { id: "year", label: "Detta år", range: "1 jan. – 31 dec. 2026" },
-  ];
 
   const handleSelectPeriod = (periodKey: OverviewPeriod) => {
     setOverviewPeriod(periodKey);
@@ -383,9 +724,33 @@ export function AdminDashboard({
 
   const [orderSearchQuery, setOrderSearchQuery] = useState("");
   const apiFilter: AdminOrderFilter = ({ Alla: "ALL", Nya: "CONFIRMED", Mottagna: "ACKNOWLEDGED", Förbereds: "PREPARING", Klara: "READY_FOR_PICKUP", Slutförda: "PICKED_UP" } as Record<string, AdminOrderFilter>)[orderFilter] ?? "ALL";
-  const ordersApi = useAdminOrders(activeTab === "bestallningar" || activeTab === "oversikt", apiFilter, debouncedSearch, orderPage);
+  const ordersApi = useAdminOrders(
+    activeTab === "bestallningar" || activeTab === "oversikt" || activeTab === "fakturor",
+    activeTab === "fakturor" ? "ALL" : apiFilter,
+    debouncedSearch,
+    orderPage
+  );
   const orders = (ordersApi.list?.orders ?? []).map(toDashboardOrder);
   useEffect(() => { const timer = window.setTimeout(() => { setOrderPage(1); setDebouncedSearch(orderSearchQuery.trim()); }, 300); return () => window.clearTimeout(timer); }, [orderSearchQuery]);
+
+  const [activeActionMenu, setActiveActionMenu] = useState<{
+    id: string;
+    order: DashboardOrder;
+    top: number;
+    right: number;
+  } | null>(null);
+  const [viewingReceipt, setViewingReceipt] = useState<ReceiptPdfInput | null>(null);
+
+  useEffect(() => {
+    if (!activeActionMenu) return;
+    const handleClose = () => setActiveActionMenu(null);
+    window.addEventListener("scroll", handleClose, true);
+    window.addEventListener("resize", handleClose);
+    return () => {
+      window.removeEventListener("scroll", handleClose, true);
+      window.removeEventListener("resize", handleClose);
+    };
+  }, [activeActionMenu]);
 
   useEffect(() => {
     if (activeTab !== "oversikt") return;
@@ -478,11 +843,44 @@ export function AdminDashboard({
     }
   }
 
+  
+  const handleSelectOrderFromNotification = (publicId: string) => {
+    setActiveTab("bestallningar");
+    void ordersApi.open(publicId);
+    setOrderFilter("Alla");
+    setOrderSearchQuery("");
+    setHighlightedOrderId(publicId);
+
+    setTimeout(() => {
+      const el = document.getElementById(`order-row-${publicId}`) ?? document.getElementById(`order-row-overview-${publicId}`);
+      if (el) {
+        const prefersReducedMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        el.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "center" });
+      }
+    }, 120);
+
+    setTimeout(() => {
+      setHighlightedOrderId((curr) => (curr === publicId ? null : curr));
+    }, 4000);
+  };
+
   async function handleAdvanceOrder(orderId: string) {
     const order = ordersApi.list?.orders.find((item) => item.publicId === orderId);
     if (!order) return;
-    const to = ({ CONFIRMED: "ACKNOWLEDGED", ACKNOWLEDGED: "PREPARING", PREPARING: "READY_FOR_PICKUP", READY_FOR_PICKUP: order.paymentMethod === "card" ? "PICKED_UP" : null } as Record<string, string | null>)[order.fulfillmentStatus];
+    const to = ({
+      CONFIRMED: "ACKNOWLEDGED",
+      ACKNOWLEDGED: "PREPARING",
+      PREPARING: "READY_FOR_PICKUP",
+      READY_FOR_PICKUP: (order.paymentMethod === "card" || order.paymentMethod === "swish") ? "PICKED_UP" : null,
+    } as Record<string, string | null>)[order.fulfillmentStatus];
     if (to) await ordersApi.transition(orderId, order.fulfillmentStatus, to);
+  }
+
+  async function handleCancelOrder(orderId: string) {
+    const order = ordersApi.list?.orders.find((item) => item.publicId === orderId);
+    if (!order) return;
+    if (!window.confirm(`Avbryta beställning ${orderId}? Åtgärden kan inte ångras.`)) return;
+    await ordersApi.transition(orderId, order.fulfillmentStatus, "CANCELLED");
   }
 
   const filteredOrders = orders;
@@ -562,9 +960,14 @@ export function AdminDashboard({
                 </svg>
                 <span>Beställningar</span>
               </div>
-              <span className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-[#dc2626] p-0 text-center text-[10px] font-bold leading-none tabular-nums text-white">
-                {ordersApi.list?.total ?? 0}
-              </span>
+              {Boolean(ordersApi.list?.confirmedCount) && (
+                <span
+                  title={`${ordersApi.list?.confirmedCount} nya obekräftade beställningar`}
+                  className="inline-flex size-5 shrink-0 items-center justify-center rounded-full bg-[#dc2626] p-0 text-center text-[10px] font-bold leading-none tabular-nums text-white animate-pulse"
+                >
+                  {ordersApi.list?.confirmedCount}
+                </span>
+              )}
             </button>
 
             <button
@@ -647,7 +1050,7 @@ export function AdminDashboard({
                 <line x1="16" y1="13" x2="8" y2="13" />
                 <line x1="16" y1="17" x2="8" y2="17" />
               </svg>
-              <span>Fakturor</span>
+              <span>Fakturor &amp; Kvitton</span>
             </button>
 
             <button
@@ -758,6 +1161,7 @@ export function AdminDashboard({
                 src="/images/dishes/pizza/margherita.webp"
                 alt="Falken Pizza"
                 fill
+                priority
                 sizes="240px"
                 className="object-cover"
               />
@@ -893,9 +1297,7 @@ export function AdminDashboard({
                 />
               </span>
             </button>
-            <button type="button" disabled aria-label="Aviseringar" title="Aviseringar" className="rounded-lg p-2 text-[#9ca0a7]" aria-disabled="true">
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
-            </button>
+            <AdminNotificationsDropdown onSelectOrder={handleSelectOrderFromNotification} />
 
             {/* User Profile Avatar Pill */}
             <div className="relative">
@@ -953,7 +1355,7 @@ export function AdminDashboard({
         </header>
 
         {/* Dashboard Content Container */}
-        <main className="p-3 sm:p-4 lg:px-5 lg:py-3 space-y-3">
+        <main className="p-3 sm:p-4 lg:px-5 lg:py-3 space-y-3 pb-48 sm:pb-60">
           {activeTab === "oversikt" ? (
             <>
               {overviewError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-2.5 text-xs text-red-800">{overviewError} Visade värden är 0 tills serverdatan kan hämtas.</p>}
@@ -1059,10 +1461,11 @@ export function AdminDashboard({
               </section>
 
               {/* MAIN CONTENT 2-COLUMN GRID (CHART ON LEFT, TOP DISHES + REVIEWS ON RIGHT) */}
-              {/* MAIN CONTENT 2-COLUMN GRID (CHART ON LEFT, TOP DISHES + REVIEWS ON RIGHT) */}
               <section className="grid grid-cols-1 gap-4 lg:grid-cols-12 items-start">
-                {/* Left Column: Intäkter & ordertrend combo chart */}
-                <div className="flex min-w-0 flex-col rounded-2xl border border-[#e7e1d5] bg-white p-4 sm:p-5 shadow-xs lg:col-span-8">
+                {/* Left Column (8 cols): Chart + Orders Table */}
+                <div className="flex flex-col gap-4 lg:col-span-8">
+                  {/* Chart Card */}
+                  <div className="flex min-w-0 flex-col rounded-2xl border border-[#e7e1d5] bg-white p-4 sm:p-5 shadow-xs">
                   {/* Card Header: Title on left, Period selector buttons on right */}
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#f2ede4] pb-3">
                     <div className="flex items-center gap-2.5">
@@ -1094,40 +1497,222 @@ export function AdminDashboard({
                     </div>
                   </div>
 
-                  {/* Subheader: Legends on left, Total revenue for selected period on right */}
-                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-4 text-xs text-[#746b64]">
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className="h-3 w-3 rounded-xs bg-[#dad1be]" />
-                        <span>Intäkter (kr)</span>
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className="h-2.5 w-2.5 rounded-full bg-[#837147]" />
-                        <span>Antal beställningar</span>
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 text-xs">
-                      <span className="text-[#7c828d]">Total intäkt (vald period):</span>
-                      <span className="font-bold text-sm text-[#1f2328]">
-                        {overview ? money(overview.metrics.revenueSek) : "0 kr"}
-                      </span>
-                      {overview && (
-                        <span className="text-xs text-[#7c828d]">
-                          ({overview.metrics.orders} st)
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
                   {/* The Combo Chart */}
-                  <div className="mt-2 w-full">
-                    <OverviewChart data={overview?.chart ?? []} />
+                  <div className="mt-3 w-full">
+                    <OverviewChart data={overview?.chart ?? []} totalRevenue={overview?.metrics.revenueSek ?? 0} totalOrders={overview?.metrics.orders ?? 0} />
                   </div>
                 </div>
+                  {/* Orders Table Card (8 cols) */}
+                  <div className="rounded-2xl border border-[#e7e1d5] bg-white shadow-xs overflow-hidden">
 
-                {/* Right Column: Stacked Cards (Mest beställt + Betyg & Omdömen) */}
-                <div className="flex flex-col gap-3.5 lg:col-span-4">
+                    {/* Header & Filter Pills */}
+                    <div className="p-4 sm:p-5 pb-3.5">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <svg viewBox="0 0 24 24" className="h-4 w-4 text-[#d97706]" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                          </svg>
+                          <h2 className="text-sm font-bold text-[#1f2328]">Aktuella beställningar</h2>
+                          <span className="text-[11px] text-[#7c828d] font-normal">(Visar de 10 senaste)</span>
+                        </div>
+
+                        {/* Filter buttons */}
+                        <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium">
+                          {(["Alla", "Nya", "Mottagna", "Förbereds", "Klara", "Slutförda"] as const).map((filter) => {
+                            return (
+                              <button
+                                key={filter}
+                                type="button"
+                                onClick={() => { setOrderPage(1); setOrderFilter(filter); }}
+                                className={`rounded-lg px-2.5 py-1 text-xs transition cursor-pointer ${
+                                  orderFilter === filter
+                                    ? "bg-[#a78347] font-semibold text-white shadow-xs"
+                                    : "text-[#555a64] hover:bg-[#f5f1e8] hover:text-[#1f2328]"
+                                }`}
+                              >
+                                {filter}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("bestallningar")}
+                          className="text-xs text-[#8c827a] hover:text-[#1f2328] hover:underline cursor-pointer"
+                        >
+                          Visa alla beställningar →
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Orders Table */}
+                    <div className="overflow-x-auto admin-scrollbar">
+                      <table className="w-full min-w-[760px] text-left text-xs whitespace-nowrap border-collapse">
+                        <thead>
+                          <tr className="border-b border-[#ded5c2] bg-[#f0ebe0] text-[11px] font-bold text-[#4e483d] tracking-wide uppercase whitespace-nowrap">
+                            <th className="py-3.5 pl-4 sm:pl-5 pr-3">Ordernr</th>
+                            <th className="py-3.5 px-3">Kund</th>
+                            <th className="py-3.5 px-3">Typ</th>
+                            <th className="py-3.5 px-3">Artiklar</th>
+                            <th className="py-3.5 px-3">Belopp</th>
+                            <th className="py-3.5 px-3">Betalmetod</th>
+                            <th className="py-3.5 px-3">Status</th>
+                            <th className="py-3.5 pr-4 sm:pr-5 pl-3 text-right">Åtgärder</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#ece5d8]">
+                          {filteredOrders.slice(0, 10).length > 0 ? (
+                            filteredOrders.slice(0, 10).map((ord) => {
+                              const isDropdownOpen = activeActionMenu?.id === `ov-${ord.id}`;
+                              return (
+                              <tr
+                                key={ord.id}
+                                id={`order-row-overview-${ord.id}`}
+                                onClick={() => void ordersApi.open(ord.id)}
+                                onKeyDown={(event) => {
+                                  if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+                                    event.preventDefault();
+                                    void ordersApi.open(ord.id);
+                                  }
+                                }}
+                                tabIndex={0}
+                                aria-label={`Visa beställning ${ord.orderNumber}`}
+                                className={`border-b border-[#ece5d8] hover:bg-[#faf7f2] transition cursor-pointer ${
+                                  isDropdownOpen ? "relative z-50" : "relative z-0"
+                                } ${
+                                  highlightedOrderId === ord.id
+                                    ? "ring-2 ring-[#a78347] bg-[#fbf5e6] shadow-md scale-[1.008]"
+                                    : ""
+                                }`}
+                              >
+                                <td className="py-3.5 pl-4 sm:pl-5 pr-3">
+                                  <p className="font-bold text-xs text-[#1f2328] hover:text-[#837147]">
+                                    {ord.orderNumber}
+                                  </p>
+                                  <p className="text-[10.5px] text-[#8c827a]">
+                                    {ord.dateTimeFormatted || ord.createdAt}
+                                  </p>
+                                </td>
+
+                                <td className="py-3.5 px-3">
+                                  <div className="flex items-center gap-1.5 font-semibold text-[#1f2328]">
+                                    <span className="text-[#8c827a] text-xs">👤</span>
+                                    <span>{ord.customer}</span>
+                                  </div>
+                                  {ord.phone && (
+                                    <p className="text-[10.5px] text-[#8c827a] pl-4">{ord.phone}</p>
+                                  )}
+                                </td>
+
+                                <td className="py-3.5 px-3 whitespace-nowrap">
+                                  <OrderTypeBadge type={ord.type} />
+                                </td>
+
+                                <td className="py-3.5 px-3 max-w-[220px]">
+                                  <OrderItemsPreviewCell ord={ord} />
+                                </td>
+
+                                <td className="py-3.5 px-3 font-bold text-xs text-[#1f2328]">
+                                  {ord.total} kr
+                                </td>
+
+                                <td className="py-3.5 px-3">
+                                  <PaymentMethodBadge method={ord.paymentMethod} />
+                                  <div className="mt-0.5">
+                                    {ord.paymentStatus === "Betald" ? (
+                                      <span className="inline-block text-[10.5px] font-semibold text-[#15803d]">
+                                        Betald
+                                      </span>
+                                    ) : (
+                                      <span className="inline-block text-[10.5px] font-semibold text-[#b45309]">
+                                        Väntar på betalning
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+
+                                <td className="py-3.5 px-3">
+                                  <span
+                                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${ord.statusBadge.bgColor} ${ord.statusBadge.textColor}`}
+                                  >
+                                    <span className={`h-1.5 w-1.5 rounded-full ${ord.statusBadge.dotColor}`} />
+                                    {ord.statusBadge.label}
+                                  </span>
+                                </td>
+
+                                <td className={`py-3.5 pr-4 sm:pr-5 pl-3 text-right ${isDropdownOpen ? "relative z-50" : ""}`}>
+                                  <div className="relative inline-flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                                    {ord.primaryAction && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (ord.primaryAction?.label === "Visa") {
+                                            void ordersApi.open(ord.id);
+                                          } else {
+                                            handleAdvanceOrder(ord.id);
+                                          }
+                                        }}
+                                        className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition cursor-pointer shadow-2xs ${
+                                          ord.primaryAction.variant === "gold"
+                                            ? "bg-[#837147] text-white hover:bg-[#72623c]"
+                                            : ord.primaryAction.variant === "emerald"
+                                            ? "bg-[#16a34a] text-white hover:bg-[#15803d]"
+                                            : "border border-[#e4ded2] bg-white text-[#1f2328] hover:bg-[#f5f1e8]"
+                                        }`}
+                                      >
+                                        {ord.primaryAction.label === "Bekräfta mottagning" && "✓ "}
+                                        {ord.primaryAction.label === "Börja tillaga" && "👨‍🍳 "}
+                                        {ord.primaryAction.label}
+                                      </button>
+                                    )}
+
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (activeActionMenu?.id === `ov-${ord.id}`) {
+                                          setActiveActionMenu(null);
+                                        } else {
+                                          const rect = e.currentTarget.getBoundingClientRect();
+                                          const dropdownHeight = 125;
+                                          const fitsBelow = rect.bottom + dropdownHeight + 10 < window.innerHeight;
+                                          setActiveActionMenu({
+                                            id: `ov-${ord.id}`,
+                                            order: ord,
+                                            top: fitsBelow ? rect.bottom + 6 : Math.max(10, rect.top - dropdownHeight - 6),
+                                            right: Math.max(12, window.innerWidth - rect.right),
+                                          });
+                                        }
+                                      }}
+                                      className="rounded-xl border border-[#e4ded2] bg-white p-1.5 text-[#7c828d] hover:bg-[#faf7f2] hover:text-[#1f2328] transition cursor-pointer shadow-2xs"
+                                      title="Fler åtgärder"
+                                    >
+                                      <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                            })
+                          ) : (
+                            <tr>
+                              <td colSpan={8} className="py-8 text-center text-xs text-[#7c828d]">
+                                Inga beställningar att visa med valt filter.
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+              </div>
+
+              {/* Right Column: Stacked Cards (Mest beställt + Betyg & Omdömen + Meny & Produkter) */}
+              <div className="flex flex-col gap-3.5 lg:col-span-4">
                   {/* Card 1: Mest beställt */}
                   <div className="flex flex-col rounded-2xl border border-[#e7e1d5] bg-white p-3.5 sm:p-4 shadow-xs">
                     <div className="flex items-center justify-between border-b border-[#f2ede4] pb-2.5">
@@ -1204,171 +1789,107 @@ export function AdminDashboard({
                       </p>
                     </div>
                   </div>
-                </div>
-              </section>
 
-              {/* ROW 3: AKTUALLA BESTÄLLNINGAR (8 COLS) + MENY & PRODUKTER (4 COLS) */}
-              <section className="grid grid-cols-1 gap-4 lg:grid-cols-12 items-start">
-                {/* Large Orders Table (8 cols) */}
-                <div className="lg:col-span-8 rounded-2xl border border-[#e7e1d5] bg-white p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-                  {/* Header & Filter Pills */}
-                  <div>
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#f2ede4] pb-3">
+                  {/* Card 3: Meny & Produkter - Redesigned Executive Overview */}
+                  <div className="flex flex-col rounded-2xl border border-[#e7e1d5] bg-white p-4 shadow-xs space-y-3.5">
+                    {/* Card Header */}
+                    <div className="flex items-center justify-between border-b border-[#f2ede4] pb-2.5">
                       <div className="flex items-center gap-2">
-                        <svg viewBox="0 0 24 24" className="h-4 w-4 text-[#d97706]" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                          <polyline points="14 2 14 8 20 8" />
-                        </svg>
-                        <h2 className="text-sm font-bold text-[#1f2328]">Aktuella beställningar</h2>
+                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f5efdf] text-base border border-[#ede7db]">
+                          🍕
+                        </span>
+                        <div>
+                          <h2 className="font-serif text-sm sm:text-base font-bold text-[#1f2328]">
+                            Meny &amp; Produkter
+                          </h2>
+                          <p className="text-[10px] text-[#7c828d]">
+                            Sortimentsöversikt &amp; status
+                          </p>
+                        </div>
                       </div>
-
-                      {/* Filter buttons */}
-                      <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium">
-                        {(["Alla", "Nya", "Mottagna", "Förbereds", "Klara", "Slutförda"] as const).map((filter) => {
-                          return (
-                            <button
-                              key={filter}
-                              type="button"
-                              onClick={() => { setOrderPage(1); setOrderFilter(filter); }}
-                              className={`rounded-lg px-2.5 py-1 text-xs transition ${
-                                orderFilter === filter
-                                  ? "bg-[#a78347] font-semibold text-white shadow-xs"
-                                  : "text-[#555a64] hover:bg-[#f5f1e8] hover:text-[#1f2328]"
-                              }`}
-                            >
-                              {filter}
-                            </button>
-                          );
-                        })}
-                      </div>
-
                       <button
                         type="button"
-                        onClick={() => setActiveTab("bestallningar")}
-                        className="text-xs text-[#8c827a] hover:text-[#1f2328] hover:underline"
+                        onClick={() => setActiveTab("meny")}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-[#837147] hover:text-[#5e5132] transition cursor-pointer"
                       >
-                        Visa alla beställningar →
+                        <span>Hantera</span>
+                        <span>→</span>
+                      </button>
+                    </div>
+
+                    {/* Quick KPI stats row */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="rounded-xl border border-[#ede7db] bg-[#faf7f0] p-2 text-center">
+                        <p className="text-base font-bold text-[#1f2328]">119</p>
+                        <p className="text-[10px] font-medium text-[#7c828d]">Artiklar</p>
+                      </div>
+                      <div className="rounded-xl border border-[#ede7db] bg-[#faf7f0] p-2 text-center">
+                        <p className="text-base font-bold text-[#1f2328]">9</p>
+                        <p className="text-[10px] font-medium text-[#7c828d]">Kategorier</p>
+                      </div>
+                      <div className="rounded-xl border border-[#ede7db] bg-[#faf7f0] p-2 text-center">
+                        <div className="flex items-center justify-center gap-1 text-xs font-bold text-[#15803d]">
+                          <span className="h-1.5 w-1.5 rounded-full bg-[#16a34a] inline-block" />
+                          <span>Aktiv</span>
+                        </div>
+                        <p className="text-[10px] font-medium text-[#7c828d]">Status</p>
+                      </div>
+                    </div>
+
+                    {/* Category Breakdown List */}
+                    <div className="space-y-1 pt-0.5">
+                      <p className="text-[10.5px] font-bold uppercase tracking-wider text-[#8c827a] mb-1">
+                        Kategorier &amp; Rätter
+                      </p>
+                      <div className="space-y-1 text-xs">
+                        {[
+                          { name: "Pizzor (Klassiska & Special)", count: 67, icon: "🍕" },
+                          { name: "Kebab, Gyros & Rullar", count: 11, icon: "🥙" },
+                          { name: "À la carte & Kötträtter", count: 11, icon: "🥩" },
+                          { name: "Sallader & Förrätter", count: 7, icon: "🥗" },
+                          { name: "Drycker & Tillbehör", count: 16, icon: "🥤" },
+                        ].map((cat) => (
+                          <button
+                            key={cat.name}
+                            type="button"
+                            onClick={() => setActiveTab("meny")}
+                            className="w-full flex items-center justify-between rounded-xl px-2.5 py-1.5 hover:bg-[#fbf9f4] border border-transparent hover:border-[#ede7db] transition text-left cursor-pointer group"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-sm shrink-0">{cat.icon}</span>
+                              <span className="font-medium text-[#1f2328] group-hover:text-[#837147] truncate text-xs">
+                                {cat.name}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[#7c828d] shrink-0 font-medium text-[11px]">
+                              <span>{cat.count} st</span>
+                              <span className="text-[#a78347] opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Quick Action Buttons */}
+                    <div className="pt-2 border-t border-[#f2ede4] flex flex-col gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("meny")}
+                        className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#837147] py-2 px-3 text-xs font-semibold text-white hover:bg-[#72623c] transition shadow-2xs cursor-pointer"
+                      >
+                        <span>🍕</span>
+                        <span>Öppna menyhantering</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("tillagg")}
+                        className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#ded5c2] bg-white py-1.5 px-3 text-xs font-semibold text-[#1f2328] hover:bg-[#faf7f2] transition cursor-pointer"
+                      >
+                        <span>🧀</span>
+                        <span>Hantera tillägg &amp; såser</span>
                       </button>
                     </div>
                   </div>
-
-                  {/* Orders Table */}
-                  <div className="mt-3 flex-1 flex flex-col justify-between min-h-0 overflow-x-auto admin-scrollbar pb-1">
-                    <table className="w-full min-w-[720px] text-left text-xs whitespace-nowrap">
-                      <thead>
-                        <tr className="border-b border-[#f2ede4] text-[11px] font-semibold text-[#8c827a] whitespace-nowrap">
-                          <th className="py-2.5 pr-2 whitespace-nowrap">Ordernr</th>
-                          <th className="py-2.5 px-2 whitespace-nowrap">Kund</th>
-                          <th className="py-2.5 px-2 whitespace-nowrap">Typ</th>
-                          <th className="py-2.5 px-2 whitespace-nowrap">Beställning</th>
-                          <th className="py-2.5 px-2 whitespace-nowrap">Totalt</th>
-                          <th className="py-2.5 px-2 whitespace-nowrap">Betalning</th>
-                          <th className="py-2.5 px-2 whitespace-nowrap">Status</th>
-                          <th className="py-2.5 pl-2 text-right whitespace-nowrap">Åtgärder</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#f5f1e8]">
-                        {filteredOrders.length > 0 ? (
-                          filteredOrders.map((ord) => (
-                            <tr
-                              key={ord.id}
-                              onClick={() => void ordersApi.open(ord.id)}
-                              onKeyDown={(event) => { if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); void ordersApi.open(ord.id); } }}
-                              tabIndex={0}
-                              aria-label={`Visa beställning ${ord.orderNumber}`}
-                              className="hover:bg-[#faf7f2]/80 transition cursor-pointer"
-                            >
-                              <td className="py-3 pr-2 font-bold text-[#1f2328] whitespace-nowrap">{ord.orderNumber}</td>
-                              <td className="py-3 px-2 font-medium text-[#1f2328] whitespace-nowrap">{ord.customer}</td>
-                              <td className="py-3 px-2 text-[#555a64] whitespace-nowrap">
-                                <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-                                  {ord.type.includes("Äta") && <span>🍴</span>}
-                                  {ord.type.includes("Avhämtning") && <span>🛍️</span>}
-                                  {ord.type.includes("Online") && <span>📱</span>}
-                                  <span>{ord.type}</span>
-                                </span>
-                              </td>
-                              <td className="py-3 px-2 text-[#555a64] max-w-[220px] truncate whitespace-nowrap" title={ord.itemsText}>
-                                {ord.itemsText}
-                              </td>
-                              <td className="py-3 px-2 font-bold text-[#1f2328] whitespace-nowrap">
-                                {ord.total} kr
-                              </td>
-                              <td className="py-3 px-2 text-[#555a64] whitespace-nowrap">
-                                {ord.paymentMethod}
-                              </td>
-                              <td className="py-3 px-2 whitespace-nowrap">
-                                <span
-                                  className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold ${ord.statusBadge.bgColor} ${ord.statusBadge.textColor} whitespace-nowrap`}
-                                >
-                                  <span className={`h-1.5 w-1.5 rounded-full ${ord.statusBadge.dotColor}`} />
-                                  {ord.statusBadge.label}
-                                </span>
-                              </td>
-                              <td className="py-3 pl-2 text-right whitespace-nowrap">
-                                <div className="flex items-center justify-end gap-1.5">
-                                  {ord.primaryAction && (
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (ord.primaryAction?.label === "Visa") {
-                                          void ordersApi.open(ord.id);
-                                        } else {
-                                          handleAdvanceOrder(ord.id);
-                                        }
-                                      }}
-                                      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition cursor-pointer ${
-                                        ord.primaryAction.variant === "gold"
-                                          ? "bg-[#a78347] text-white hover:bg-[#96743b] shadow-xs"
-                                          : ord.primaryAction.variant === "emerald"
-                                          ? "bg-[#16a34a] text-white hover:bg-[#15803d] shadow-xs"
-                                          : "border border-[#e4ded2] bg-white text-[#1f2328] hover:bg-[#f5f1e8]"
-                                      }`}
-                                    >
-                                      {ord.primaryAction.label}
-                                    </button>
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      void ordersApi.open(ord.id);
-                                    }}
-                                    className="rounded-lg p-1 text-[#8c827a] hover:bg-[#f5f1e8] hover:text-[#1f2328] transition"
-                                    title="Visa orderdetaljer"
-                                  >
-                                    ⋮
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan={8} className="py-8 text-center text-xs text-[#7c828d]">
-                              Inga beställningar att visa med valt filter.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Right Box: Meny & Produkter (4 cols) */}
-                <div className="flex min-h-48 flex-col rounded-2xl border border-[#e7e1d5] bg-white p-4 sm:p-5 shadow-xs lg:col-span-4">
-                  <div className="flex items-center justify-between border-b border-[#f2ede4] pb-2.5">
-                    <h2 className="text-sm font-bold text-[#1f2328]">Meny &amp; Produkter</h2>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("meny")}
-                      className="text-xs text-[#8c827a] hover:text-[#1f2328] hover:underline"
-                    >
-                      Hantera →
-                    </button>
-                  </div>
-                  <p className="m-auto text-sm text-[#7c828d]">Redigering kommer senare.</p>
                 </div>
               </section>
             </>
@@ -1376,18 +1897,21 @@ export function AdminDashboard({
             /* ========================================================================= */
             /* TAB: BESTÄLLNINGAR FULL VIEW                                              */
             /* ========================================================================= */
-            <div className="space-y-6">
+            <div className="space-y-4">
+              {/* Header */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#e8e2d5] pb-4">
                 <div>
-                  <h2 className="font-serif text-2xl font-bold text-[#1f2328]">Alla beställningar</h2>
-                  <p className="text-xs text-[#7c828d]">Hantera, sök och följ kundordrar och specifikationer i realtid</p>
+                  <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#1f2328]">Alla beställningar</h1>
+                  <p className="mt-1 text-xs text-[#7c828d]">
+                    Hantera, sök och följ kundordrar och specifikationer i realtid
+                  </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setActiveTab("oversikt")}
-                  className="rounded-xl border border-[#e4ded2] bg-white px-3.5 py-1.5 text-xs font-semibold text-[#1f2328] hover:bg-[#f5f1e8] transition self-start sm:self-auto"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#e4ded2] bg-white px-3.5 py-2 text-xs font-semibold text-[#1f2328] hover:bg-[#f5f1e8] transition cursor-pointer self-start sm:self-auto"
                 >
-                  ← Tillbaka till översikt
+                  <span>← Tillbaka till översikt</span>
                 </button>
               </div>
 
@@ -1405,15 +1929,21 @@ export function AdminDashboard({
                     type="search"
                     maxLength={80}
                     value={orderSearchQuery}
-                    onChange={(e) => setOrderSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setOrderSearchQuery(e.target.value);
+                      setOrderPage(1);
+                    }}
                     placeholder="Sök ordernummer, kund eller telefon..."
                     className="w-full rounded-xl border border-[#e4ded2] bg-white pl-9 pr-8 py-2 text-xs text-[#1f2328] placeholder-[#8c827a] focus:border-[#b88e4d] focus:outline-none shadow-2xs transition"
                   />
                   {orderSearchQuery && (
                     <button
                       type="button"
-                      onClick={() => setOrderSearchQuery("")}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#8c827a] hover:text-[#1f2328] text-xs font-bold"
+                      onClick={() => {
+                        setOrderSearchQuery("");
+                        setOrderPage(1);
+                      }}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#8c827a] hover:text-[#1f2328] text-xs font-bold cursor-pointer"
                       title="Rensa sökning"
                     >
                       ✕
@@ -1423,32 +1953,30 @@ export function AdminDashboard({
 
                 {/* Status Filter Pills */}
                 <div className="flex flex-wrap items-center gap-1 rounded-xl bg-white border border-[#e4ded2] p-1 text-xs">
-                  {(["Alla", "Nya", "Mottagna", "Förbereds", "Klara", "Slutförda"] as const).map((filter) => {
-                    
-                    return (
-                      <button
-                        key={filter}
-                        type="button"
-                        onClick={() => { setOrderPage(1); setOrderFilter(filter); }}
-                        className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 transition ${
-                          orderFilter === filter
-                            ? "bg-[#a78347] font-semibold text-white shadow-2xs"
-                            : "text-[#555a64] hover:bg-black/5 hover:text-[#1f2328]"
-                        }`}
-                      >
-                        <span>{filter}</span>
-                      </button>
-                    );
-                  })}
+                  {(["Alla", "Nya", "Mottagna", "Förbereds", "Klara", "Slutförda"] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      type="button"
+                      onClick={() => { setOrderPage(1); setOrderFilter(filter); }}
+                      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs transition cursor-pointer ${
+                        orderFilter === filter
+                          ? "bg-[#a78347] font-semibold text-white shadow-2xs"
+                          : "text-[#555a64] hover:bg-black/5 hover:text-[#1f2328]"
+                      }`}
+                    >
+                      <span>{filter}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
 
               {ordersApi.error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{ordersApi.error}</p>}
               {ordersApi.loading && <p role="status" className="text-sm text-[#7c828d]">Laddar beställningar…</p>}
-              {/* Table or Empty state */}
-              <div className="rounded-2xl border border-[#e7e1d5] bg-white p-5 shadow-xs">
+
+              {/* Table Container */}
+              <div className="flex flex-col rounded-2xl border border-[#e7e1d5] bg-white shadow-xs overflow-hidden">
                 {ordersApi.error || ordersApi.loading ? null : filteredOrders.length === 0 ? (
-                  <div className="py-12 text-center space-y-3">
+                  <div className="py-12 p-5 text-center space-y-3">
                     <p className="text-3xl">🔍</p>
                     <p className="text-sm font-bold text-[#1f2328]">Inga beställningar hittades</p>
                     <p className="text-xs text-[#7c828d]">
@@ -1460,125 +1988,204 @@ export function AdminDashboard({
                         setOrderSearchQuery("");
                         setOrderFilter("Alla");
                       }}
-                      className="rounded-xl border border-[#e4ded2] bg-[#fdfbf7] px-3.5 py-1.5 text-xs font-semibold text-[#1f2328] hover:bg-[#f5f1e8] transition"
+                      className="rounded-xl border border-[#e4ded2] bg-[#fdfbf7] px-3.5 py-1.5 text-xs font-semibold text-[#1f2328] hover:bg-[#f5f1e8] transition cursor-pointer"
                     >
                       Återställ sökning &amp; filter
                     </button>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto admin-scrollbar pb-1">
-                    <table className="w-full min-w-[760px] text-left text-xs whitespace-nowrap">
-                      <thead>
-                        <tr className="border-b border-[#f2ede4] text-[11px] font-semibold text-[#8c827a] whitespace-nowrap">
-                          <th className="py-2.5 pr-2 whitespace-nowrap">Ordernr</th>
-                          <th className="py-2.5 px-2 whitespace-nowrap">Kund</th>
-                          <th className="py-2.5 px-2 whitespace-nowrap">Typ</th>
-                          <th className="py-2.5 px-2 whitespace-nowrap">Artiklar &amp; Specifikationer</th>
-                          <th className="py-2.5 px-2 whitespace-nowrap">Belopp</th>
-                          <th className="py-2.5 px-2 whitespace-nowrap">Betalmetod</th>
-                          <th className="py-2.5 px-2 whitespace-nowrap">Status</th>
-                          <th className="py-2.5 pl-2 text-right whitespace-nowrap">Åtgärd</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#f5f1e8]">
-                        {filteredOrders.map((ord) => (
-                          <tr
-                            key={ord.id}
-                            onClick={() => void ordersApi.open(ord.id)}
-                            onKeyDown={(event) => { if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); void ordersApi.open(ord.id); } }}
-                            tabIndex={0}
-                            aria-label={`Visa beställning ${ord.orderNumber}`}
-                            className="hover:bg-[#faf7f2] transition cursor-pointer"
-                          >
-                            <td className="py-3 pr-2 font-bold text-[#1f2328] whitespace-nowrap">
-                              <span className="hover:text-[#a78347] underline decoration-dotted underline-offset-4">
-                                {ord.orderNumber}
-                              </span>
-                            </td>
-                            <td className="py-3 px-2 font-medium text-[#1f2328] whitespace-nowrap">
-                              <div>{ord.customer}</div>
-                              {ord.phone && (
-                                <div className="text-[10px] text-[#8c827a]">{ord.phone}</div>
-                              )}
-                            </td>
-                            <td className="py-3 px-2 text-[#555a64] whitespace-nowrap">
-                              <span className="inline-flex items-center gap-1">
-                                {ord.type.includes("Äta") && <span>🍴</span>}
-                                {ord.type.includes("Avhämtning") && <span>🛍️</span>}
-                                {ord.type.includes("Online") && <span>📱</span>}
-                                <span>{ord.type}</span>
-                              </span>
-                            </td>
-                            <td className="py-3 px-2 text-[#555a64] max-w-xs truncate" title={ord.itemsText}>
-                              <div className="font-medium text-[#1f2328] truncate">{ord.itemsText}</div>
-                              {ord.items && ord.items[0]?.size && (
-                                <div className="text-[10px] text-[#8c827a]">
-                                  {ord.items.map((it) => it.size).filter(Boolean).join(" · ")}
+                  <>
+                    <div className="overflow-x-auto admin-scrollbar">
+                      <table className="w-full min-w-[780px] text-left text-xs whitespace-nowrap border-collapse">
+                        <thead>
+                          <tr className="border-b border-[#ded5c2] bg-[#f0ebe0] text-[11px] font-bold text-[#4e483d] tracking-wide uppercase whitespace-nowrap">
+                            <th className="py-3.5 pl-4 sm:pl-5 pr-3">Ordernr</th>
+                            <th className="py-3.5 px-3">Kund</th>
+                            <th className="py-3.5 px-3">Typ</th>
+                            <th className="py-3.5 px-3">Artiklar</th>
+                            <th className="py-3.5 px-3">Belopp</th>
+                            <th className="py-3.5 px-3">Betalmetod</th>
+                            <th className="py-3.5 px-3">Status</th>
+                            <th className="py-3.5 pr-4 sm:pr-5 pl-3 text-right">Åtgärder</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#ece5d8]">
+                          {filteredOrders.map((ord) => {
+                            const isDropdownOpen = activeActionMenu?.id === ord.id;
+                            return (
+                            <tr
+                              key={ord.id}
+                              id={`order-row-${ord.id}`}
+                              onClick={() => void ordersApi.open(ord.id)}
+                              onKeyDown={(event) => {
+                                if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+                                  event.preventDefault();
+                                  void ordersApi.open(ord.id);
+                                }
+                              }}
+                              tabIndex={0}
+                              aria-label={`Visa beställning ${ord.orderNumber}`}
+                              className={`border-b border-[#ece5d8] hover:bg-[#faf7f2] transition cursor-pointer ${
+                                isDropdownOpen ? "relative z-50" : "relative z-0"
+                              } ${
+                                highlightedOrderId === ord.id
+                                  ? "ring-2 ring-[#a78347] bg-[#fbf5e6] shadow-md scale-[1.008]"
+                                  : ""
+                              }`}
+                            >
+                              {/* Ordernr + Date underneath */}
+                              <td className="py-3.5 pl-4 sm:pl-5 pr-3">
+                                <p className="font-bold text-xs text-[#1f2328] hover:text-[#837147]">
+                                  {ord.orderNumber}
+                                </p>
+                                <p className="text-[10.5px] text-[#8c827a]">
+                                  {ord.dateTimeFormatted || ord.createdAt}
+                                </p>
+                              </td>
+
+                              {/* Kund: icon + name + phone */}
+                              <td className="py-3.5 px-3">
+                                <div className="flex items-center gap-1.5 font-semibold text-[#1f2328]">
+                                  <span className="text-[#8c827a] text-xs">👤</span>
+                                  <span>{ord.customer}</span>
                                 </div>
-                              )}
-                            </td>
-                            <td className="py-3 px-2 font-bold text-[#1f2328] whitespace-nowrap">
-                              {ord.total} kr
-                            </td>
-                            <td className="py-3 px-2 text-[#555a64] whitespace-nowrap">
-                              <div>{ord.paymentMethod}</div>
-                              <span className="text-[10px] font-semibold text-[#15803d]">
-                                {ord.paymentStatus || "Betald"}
-                              </span>
-                            </td>
-                            <td className="py-3 px-2 whitespace-nowrap">
-                              <span
-                                className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-semibold ${ord.statusBadge.bgColor} ${ord.statusBadge.textColor}`}
-                              >
-                                <span className={`h-1.5 w-1.5 rounded-full ${ord.statusBadge.dotColor}`} />
-                                {ord.statusBadge.label}
-                              </span>
-                            </td>
-                            <td className="py-3 pl-2 text-right whitespace-nowrap">
-                              <div className="flex items-center justify-end gap-1.5">
-                                {ord.primaryAction && (
+                                {ord.phone && (
+                                  <p className="text-[10.5px] text-[#8c827a] pl-4">{ord.phone}</p>
+                                )}
+                              </td>
+
+                              {/* Typ */}
+                              <td className="py-3.5 px-3 whitespace-nowrap">
+                                <OrderTypeBadge type={ord.type} />
+                              </td>
+
+                              {/* Artiklar & Specifikationer */}
+                              <td className="py-3.5 px-3 max-w-[220px]">
+                                <OrderItemsPreviewCell ord={ord} />
+                              </td>
+
+                              {/* Belopp */}
+                              <td className="py-3.5 px-3 font-bold text-xs text-[#1f2328]">
+                                {ord.total} kr
+                              </td>
+
+                              {/* Betalmetod + payment status */}
+                              <td className="py-3.5 px-3">
+                                <PaymentMethodBadge method={ord.paymentMethod} />
+                                <div className="mt-0.5">
+                                  {ord.paymentStatus === "Betald" ? (
+                                    <span className="inline-block text-[10.5px] font-semibold text-[#15803d]">
+                                      Betald
+                                    </span>
+                                  ) : (
+                                    <span className="inline-block text-[10.5px] font-semibold text-[#b45309]">
+                                      Väntar på betalning
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* Status */}
+                              <td className="py-3.5 px-3">
+                                <span
+                                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${ord.statusBadge.bgColor} ${ord.statusBadge.textColor}`}
+                                >
+                                  <span className={`h-1.5 w-1.5 rounded-full ${ord.statusBadge.dotColor}`} />
+                                  {ord.statusBadge.label}
+                                </span>
+                              </td>
+
+                              {/* Åtgärder with Primary Button + 3 dots Dropdown */}
+                              <td className={`py-3.5 pr-4 sm:pr-5 pl-3 text-right ${isDropdownOpen ? "relative z-50" : ""}`}>
+                                <div className="relative inline-flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                                  {ord.primaryAction && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (ord.primaryAction?.label === "Visa") {
+                                          void ordersApi.open(ord.id);
+                                        } else {
+                                          handleAdvanceOrder(ord.id);
+                                        }
+                                      }}
+                                      className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition cursor-pointer shadow-2xs ${
+                                        ord.primaryAction.variant === "gold"
+                                          ? "bg-[#837147] text-white hover:bg-[#72623c]"
+                                          : ord.primaryAction.variant === "emerald"
+                                          ? "bg-[#16a34a] text-white hover:bg-[#15803d]"
+                                          : "border border-[#e4ded2] bg-white text-[#1f2328] hover:bg-[#f5f1e8]"
+                                      }`}
+                                    >
+                                      {ord.primaryAction.label === "Bekräfta mottagning" && "✓ "}
+                                      {ord.primaryAction.label === "Börja tillaga" && "👨‍🍳 "}
+                                      {ord.primaryAction.label}
+                                    </button>
+                                  )}
+
+                                  {/* Three Dots Button */}
                                   <button
                                     type="button"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (ord.primaryAction?.label === "Visa") {
-                                        void ordersApi.open(ord.id);
+                                      if (activeActionMenu?.id === ord.id) {
+                                        setActiveActionMenu(null);
                                       } else {
-                                        handleAdvanceOrder(ord.id);
+                                        const rect = e.currentTarget.getBoundingClientRect();
+                                        const dropdownHeight = 125;
+                                        const fitsBelow = rect.bottom + dropdownHeight + 10 < window.innerHeight;
+                                        setActiveActionMenu({
+                                          id: ord.id,
+                                          order: ord,
+                                          top: fitsBelow ? rect.bottom + 6 : Math.max(10, rect.top - dropdownHeight - 6),
+                                          right: Math.max(12, window.innerWidth - rect.right),
+                                        });
                                       }
                                     }}
-                                    className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition cursor-pointer ${
-                                      ord.primaryAction.variant === "gold"
-                                        ? "bg-[#a78347] text-white hover:bg-[#96743b] shadow-xs"
-                                        : ord.primaryAction.variant === "emerald"
-                                        ? "bg-[#16a34a] text-white hover:bg-[#15803d] shadow-xs"
-                                        : "border border-[#e4ded2] bg-white text-[#1f2328] hover:bg-[#f5f1e8]"
-                                    }`}
+                                    className="rounded-xl border border-[#e4ded2] bg-white p-1.5 text-[#7c828d] hover:bg-[#faf7f2] hover:text-[#1f2328] transition cursor-pointer shadow-2xs"
+                                    title="Fler åtgärder"
                                   >
-                                    {ord.primaryAction.label}
+                                    <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                                      <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                    </svg>
                                   </button>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    void ordersApi.open(ord.id);
-                                  }}
-                                  className="rounded-lg p-1 text-[#8c827a] hover:bg-[#f5f1e8] hover:text-[#1f2328] transition"
-                                  title="Visa orderdetaljer"
-                                >
-                                  ⋮
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination */}
+                    {!!ordersApi.list?.total && (
+                      <div className="relative z-0 flex items-center justify-between border-t border-[#f2ede4] bg-[#fbf9f4] px-4 py-3 text-xs text-[#7c828d] rounded-b-2xl">
+                        <span>
+                          {ordersApi.list.total} beställningar · sida {orderPage} av {Math.max(1, Math.ceil(ordersApi.list.total / ordersApi.list.limit))}
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            disabled={orderPage <= 1}
+                            onClick={() => setOrderPage((p) => Math.max(1, p - 1))}
+                            className="rounded-lg border border-[#e4ded2] bg-white px-3 py-1.5 font-medium disabled:opacity-40 hover:bg-[#faf7f2] cursor-pointer"
+                          >
+                            Föregående
+                          </button>
+                          <button
+                            type="button"
+                            disabled={orderPage * ordersApi.list.limit >= ordersApi.list.total}
+                            onClick={() => setOrderPage((p) => p + 1)}
+                            className="rounded-lg border border-[#e4ded2] bg-white px-3 py-1.5 font-medium disabled:opacity-40 hover:bg-[#faf7f2] cursor-pointer"
+                          >
+                            Nästa
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
-              {!!ordersApi.list?.total && <div className="flex items-center justify-between text-xs text-[#555a64]"><span>{ordersApi.list.total} beställningar · sida {orderPage} av {Math.ceil(ordersApi.list.total / ordersApi.list.limit)}</span><div className="flex gap-2"><button type="button" disabled={orderPage <= 1} onClick={() => setOrderPage(orderPage - 1)} className="rounded-lg border border-[#e4ded2] bg-white px-3 py-2 disabled:opacity-40">Föregående</button><button type="button" disabled={orderPage * ordersApi.list.limit >= ordersApi.list.total} onClick={() => setOrderPage(orderPage + 1)} className="rounded-lg border border-[#e4ded2] bg-white px-3 py-2 disabled:opacity-40">Nästa</button></div></div>}
             </div>
           ) : activeTab === "installningar" ? (
             /* ========================================================================= */
@@ -1690,6 +2297,17 @@ export function AdminDashboard({
                 </form>
               </div>
             </div>
+          ) : activeTab === "fakturor" ? (
+            <AdminInvoicesTab
+              orders={ordersApi.list?.orders ?? []}
+              onOpenOrder={(id) => void ordersApi.open(id)}
+            />
+          ) : activeTab === "analyser" ? (
+            <AdminAnalyticsTab
+              overview={overview}
+              activePeriod={overviewPeriod}
+              onPeriodChange={(p) => handleSelectPeriod(p)}
+            />
           ) : activeTab === "oppettider" ? (
             <AdminHoursTab />
           ) : (
@@ -1718,7 +2336,97 @@ export function AdminDashboard({
         </footer>
       </div>
 
-      {ordersApi.selected && <AdminOrderDialog order={ordersApi.selected} busy={ordersApi.busy} onClose={() => ordersApi.setSelected(null)} onTransition={(to) => void ordersApi.transition(ordersApi.selected!.publicId, ordersApi.selected!.fulfillmentStatus, to)} />}
+      {ordersApi.selected && (
+        <AdminOrderDialog
+          order={ordersApi.selected}
+          busy={ordersApi.busy}
+          onClose={() => ordersApi.setSelected(null)}
+          onTransition={(to) => void ordersApi.transition(ordersApi.selected!.publicId, ordersApi.selected!.fulfillmentStatus, to)}
+          onViewReceipt={(ord) => {
+            setViewingReceipt({
+              orderNumber: ord.publicId,
+              customerName: ord.customerName,
+              phone: ord.phone,
+              date: ord.createdAt ? new Date(ord.createdAt).toLocaleDateString("sv-SE") : new Date().toLocaleDateString("sv-SE"),
+              paymentMethod: ord.paymentMethod === "card" ? "Stripe · kort" : ord.paymentMethod === "swish" ? "Swish" : "Betala på plats",
+              paymentStatus: ord.paymentStatus === "paid" ? "Betald" : "Väntar på betalning",
+              totalSek: ord.totalSek,
+              items: ord.items.map((it) => ({
+                description: it.name,
+                quantity: it.quantity,
+                unitPriceSek: it.basePriceSek || Math.round(it.lineTotalSek / Math.max(1, it.quantity)),
+              })),
+            });
+          }}
+        />
+      )}
+
+      {activeActionMenu && typeof document !== "undefined" && createPortal(
+        <div
+          className="fixed inset-0 z-[99999]"
+          onClick={() => setActiveActionMenu(null)}
+        >
+          <div
+            style={{
+              position: "fixed",
+              top: activeActionMenu.top,
+              right: activeActionMenu.right,
+            }}
+            className="w-52 rounded-2xl border border-[#e4ded2] bg-white p-1.5 shadow-2xl animate-in fade-in zoom-in-95 duration-100 text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 1: Visa beställning */}
+            <button
+              type="button"
+              onClick={() => {
+                const ord = activeActionMenu.order;
+                setActiveActionMenu(null);
+                void ordersApi.open(ord.id);
+              }}
+              className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-[#1f2328] hover:bg-[#fbf9f4] transition cursor-pointer"
+            >
+              <span className="text-sm">👁️</span>
+              <span>Visa beställning</span>
+            </button>
+
+            {/* 2: Visa kvitto */}
+            <button
+              type="button"
+              onClick={() => {
+                const ord = activeActionMenu.order;
+                setActiveActionMenu(null);
+                setViewingReceipt(getReceiptInputFromOrder(ord));
+              }}
+              className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-[#1f2328] hover:bg-[#fbf9f4] transition cursor-pointer"
+            >
+              <span className="text-sm">📄</span>
+              <span>Visa kvitto</span>
+            </button>
+
+            {/* 3: Avbryt beställning */}
+            <button
+              type="button"
+              onClick={() => {
+                const ord = activeActionMenu.order;
+                setActiveActionMenu(null);
+                void handleCancelOrder(ord.id);
+              }}
+              className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 transition cursor-pointer border-t border-[#f2ede4] mt-1 pt-1.5"
+            >
+              <span className="text-sm">🚫</span>
+              <span>Avbryt beställning</span>
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {viewingReceipt && (
+        <AdminReceiptModal
+          receipt={viewingReceipt}
+          onClose={() => setViewingReceipt(null)}
+        />
+      )}
     </div>
   );
 }

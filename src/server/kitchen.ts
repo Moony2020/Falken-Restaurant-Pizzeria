@@ -11,7 +11,7 @@ export async function listKitchenOrders(limit = 100): Promise<KitchenOrder[]> {
     // Status alone must never make an unpaid card order visible to the kitchen.
     fulfillmentStatus: { $in: KITCHEN_STATUSES },
     $or: [
-      { paymentMethod: "card", paymentStatus: "paid" },
+      { paymentMethod: { $in: ["card", "swish"] }, paymentStatus: "paid" },
       { paymentMethod: "pay_on_pickup", paymentStatus: { $in: ["unpaid", "paid"] } },
     ],
   })
