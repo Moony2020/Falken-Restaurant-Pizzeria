@@ -34,24 +34,50 @@ const publicProduct = (product: ProductLike) => ({
 });
 export async function getAdminProduct(slug: string) { const product = await ProductModel.findOne({ slug }).lean(); return product ? publicProduct(product) : null; }
 export async function updateAdminProduct(slug: string, input: ProductEdit, idempotencyKey: string, actor: AdminPrincipal) {
+  const isReplicaSet = await (async () => {
+    try {
+      const res = await mongoose.connection.db?.admin().command({ hello: 1 });
+      return Boolean(res?.setName || res?.msg === "isdbgrid");
+    } catch {
+      return false;
+    }
+  })();
+
+  const execute = async (session?: mongoose.ClientSession): Promise<{ status: "ok" | "stale" | "missing"; product?: unknown }> => {
+    const deduplicationKey = `catalog-edit:${slug}:${idempotencyKey}`;
+    const replayQuery = AuditLogModel.findOne({ deduplicationKey });
+    if (session) replayQuery.session(session);
+    const replay = await replayQuery.lean();
+    if (replay) {
+      const curQuery = ProductModel.findOne({ slug });
+      if (session) curQuery.session(session);
+      const current = await curQuery.lean();
+      return current ? { status: "ok", product: publicProduct(current) } : { status: "missing" };
+    }
+    const currentQuery = ProductModel.findOne({ slug });
+    if (session) currentQuery.session(session);
+    const current = await currentQuery;
+    if (!current) return { status: "missing" };
+    if ((current.__v ?? 0) !== input.expectedRevision) return { status: "stale", product: publicProduct(current.toObject()) };
+    const currentById = new Map(current.variants.map((item) => [item.id, item]));
+    if (currentById.size !== input.variants.length || input.variants.some((item) => !currentById.has(item.id))) throw new Error("variant_set_changed");
+    const before = { nameSv: current.nameSv, active: current.active, sortOrder: current.sortOrder, variants: current.variants.map((item) => ({ id: item.id, priceSek: item.priceSek, available: item.available, priceStatus: item.priceStatus })) };
+    current.nameSv = input.nameSv; current.descriptionSv = input.descriptionSv || undefined; current.image = input.image || undefined; current.active = input.active; current.sortOrder = input.sortOrder;
+    current.variants = input.variants.map((item) => ({ ...currentById.get(item.id)!, label: item.label, priceSek: item.priceSek, available: item.available, priceStatus: item.priceStatus }));
+    await current.save(session ? { session } : undefined);
+    await AuditLogModel.create([{ at: new Date(), action: "catalog_product_updated", entity: "product", entityId: slug, actorType: "staff", actorId: actor.id, deduplicationKey, detail: { before, after: { nameSv: current.nameSv, active: current.active, sortOrder: current.sortOrder, variants: current.variants.map((item) => ({ id: item.id, priceSek: item.priceSek, available: item.available, priceStatus: item.priceStatus })) } } }], session ? { session } : undefined);
+    return { status: "ok", product: publicProduct(current.toObject()) };
+  };
+
+  if (!isReplicaSet) {
+    return await execute();
+  }
+
   const session = await mongoose.startSession();
   try {
     let result: { status: "ok" | "stale" | "missing"; product?: unknown } = { status: "missing" };
     await session.withTransaction(async () => {
-      const deduplicationKey = `catalog-edit:${slug}:${idempotencyKey}`;
-      const replay = await AuditLogModel.findOne({ deduplicationKey }).session(session).lean();
-      if (replay) { const current = await ProductModel.findOne({ slug }).session(session).lean(); result = current ? { status: "ok", product: publicProduct(current) } : { status: "missing" }; return; }
-      const current = await ProductModel.findOne({ slug }).session(session);
-      if (!current) { result = { status: "missing" }; return; }
-      if ((current.__v ?? 0) !== input.expectedRevision) { result = { status: "stale", product: publicProduct(current.toObject()) }; return; }
-      const currentById = new Map(current.variants.map((item) => [item.id, item]));
-      if (currentById.size !== input.variants.length || input.variants.some((item) => !currentById.has(item.id))) throw new Error("variant_set_changed");
-      const before = { nameSv: current.nameSv, active: current.active, sortOrder: current.sortOrder, variants: current.variants.map((item) => ({ id: item.id, priceSek: item.priceSek, available: item.available, priceStatus: item.priceStatus })) };
-      current.nameSv = input.nameSv; current.descriptionSv = input.descriptionSv || undefined; current.image = input.image || undefined; current.active = input.active; current.sortOrder = input.sortOrder;
-      current.variants = input.variants.map((item) => ({ ...currentById.get(item.id)!, label: item.label, priceSek: item.priceSek, available: item.available, priceStatus: item.priceStatus }));
-      await current.save({ session });
-      await AuditLogModel.create([{ at: new Date(), action: "catalog_product_updated", entity: "product", entityId: slug, actorType: "staff", actorId: actor.id, deduplicationKey, detail: { before, after: { nameSv: current.nameSv, active: current.active, sortOrder: current.sortOrder, variants: current.variants.map((item) => ({ id: item.id, priceSek: item.priceSek, available: item.available, priceStatus: item.priceStatus })) } } }], { session });
-      result = { status: "ok", product: publicProduct(current.toObject()) };
+      result = await execute(session);
     }, { writeConcern: { w: "majority" } });
     return result;
   } finally { await session.endSession(); }

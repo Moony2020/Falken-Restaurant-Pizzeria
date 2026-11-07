@@ -27,84 +27,106 @@ export async function collectPayOnPickupPayment(input: {
   // Do not rely on background auto-index creation: the deduplication constraint
   // must exist before a staff member can record a counter payment.
   await AuditLogModel.init();
-  const session = await mongoose.startSession();
-  try {
-    return await session.withTransaction(async () => {
-      const order = await OrderModel.findOne({ publicId: input.publicId })
-        .select("_id paymentMethod paymentStatus onSiteCollection totalSek")
-        .session(session)
-        .lean();
-      if (!order) return { ok: false, reason: "not_found" } as const;
-      if (order.paymentMethod !== "pay_on_pickup") return { ok: false, reason: "wrong_payment_method" } as const;
 
-      const existing = order.onSiteCollection;
-      if (existing) {
-        return existing.idempotencyKey === input.idempotencyKey
-          ? { ok: true, changed: false } as const
-          : { ok: false, reason: "already_collected" } as const;
-      }
-      if (order.paymentStatus !== "unpaid") return { ok: false, reason: "already_collected" } as const;
+  const isReplicaSet = await (async () => {
+    try {
+      const res = await mongoose.connection.db?.admin().command({ hello: 1 });
+      return Boolean(res?.setName || res?.msg === "isdbgrid");
+    } catch {
+      return false;
+    }
+  })();
 
-      const updated = await OrderModel.findOneAndUpdate(
-        {
-          _id: order._id,
-          paymentMethod: "pay_on_pickup",
-          paymentStatus: "unpaid",
-          onSiteCollection: { $exists: false },
-        },
-        {
-          $set: {
-            paymentStatus: "paid",
-            paidAt: now,
-            onSiteCollection: {
-              method: input.method,
-              amountSek: order.totalSek,
-              collectedBy: input.staff.id,
-              collectedAt: now,
-              idempotencyKey: input.idempotencyKey,
-            },
+  const execute = async (session?: mongoose.ClientSession): Promise<CollectionResult> => {
+    const orderQuery = OrderModel.findOne({ publicId: input.publicId })
+      .select("_id paymentMethod paymentStatus onSiteCollection totalSek");
+    if (session) orderQuery.session(session);
+    const order = await orderQuery.lean();
+    if (!order) return { ok: false, reason: "not_found" } as const;
+    if (order.paymentMethod !== "pay_on_pickup") return { ok: false, reason: "wrong_payment_method" } as const;
+
+    const existing = order.onSiteCollection;
+    if (existing) {
+      return existing.idempotencyKey === input.idempotencyKey
+        ? { ok: true, changed: false } as const
+        : { ok: false, reason: "already_collected" } as const;
+    }
+    if (order.paymentStatus !== "unpaid") return { ok: false, reason: "already_collected" } as const;
+
+    const updateQuery = OrderModel.findOneAndUpdate(
+      {
+        _id: order._id,
+        paymentMethod: "pay_on_pickup",
+        paymentStatus: "unpaid",
+        onSiteCollection: { $exists: false },
+      },
+      {
+        $set: {
+          paymentStatus: "paid",
+          paidAt: now,
+          onSiteCollection: {
+            method: input.method,
+            amountSek: order.totalSek,
+            collectedBy: input.staff.id,
+            collectedAt: now,
+            idempotencyKey: input.idempotencyKey,
           },
         },
-        { new: true, session },
-      ).lean();
+      },
+      { new: true, ...(session ? { session } : {}) },
+    );
+    const updated = await updateQuery.lean();
 
-      if (!updated) {
-        const current = await OrderModel.findById(order._id).select("onSiteCollection").session(session).lean();
-        return current?.onSiteCollection?.idempotencyKey === input.idempotencyKey
-          ? { ok: true, changed: false } as const
-          : { ok: false, reason: "conflict" } as const;
-      }
+    if (!updated) {
+      const currentQuery = OrderModel.findById(order._id).select("onSiteCollection");
+      if (session) currentQuery.session(session);
+      const current = await currentQuery.lean();
+      return current?.onSiteCollection?.idempotencyKey === input.idempotencyKey
+        ? { ok: true, changed: false } as const
+        : { ok: false, reason: "conflict" } as const;
+    }
 
-      // Do not acknowledge success merely because Mongo accepted the update.
-      // This catches a stale strict Mongoose model which would otherwise drop
-      // an unknown embedded field while still changing paymentStatus.
-      const receipt = updated.onSiteCollection;
-      if (
-        !receipt ||
-        receipt.method !== input.method ||
-        receipt.amountSek !== order.totalSek ||
-        receipt.collectedBy !== input.staff.id ||
-        receipt.idempotencyKey !== input.idempotencyKey
-      ) {
-        throw new Error("Pay-on-pickup collection evidence was not persisted");
-      }
+    // Do not acknowledge success merely because Mongo accepted the update.
+    // This catches a stale strict Mongoose model which would otherwise drop
+    // an unknown embedded field while still changing paymentStatus.
+    const receipt = updated.onSiteCollection;
+    if (
+      !receipt ||
+      receipt.method !== input.method ||
+      receipt.amountSek !== order.totalSek ||
+      receipt.collectedBy !== input.staff.id ||
+      receipt.idempotencyKey !== input.idempotencyKey
+    ) {
+      throw new Error("Pay-on-pickup collection evidence was not persisted");
+    }
 
-      await AuditLogModel.create([{
-        at: now,
-        action: "pay_on_pickup_collected",
-        entity: "order",
-        entityId: String(order._id),
-        actorType: "staff",
-        actorId: input.staff.id,
-        deduplicationKey: `pay_on_pickup_collected:${order._id}`,
-        detail: { method: input.method, amountSek: order.totalSek },
-      }], { session });
-      return { ok: true, changed: true } as const;
-    }, {
-      readConcern: { level: "snapshot" },
-      writeConcern: { w: "majority" },
-      readPreference: "primary",
-    });
+    await AuditLogModel.create([{
+      at: now,
+      action: "pay_on_pickup_collected",
+      entity: "order",
+      entityId: String(order._id),
+      actorType: "staff",
+      actorId: input.staff.id,
+      deduplicationKey: `pay_on_pickup_collected:${order._id}`,
+      detail: { method: input.method, amountSek: order.totalSek },
+    }], session ? { session } : undefined);
+    return { ok: true, changed: true } as const;
+  };
+
+  if (!isReplicaSet) {
+    return await execute();
+  }
+
+  const session = await mongoose.startSession();
+  try {
+    return await session.withTransaction(
+      () => execute(session),
+      {
+        readConcern: { level: "snapshot" },
+        writeConcern: { w: "majority" },
+        readPreference: "primary",
+      },
+    );
   } finally {
     await session.endSession();
   }
