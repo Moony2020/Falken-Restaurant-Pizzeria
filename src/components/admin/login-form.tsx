@@ -2,10 +2,12 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { EyeIcon, EyeOffIcon } from "@/components/icons";
 import { FalkenLoading } from "@/components/falken-loading";
 
 export function AdminLoginForm() {
+  const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
@@ -39,7 +41,8 @@ export function AdminLoginForm() {
 
       // Login verified: show full loading screen immediately and navigate
       setIsRedirecting(true);
-      window.location.href = "/admin";
+      router.push("/admin");
+      router.refresh();
     } catch {
       setMessage("Inloggningen kunde inte genomföras. Kontrollera nätverket och försök igen.");
       setBusy(false);

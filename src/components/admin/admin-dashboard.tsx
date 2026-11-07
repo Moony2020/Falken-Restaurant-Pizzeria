@@ -18,6 +18,7 @@ import { AdminHoursTab } from "@/components/admin/admin-hours-tab";
 import { AdminNotificationsDropdown } from "@/components/admin/admin-notifications-dropdown";
 import { AdminInvoicesTab, PaymentMethodBadge, OrderTypeBadge } from "@/components/admin/admin-invoices-tab";
 import { AdminAnalyticsTab } from "@/components/admin/admin-analytics-tab";
+import { AdminProductsTab } from "@/components/admin/admin-products-tab";
 import type { ReceiptPdfInput } from "@/lib/order-receipt-pdf";
 import { AdminReceiptModal } from "@/components/admin/admin-receipt-modal";
 
@@ -2187,6 +2188,8 @@ export function AdminDashboard({
                 )}
               </div>
             </div>
+          ) : activeTab === "meny" ? (
+            <AdminProductsTab />
           ) : activeTab === "installningar" ? (
             /* ========================================================================= */
             /* TAB: INSTÄLLNINGAR FULL VIEW                                              */
@@ -2342,6 +2345,7 @@ export function AdminDashboard({
           busy={ordersApi.busy}
           onClose={() => ordersApi.setSelected(null)}
           onTransition={(to) => void ordersApi.transition(ordersApi.selected!.publicId, ordersApi.selected!.fulfillmentStatus, to)}
+          onCollectPayment={(method) => void ordersApi.collectPayment(ordersApi.selected!.publicId, method)}
           onViewReceipt={(ord) => {
             setViewingReceipt({
               orderNumber: ord.publicId,

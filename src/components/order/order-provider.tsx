@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { cartStore, type CartLine } from "@/lib/cart-store";
-
+import { useCartPricing } from "@/lib/cart-pricing-store";
 import { useRestaurantStatus } from "@/lib/use-restaurant-status";
 
 type OrderContextValue = {
@@ -34,6 +34,9 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const [activeProductId, setActiveProductId] = useState<string | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const { status: restaurantStatus } = useRestaurantStatus();
+
+  // Keep cart price validation warm in the background so opening the drawer is instant
+  useCartPricing();
 
   // Only a count is derived here. Prices come from the server (see cart-pricing-store).
   const count = useMemo(() => lines.reduce((sum, l) => sum + l.quantity, 0), [lines]);

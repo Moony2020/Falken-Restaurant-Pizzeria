@@ -72,11 +72,16 @@ const auditLogSchema = new Schema(
     entityId: { type: String, required: true, maxlength: 100, index: true },
     actorType: { type: String, enum: ["payment", "staff", "system", "customer"], required: true },
     actorId: { type: String, maxlength: 100 },
+    /** Optional operation key for audit records which must occur no more than once. */
+    deduplicationKey: { type: String, maxlength: 180 },
     /** Small, secret-free facts only: amounts, ids, statuses. Never card data, never full provider payloads. */
     detail: { type: Schema.Types.Mixed },
   },
   { timestamps: false },
 );
+// Most audit actions may happen repeatedly. Counter collection is the exception:
+// its receipt is one-per-order, even if a request is retried.
+auditLogSchema.index({ deduplicationKey: 1 }, { unique: true, sparse: true });
 
 export type AuditLogDoc = {
   at: Date;
@@ -85,6 +90,7 @@ export type AuditLogDoc = {
   entityId: string;
   actorType: "payment" | "staff" | "system" | "customer";
   actorId?: string;
+  deduplicationKey?: string;
   detail?: Record<string, unknown>;
 };
 

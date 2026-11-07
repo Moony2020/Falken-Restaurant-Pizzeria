@@ -80,7 +80,11 @@ function CartContents() {
   const changes =
     pricing.status === "ready" ? priceChanges(lines, pricing.lines) : [];
   const issues = pricing.status === "issues" ? pricing.issues : [];
-  const canContinue = pricing.status === "ready" && changes.length === 0;
+  const canContinue =
+    lines.length > 0 &&
+    pricing.status !== "issues" &&
+    pricing.status !== "error" &&
+    changes.length === 0;
 
   return (
     <>
@@ -186,7 +190,7 @@ function CartContents() {
                 checkoutStore.dismissOrder();
                 router.push("/kassa");
               }}
-              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-gold text-sm font-semibold text-ink transition hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-45"
+              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-gold text-sm font-semibold text-ink transition hover:bg-gold-light disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer"
             >
               Fortsätt till kassan <ArrowIcon className="size-4" />
             </button>

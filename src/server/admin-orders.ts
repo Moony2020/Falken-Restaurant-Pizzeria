@@ -85,7 +85,7 @@ export async function listAdminOrders(input: z.infer<typeof adminOrderQuerySchem
 export async function getAdminOrder(publicId: string) {
   if (!validAdminOrderId(publicId)) return null;
   const order = await OrderModel.findOne({ publicId, ...adminVisibleOrderFilter() })
-    .select("publicId contact createdAt pickupAt fulfillmentStatus paymentStatus paymentMethod paymentProvider totalSek subtotalSek discountSek currency items acknowledgedAt acknowledgedBy statusHistory paidAt")
+    .select("publicId contact createdAt pickupAt fulfillmentStatus paymentStatus paymentMethod paymentProvider totalSek subtotalSek discountSek currency items acknowledgedAt acknowledgedBy statusHistory paidAt onSiteCollection")
     .lean() as OrderRow | null;
   if (!order) return null;
   return {
@@ -94,6 +94,12 @@ export async function getAdminOrder(publicId: string) {
     discountSek: order.discountSek,
     currency: order.currency,
     paidAt: order.paidAt?.toISOString() ?? null,
+    onSiteCollection: order.onSiteCollection ? {
+      method: order.onSiteCollection.method,
+      amountSek: order.onSiteCollection.amountSek,
+      collectedBy: order.onSiteCollection.collectedBy,
+      collectedAt: order.onSiteCollection.collectedAt.toISOString(),
+    } : null,
     acknowledgedBy: order.acknowledgedBy ?? null,
     items: order.items.map((item) => ({
       name: item.productNameSnapshot,
@@ -119,8 +125,8 @@ export async function advanceAdminOrder(publicId: string, expectedStatus: Fulfil
   const order = await OrderModel.findOne({ publicId, ...adminVisibleOrderFilter() }).select("_id fulfillmentStatus paymentMethod paymentStatus").lean();
   if (!order) return { ok: false as const, reason: "not_found" as const };
   if (order.fulfillmentStatus !== expectedStatus) return { ok: false as const, reason: "conflict" as const };
-  if (to === "PICKED_UP" && order.paymentMethod === "pay_on_pickup") {
-    // A5 will introduce verified on-site collection. A3 cannot infer payment from a status field.
+  if (to === "PICKED_UP" && order.paymentMethod === "pay_on_pickup" && order.paymentStatus !== "paid") {
+    // Counter orders require a separate, staff-recorded collection before pickup.
     return { ok: false as const, reason: "payment_required" as const };
   }
   const result = await transitionOrder({ orderId: order._id, to, actor: { type: "staff", id: staff.id } });

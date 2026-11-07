@@ -56,6 +56,20 @@ const statusHistorySchema = new Schema(
   { _id: false },
 );
 
+// Staff-recorded collection for an order that is paid at the counter. This is
+// deliberately embedded in the Order so changing it and paymentStatus is one
+// conditional MongoDB update, rather than two records that could diverge.
+const onSiteCollectionSchema = new Schema(
+  {
+    method: { type: String, enum: ["cash", "card_terminal"], required: true },
+    amountSek: sek,
+    collectedBy: { type: String, required: true, maxlength: 100 },
+    collectedAt: { type: Date, required: true },
+    idempotencyKey: { type: String, required: true, minlength: 16, maxlength: 100 },
+  },
+  { _id: false },
+);
+
 const orderSchema = new Schema(
   {
     publicId: { type: String, required: true, unique: true, default: generatePublicId },
@@ -85,6 +99,7 @@ const orderSchema = new Schema(
     /** The trusted Payment record that paid this order. Written atomically with the Stripe confirmation. */
     paymentId: { type: Schema.Types.ObjectId, ref: "Payment" },
     paidAt: { type: Date },
+    onSiteCollection: { type: onSiteCollectionSchema, required: false },
     /** Populated by an explicit acknowledgement or atomically when staff starts preparing. */
     acknowledgedAt: { type: Date, index: true },
     acknowledgedBy: { type: String, maxlength: 100 },
@@ -151,6 +166,13 @@ export type OrderDoc = {
   paymentExpiresAt?: Date;
   paymentId?: Types.ObjectId;
   paidAt?: Date;
+  onSiteCollection?: {
+    method: "cash" | "card_terminal";
+    amountSek: number;
+    collectedBy: string;
+    collectedAt: Date;
+    idempotencyKey: string;
+  };
   acknowledgedAt?: Date;
   acknowledgedBy?: string;
   cancelledAt?: Date;
@@ -169,7 +191,12 @@ export type OrderDoc = {
 
 if (models.Order) {
   const pmEnum = (models.Order.schema.path("paymentMethod") as { enumValues?: string[] } | undefined)?.enumValues;
-  if (!pmEnum || !pmEnum.includes("swish")) {
+  // Next.js hot reload can retain a pre-A5 Order model. Strict mode would then
+  // silently discard onSiteCollection while accepting the rest of an update.
+  // Recompile when either required part of the current schema is missing.
+  const onSiteMethod = models.Order.schema.path("onSiteCollection.method");
+  const onSiteKey = models.Order.schema.path("onSiteCollection.idempotencyKey");
+  if (!pmEnum || !pmEnum.includes("swish") || !onSiteMethod || !onSiteKey) {
     delete (models as Record<string, unknown>).Order;
   }
 }

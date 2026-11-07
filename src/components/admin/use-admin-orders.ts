@@ -85,5 +85,31 @@ export function useAdminOrders(enabled: boolean, filter: AdminOrderFilter, query
     }
   }, [busy, open, refresh, router]);
 
-  return { list, selected, setSelected, loading, busy, error, refresh, open, transition };
+  const collectPayment = useCallback(async (publicId: string, method: "cash" | "card_terminal") => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const idempotencyKey = crypto.randomUUID();
+      const response = await fetch(`/api/admin/orders/${encodeURIComponent(publicId)}/collect-payment`, {
+        method: "POST",
+        headers: { "content-type": "application/json", "x-csrf-token": csrfToken() },
+        body: JSON.stringify({ method, idempotencyKey }),
+      });
+      if (response.status === 401) { router.replace("/admin/login"); return; }
+      if (!response.ok) {
+        const body = await response.json().catch(() => null) as { error?: string } | null;
+        throw new Error(body?.error === "already_collected" ? "Betalningen är redan registrerad." : "Det gick inte att registrera betalningen.");
+      }
+      const result = await response.json() as { order: AdminOrderDetail };
+      setSelected((current) => current?.publicId === publicId ? result.order : current);
+      await refresh(true);
+      setError("");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Ett fel uppstod.");
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, refresh, router]);
+
+  return { list, selected, setSelected, loading, busy, error, refresh, open, transition, collectPayment };
 }

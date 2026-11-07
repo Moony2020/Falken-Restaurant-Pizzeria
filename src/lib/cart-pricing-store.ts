@@ -2,8 +2,9 @@ import { useSyncExternalStore } from "react";
 import { firstSightings, toPayloadItems, validateCart, type CartPricing } from "./cart-api.ts";
 import { cartStore } from "./cart-store.ts";
 
-// Keeps the server's price for the current cart. It runs only while something is subscribed
-// (the cart drawer), re-validates a moment after the cart changes, and cancels stale requests.
+// Keeps the server's price for the current cart. It runs while subscribed,
+// re-validates a moment after the cart changes, caches the ready result across modal toggles,
+// and cancels stale requests.
 
 const IDLE: CartPricing = { status: "idle" };
 let snapshot: CartPricing = IDLE;
@@ -47,10 +48,17 @@ const signature = () => JSON.stringify(toPayloadItems(cartStore.getSnapshot()));
 
 function onCartChange() {
   const sig = signature();
-  if (sig === lastSignature) return;
+  if (sig === lastSignature && snapshot.status !== "idle") return;
   lastSignature = sig;
   clearTimeout(timer);
-  timer = setTimeout(run, 200);
+  const lines = cartStore.getSnapshot();
+  if (lines.length === 0) {
+    controller?.abort();
+    controller = null;
+    publish(IDLE);
+    return;
+  }
+  timer = setTimeout(run, 150);
 }
 
 /** Forces a fresh validation now, for example after the server reports a changed total. */
@@ -64,8 +72,10 @@ function subscribe(listener: () => void) {
   listeners.add(listener);
   if (listeners.size === 1) {
     unsubscribeCart = cartStore.subscribe(onCartChange);
-    lastSignature = "";
-    onCartChange();
+    const sig = signature();
+    if (sig !== lastSignature || snapshot.status === "idle") {
+      onCartChange();
+    }
   }
   return () => {
     listeners.delete(listener);
@@ -75,8 +85,7 @@ function subscribe(listener: () => void) {
       clearTimeout(timer);
       controller?.abort();
       controller = null;
-      lastSignature = "";
-      snapshot = IDLE;
+      // Keep snapshot and lastSignature so reopening drawer doesn't clear cache
     }
   };
 }
