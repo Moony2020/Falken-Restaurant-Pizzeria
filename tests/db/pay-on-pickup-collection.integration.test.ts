@@ -13,10 +13,19 @@ const staff = { id: "cashier-1", email: "cashier@example.test", displayName: "Ca
 async function order(over: Record<string, unknown> = {}) {
   n += 1;
   return OrderModel.create({
-    publicId: `A5TEST${String(n).padStart(4, "0")}`.slice(-10), idempotencyKey: `a5-order-key-${n}`,
-    requestHash: "a".repeat(64), items: [{ productSlug: "vesuvio", productNameSnapshot: "Vesuvio", variantId: "normal", variantNameSnapshot: "Normal", basePriceSek: 110, quantity: 1, lineTotalSek: 110 }],
-    subtotalSek: 110, totalSek: 110, pickupAt: new Date("2026-10-22T11:00:00Z"), contact: { name: "Test", phone: "0700000000" },
-    paymentMethod: "pay_on_pickup", paymentStatus: "unpaid", fulfillmentStatus: "READY_FOR_PICKUP", statusHistory: [{ at: new Date(), to: "READY_FOR_PICKUP", actorType: "staff" }], ...over,
+    publicId: `A5TEST${String(n).padStart(4, "0")}`.slice(-10),
+    idempotencyKey: `a5-order-key-sample-${String(n).padStart(4, "0")}`,
+    requestHash: "a".repeat(64),
+    items: [{ productSlug: "vesuvio", productNameSnapshot: "Vesuvio", variantId: "normal", variantNameSnapshot: "Normal", basePriceSek: 110, quantity: 1, lineTotalSek: 110 }],
+    subtotalSek: 110,
+    totalSek: 110,
+    pickupAt: new Date("2026-10-22T11:00:00Z"),
+    contact: { name: "Test", phone: "0700000000" },
+    paymentMethod: "pay_on_pickup",
+    paymentStatus: "unpaid",
+    fulfillmentStatus: "READY_FOR_PICKUP",
+    statusHistory: [{ at: new Date(), to: "READY_FOR_PICKUP", actorType: "staff" }],
+    ...over,
   });
 }
 
@@ -31,7 +40,7 @@ describe("A5 on-site collections on an isolated local MongoDB", { skip: !uri ? "
     const originalCreate = AuditLogModel.create;
     AuditLogModel.create = (async () => { throw new Error("simulated audit failure"); }) as typeof AuditLogModel.create;
     try {
-      await assert.rejects(() => collectPayOnPickupPayment({ publicId: o.publicId, method: "cash", idempotencyKey: "a5-audit-fail-01", staff }), /simulated audit failure/);
+      await assert.rejects(() => collectPayOnPickupPayment({ publicId: o.publicId, method: "cash", idempotencyKey: "a5-audit-fail-key-0001", staff }), /simulated audit failure/);
     } finally {
       AuditLogModel.create = originalCreate;
     }
