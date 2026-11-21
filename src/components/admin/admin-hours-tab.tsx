@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState } from "react";
 import { DEFAULT_HOURS, formatMinutes, type CustomWeeklyHours, type Season } from "@/lib/hours";
 import { notifyStatusChange, useRestaurantStatus } from "@/lib/use-restaurant-status";
 
@@ -64,7 +64,7 @@ export function AdminHoursTab() {
           setManualOverride(data.manualOverride ?? null);
           setAnnouncement(data.announcement || "");
         }
-      } catch (err) {
+      } catch {
         if (active) {
           setFeedback({
             type: "error",

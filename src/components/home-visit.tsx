@@ -197,10 +197,12 @@ export function HomeVisit() {
           </div>
 
           <h3 className="mt-2 font-display text-2xl sm:text-3xl lg:text-[2.1rem] font-normal uppercase tracking-wide text-ink">
-            Vi har öppet
+            {status ? (status.isOpen ? "Vi har öppet" : "Vi har stängt") : "Öppettider"}
           </h3>
           <p className="mt-2 text-xs sm:text-sm text-muted leading-relaxed">
-            Välkommen under våra ordinarie öppettider. Dagens lunch serveras vardagar 11:00–14:00.
+            {status && !status.isOpen
+              ? "Välkommen åter under våra ordinarie öppettider. Dagens lunch serveras vardagar 11:00–14:00."
+              : "Välkommen under våra ordinarie öppettider. Dagens lunch serveras vardagar 11:00–14:00."}
           </p>
 
           {/* Opening Hours List with Dynamic "Idag" Indicator */}

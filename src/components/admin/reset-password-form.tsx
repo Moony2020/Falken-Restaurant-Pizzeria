@@ -190,6 +190,11 @@ export function AdminResetPasswordForm() {
   // Reset form
   return (
     <div className="space-y-6">
+      {userEmail && (
+        <div className="rounded-xl border border-line bg-paper px-3.5 py-2.5 text-xs text-muted">
+          Återställer lösenord för <span className="font-semibold text-ink">{userName ? `${userName} (${userEmail})` : userEmail}</span>
+        </div>
+      )}
       <form onSubmit={submit} className="space-y-5" noValidate>
         {/* New Password */}
         <div className="space-y-2">
