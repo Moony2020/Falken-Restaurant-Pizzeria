@@ -70,6 +70,53 @@ const onSiteCollectionSchema = new Schema(
   { _id: false },
 );
 
+// Immutable snapshot of seller/vendor identity captured server-side at order creation.
+// MUST NOT be overwritten by settings changes, status transitions, retries, or idempotent replays.
+// Legacy orders (no sellerSnapshot) must use the documented approved site-defaults fallback.
+// NEVER accept sellerSnapshot from the client/browser.
+const sellerSnapshotSchema = new Schema(
+  {
+    name: { type: String, required: true, maxlength: 60, immutable: true },
+    legalName: { type: String, maxlength: 100, immutable: true },
+    street: { type: String, maxlength: 100, immutable: true },
+    zip: { type: String, maxlength: 20, immutable: true },
+    city: { type: String, maxlength: 50, immutable: true },
+    country: { type: String, maxlength: 50, immutable: true },
+    phone: { type: String, maxlength: 30, immutable: true },
+  },
+  { _id: false },
+);
+
+const refundRecordSchema = new Schema(
+  {
+    amountSek: sek,
+    reasonCategory: {
+      type: String,
+      enum: ["customer_cancellation", "out_of_stock", "kitchen_delay", "quality_issue", "other"],
+      required: true,
+    },
+    reasonNote: { type: String, maxlength: 300, default: "" },
+    canonicalProvider: {
+      type: String,
+      enum: ["stripe", "swish", "cash", "card_terminal"],
+      required: true,
+    },
+    externalReference: { type: String, required: true },
+    canonicalReference: { type: String, required: true },
+    verificationTier: {
+      type: String,
+      enum: ["admin_attested", "provider_confirmed"],
+      default: "admin_attested",
+      required: true,
+    },
+    recordedBy: { type: String, required: true, maxlength: 100 },
+    recordedAt: { type: Date, required: true },
+    idempotencyKey: { type: String, required: true, minlength: 16, maxlength: 100 },
+    requestHash: { type: String, required: true, match: /^[a-f0-9]{64}$/ },
+  },
+  { _id: false },
+);
+
 const orderSchema = new Schema(
   {
     publicId: { type: String, required: true, unique: true, default: generatePublicId },
@@ -100,6 +147,10 @@ const orderSchema = new Schema(
     paymentId: { type: Schema.Types.ObjectId, ref: "Payment" },
     paidAt: { type: Date },
     onSiteCollection: { type: onSiteCollectionSchema, required: false },
+    totalRefundedSek: { ...sek, default: 0 },
+    refundRecord: { type: refundRecordSchema, required: false },
+    /** Immutable seller identity snapshot created server-side at order creation. Absent on legacy orders. */
+    sellerSnapshot: { type: sellerSnapshotSchema, required: false, immutable: true },
     /** Populated by an explicit acknowledgement or atomically when staff starts preparing. */
     acknowledgedAt: { type: Date, index: true },
     acknowledgedBy: { type: String, maxlength: 100 },
@@ -117,6 +168,131 @@ const orderSchema = new Schema(
 
 orderSchema.index({ createdAt: -1 });
 
+export const ORDER_MODEL_GUARD_VERSION = 2;
+
+/**
+ * Checks whether a given path targets the protected root 'sellerSnapshot'
+ * using exact root or dot/bracket boundary matching.
+ * Unrelated fields containing 'sellerSnapshot' as a substring are NOT matched.
+ */
+export function isProtectedSellerSnapshotPath(path: string): boolean {
+  if (typeof path !== "string") return false;
+  return (
+    path === "sellerSnapshot" ||
+    path.startsWith("sellerSnapshot.") ||
+    path.startsWith("sellerSnapshot[")
+  );
+}
+
+/**
+ * Shared validation logic for mutation attempts against Order.sellerSnapshot.
+ * Enforces strict immutability across ALL MongoDB update operators ($set, $unset,
+ * $rename, $currentDate, $min, $max, $addToSet, $push, $pull, $pop, $inc, $mul,
+ * $setOnInsert, etc.), replacement operations, and bulkWrite batches.
+ */
+export function assertSafeSellerSnapshotMutation(
+  update: unknown,
+  isReplacement: boolean
+): void {
+  if (!update) return;
+
+  // 1. Array-based MongoDB update pipelines (e.g. [{ $set: ... }])
+  if (Array.isArray(update)) {
+    for (const stage of update) {
+      if (typeof stage === "object" && stage !== null) {
+        for (const stageVal of Object.values(stage as Record<string, unknown>)) {
+          if (typeof stageVal === "object" && stageVal !== null) {
+            for (const path of Object.keys(stageVal as Record<string, unknown>)) {
+              if (isProtectedSellerSnapshotPath(path)) {
+                throw new Error("sellerSnapshot is immutable and cannot be modified or removed via update pipeline");
+              }
+            }
+          }
+        }
+      }
+    }
+    throw new Error("Update pipelines are not permitted on Order documents to protect sellerSnapshot immutability");
+  }
+
+  if (typeof update !== "object" || update === null) return;
+  const updateObj = update as Record<string, unknown>;
+
+  // 2. Replacement operations (replaceOne, findOneAndReplace, or direct object replacement)
+  const isDirectReplacement = isReplacement || Object.keys(updateObj).some((k) => !k.startsWith("$"));
+  if (isDirectReplacement) {
+    if ("sellerSnapshot" in updateObj) {
+      throw new Error("sellerSnapshot is immutable and cannot be replaced or modified");
+    } else {
+      throw new Error("sellerSnapshot is immutable and cannot be removed or omitted in replacement");
+    }
+  }
+
+  // 3. Generic MongoDB operator inspection:
+  // Inspect every operator key ($set, $unset, $rename, $currentDate, $min, $max, $addToSet, $push, $pull, $pop, $inc, $mul, $setOnInsert, etc.)
+  for (const [opKey, opVal] of Object.entries(updateObj)) {
+    if (opKey.startsWith("$")) {
+      if (typeof opVal !== "object" || opVal === null) continue;
+      const opObj = opVal as Record<string, unknown>;
+
+      if (opKey === "$rename") {
+        // For $rename, check BOTH source field path AND destination field path
+        for (const sourcePath of Object.keys(opObj)) {
+          if (isProtectedSellerSnapshotPath(sourcePath)) {
+            throw new Error("sellerSnapshot is immutable and cannot be renamed");
+          }
+        }
+        for (const destPath of Object.values(opObj)) {
+          if (typeof destPath === "string" && isProtectedSellerSnapshotPath(destPath)) {
+            throw new Error("sellerSnapshot is immutable and cannot be renamed");
+          }
+        }
+      } else {
+        // For all other update operators ($set, $unset, $currentDate, $min, $max, $addToSet, $push, $pull, $pop, $inc, $mul, $setOnInsert, etc.)
+        for (const targetPath of Object.keys(opObj)) {
+          if (isProtectedSellerSnapshotPath(targetPath)) {
+            if (opKey === "$unset") {
+              throw new Error("sellerSnapshot is immutable and cannot be removed");
+            }
+            if (opKey === "$setOnInsert") {
+              throw new Error("sellerSnapshot is immutable and cannot be modified via $setOnInsert");
+            }
+            throw new Error(`sellerSnapshot is immutable and cannot be modified via ${opKey}`);
+          }
+        }
+      }
+    } else {
+      // Top-level field in an update object (not starting with $)
+      if (isProtectedSellerSnapshotPath(opKey)) {
+        throw new Error("sellerSnapshot is immutable and cannot be modified");
+      }
+    }
+  }
+}
+
+interface MongooseUpdateQuery {
+  getUpdate(): unknown;
+  op?: string;
+}
+
+function rejectSellerSnapshotUpdate(this: MongooseUpdateQuery) {
+  const update = this.getUpdate();
+  if (!update) return;
+  const isReplacementOp = this.op === "replaceOne" || this.op === "findOneAndReplace";
+  assertSafeSellerSnapshotMutation(update, isReplacementOp);
+}
+
+type SchemaWithPre = {
+  pre(event: string, fn: (this: MongooseUpdateQuery) => void): void;
+};
+const hookableSchema = orderSchema as unknown as SchemaWithPre;
+hookableSchema.pre("updateOne", rejectSellerSnapshotUpdate);
+hookableSchema.pre("updateMany", rejectSellerSnapshotUpdate);
+hookableSchema.pre("findOneAndUpdate", rejectSellerSnapshotUpdate);
+hookableSchema.pre("replaceOne", rejectSellerSnapshotUpdate);
+hookableSchema.pre("findOneAndReplace", rejectSellerSnapshotUpdate);
+
+(orderSchema as unknown as { _falkenGuardVersion?: number })._falkenGuardVersion = ORDER_MODEL_GUARD_VERSION;
+
 // A stored order must add up. This catches a bad price calculation before it reaches the database.
 orderSchema.pre("validate", function () {
   const items = this.items ?? [];
@@ -133,6 +309,18 @@ orderSchema.pre("validate", function () {
   if (this.discountSek > this.subtotalSek) this.invalidate("discountSek", "Discount exceeds subtotal");
   if (this.totalSek !== this.subtotalSek - this.discountSek) {
     this.invalidate("totalSek", `Total ${this.totalSek} does not equal subtotal minus discount`);
+  }
+  if (this.totalRefundedSek !== undefined) {
+    if (this.refundRecord) {
+      if (this.totalRefundedSek !== this.refundRecord.amountSek) {
+        this.invalidate("totalRefundedSek", `totalRefundedSek ${this.totalRefundedSek} does not match refundRecord amount ${this.refundRecord.amountSek}`);
+      }
+    } else if (this.totalRefundedSek !== 0) {
+      this.invalidate("totalRefundedSek", `totalRefundedSek is ${this.totalRefundedSek} without a refundRecord`);
+    }
+    if (this.totalRefundedSek > this.totalSek) {
+      this.invalidate("totalRefundedSek", `Total refunded ${this.totalRefundedSek} exceeds order total ${this.totalSek}`);
+    }
   }
 });
 
@@ -173,6 +361,20 @@ export type OrderDoc = {
     collectedAt: Date;
     idempotencyKey: string;
   };
+  totalRefundedSek?: number;
+  refundRecord?: {
+    amountSek: number;
+    reasonCategory: "customer_cancellation" | "out_of_stock" | "kitchen_delay" | "quality_issue" | "other";
+    reasonNote?: string;
+    canonicalProvider: "stripe" | "swish" | "cash" | "card_terminal";
+    externalReference: string;
+    canonicalReference: string;
+    verificationTier: "admin_attested" | "provider_confirmed";
+    recordedBy: string;
+    recordedAt: Date;
+    idempotencyKey: string;
+    requestHash: string;
+  };
   acknowledgedAt?: Date;
   acknowledgedBy?: string;
   cancelledAt?: Date;
@@ -185,22 +387,77 @@ export type OrderDoc = {
     reason?: string;
   }[];
   needsReview?: { reason?: string; detail?: string; at?: Date };
+  /** Immutable seller snapshot written at order creation. Optional — absent on legacy orders. */
+  sellerSnapshot?: {
+    name: string;
+    legalName?: string;
+    street?: string;
+    zip?: string;
+    city?: string;
+    country?: string;
+    phone?: string;
+  };
   createdAt?: Date;
   updatedAt?: Date;
 };
 
 if (models.Order) {
-  const pmEnum = (models.Order.schema.path("paymentMethod") as { enumValues?: string[] } | undefined)?.enumValues;
-  // Next.js hot reload can retain a pre-A5 Order model. Strict mode would then
-  // silently discard onSiteCollection while accepting the rest of an update.
-  // Recompile when either required part of the current schema is missing.
-  const onSiteMethod = models.Order.schema.path("onSiteCollection.method");
-  const onSiteKey = models.Order.schema.path("onSiteCollection.idempotencyKey");
-  if (!pmEnum || !pmEnum.includes("swish") || !onSiteMethod || !onSiteKey) {
+  const existingSchema = models.Order.schema;
+  const pmEnum = (existingSchema.path("paymentMethod") as { enumValues?: string[] } | undefined)?.enumValues;
+  const onSiteMethod = existingSchema.path("onSiteCollection.method");
+  const onSiteKey = existingSchema.path("onSiteCollection.idempotencyKey");
+  const sellerSnapshotPath = existingSchema.path("sellerSnapshot.name");
+  const refundCanonicalPath = existingSchema.path("refundRecord.canonicalReference");
+  const guardVersion = (existingSchema as unknown as { _falkenGuardVersion?: number })._falkenGuardVersion;
+
+  // Next.js hot reload invariant: recompile if payment methods, onSiteCollection,
+  // sellerSnapshot schema path, refundRecord schema path, or the current security guard version is missing/stale.
+  const isUpToDate =
+    Boolean(pmEnum && pmEnum.includes("swish")) &&
+    Boolean(onSiteMethod) &&
+    Boolean(onSiteKey) &&
+    Boolean(sellerSnapshotPath) &&
+    Boolean(refundCanonicalPath) &&
+    guardVersion === ORDER_MODEL_GUARD_VERSION;
+
+  if (!isUpToDate) {
     delete (models as Record<string, unknown>).Order;
   }
 }
-export const OrderModel = (models.Order as Model<OrderDoc> | undefined) ?? model<OrderDoc>("Order", orderSchema);
+
+const RawOrderModel = ((models.Order as Model<OrderDoc> | undefined) ?? model<OrderDoc>("Order", orderSchema));
+
+// Wrap bulkWrite on OrderModel to enforce sellerSnapshot immutability without double-wrapping on reuse
+const rawWithGuard = RawOrderModel as unknown as { _bulkWriteHardened?: boolean };
+if (!rawWithGuard._bulkWriteHardened) {
+  const originalOrderBulkWrite = RawOrderModel.bulkWrite.bind(RawOrderModel);
+  RawOrderModel.bulkWrite = function (
+    ops: Parameters<typeof originalOrderBulkWrite>[0],
+    options?: Parameters<typeof originalOrderBulkWrite>[1]
+  ) {
+    if (Array.isArray(ops)) {
+      for (const op of ops) {
+        if (typeof op !== "object" || op === null) continue;
+        const opObj = op as Record<string, unknown>;
+        if (opObj.updateOne) {
+          const u = (opObj.updateOne as Record<string, unknown>).update;
+          assertSafeSellerSnapshotMutation(u, false);
+        } else if (opObj.updateMany) {
+          const u = (opObj.updateMany as Record<string, unknown>).update;
+          assertSafeSellerSnapshotMutation(u, false);
+        } else if (opObj.replaceOne) {
+          const r = (opObj.replaceOne as Record<string, unknown>).replacement;
+          assertSafeSellerSnapshotMutation(r, true);
+        }
+      }
+    }
+    return originalOrderBulkWrite(ops, options);
+  } as typeof RawOrderModel.bulkWrite;
+
+  rawWithGuard._bulkWriteHardened = true;
+}
+
+export const OrderModel = RawOrderModel;
 
 // ---- Payments -------------------------------------------------------------
 

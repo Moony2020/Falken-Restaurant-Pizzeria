@@ -14,7 +14,7 @@ export function MenuHero({ query, setQuery, disabled = false }: MenuHeroProps) {
       {/* Background Hero Image */}
       <div className="pointer-events-none absolute inset-0 select-none overflow-hidden">
         <Image
-          src="/images/menu/menu-hero.webp"
+          src="/images/hero/Hero-image.webp"
           alt="Falken Meny & Beställ – Oxfiléplanka och matupplevelse"
           fill
           priority
@@ -24,10 +24,10 @@ export function MenuHero({ query, setQuery, disabled = false }: MenuHeroProps) {
         />
 
         {/* Desktop & Tablet shadow overlay: deep dark fade on the left behind text */}
-        <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-black/95 via-black/75 via-48% to-transparent" />
+        <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 via-48% to-transparent" />
 
         {/* Mobile atmospheric overlay: dark fade ensuring text clarity above steak photo */}
-        <div className="md:hidden absolute inset-0 bg-gradient-to-t from-black/95 via-black/85 via-50% to-black/40" />
+        <div className="md:hidden absolute inset-0 bg-gradient-to-t from-black/90 via-black/75 via-50% to-black/35" />
 
         {/* Soft bottom edge gradient for smooth transition */}
         <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0d0f12] to-transparent opacity-60" />

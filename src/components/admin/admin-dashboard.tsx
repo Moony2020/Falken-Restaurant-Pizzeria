@@ -13,12 +13,14 @@ import { CURRENT_SEASON } from "@/data/site";
 import { getOpenStatus } from "@/lib/hours";
 import { useNow } from "@/lib/use-now";
 import { notifyStatusChange } from "@/lib/use-restaurant-status";
-import { EyeIcon, EyeOffIcon } from "@/components/icons";
 import { AdminHoursTab } from "@/components/admin/admin-hours-tab";
 import { AdminNotificationsDropdown } from "@/components/admin/admin-notifications-dropdown";
 import { AdminInvoicesTab, PaymentMethodBadge, OrderTypeBadge } from "@/components/admin/admin-invoices-tab";
 import { AdminAnalyticsTab } from "@/components/admin/admin-analytics-tab";
 import { AdminProductsTab } from "@/components/admin/admin-products-tab";
+import { AdminCategoriesTab } from "@/components/admin/admin-categories-tab";
+import { AdminModifiersTab } from "@/components/admin/admin-modifiers-tab";
+import { AdminSettingsTab } from "@/components/admin/admin-settings-tab";
 import type { ReceiptPdfInput } from "@/lib/order-receipt-pdf";
 import { AdminReceiptModal } from "@/components/admin/admin-receipt-modal";
 
@@ -38,7 +40,7 @@ function FalconEmblem({ className = "h-8 w-8 text-[#b88e4d]" }: { className?: st
 }
 
 // --- Status Types & Data ---
-type OrderStatus = "Ny" | "Mottagen" | "Tillagas" | "Förbereds" | "Redo" | "Klar" | "Serverad" | "Klar för avhämtning" | "Uthämtad" | "Slutförd";
+type OrderStatus = "Ny" | "Mottagen" | "Tillagas" | "Förbereds" | "Redo" | "Klar" | "Serverad" | "Klar för avhämtning" | "Uthämtad" | "Slutförd" | "Avbruten";
 
 export type OrderDetailItem = {
   name: string;
@@ -75,6 +77,15 @@ type DashboardOrder = {
     label: string;
     variant: "gold" | "white" | "emerald";
   };
+  sellerSnapshot?: {
+    name: string;
+    legalName?: string;
+    street?: string;
+    zip?: string;
+    city?: string;
+    country?: string;
+    phone?: string;
+  } | null;
 };
 
 type OverviewPeriod = "today" | "yesterday" | "week" | "month" | "year";
@@ -82,21 +93,58 @@ export type OverviewData = {
   period: OverviewPeriod;
   range: { from: string; to: string; timeZone: string };
   metrics: {
+    grossRevenueSek: number;
+    refundedSek: number;
+    netRevenueSek: number;
     revenueSek: number;
     orders: number;
     activeOrders: number;
     paidStripeOrders: number;
+    paidSwishOrders?: number;
+    paidOnlineOrders?: number;
+    collectedCashOrders?: number;
+    collectedCardTerminalOrders?: number;
     unpaidOrders: number;
     unpaidSek: number;
     averageOrderSek: number;
     reviewCount: number;
     averageRating: number | null;
+    refundBreakdown?: {
+      totalRefundedSek: number;
+      adminAttestedSek: number;
+      providerConfirmedSek: number;
+      adminAttestedCount: number;
+      providerConfirmedCount: number;
+      refundCount: number;
+    };
+    reconciliation?: {
+      status: "clean" | "discrepancy_detected";
+      discrepancies: Array<{ orderId: string; type: string; detail: string }>;
+      verifiedGrossSalesCount: number;
+      unverifiedGrossSalesCount: number;
+    };
   };
-  chart: { key: string; label: string; orders: number; revenueSek: number }[];
+  chart: {
+    key: string;
+    label: string;
+    orders: number;
+    grossRevenueSek: number;
+    refundedSek: number;
+    netRevenueSek: number;
+    revenueSek: number;
+  }[];
   bestSellers: { name: string; quantity: number }[];
   settings: {
     onlineOrderingEnabled: boolean;
     manualOverride?: "open" | "closed" | null;
+  };
+  definitions?: {
+    orders?: string;
+    grossRevenue?: string;
+    refunds?: string;
+    netRevenue?: string;
+    timeAttribution?: string;
+    accountingNotice?: string;
   };
 };
 
@@ -106,6 +154,20 @@ const overviewPeriodLabels: Record<OverviewPeriod, string> = {
   week: "Vecka",
   month: "Månad",
   year: "År",
+};
+
+const tabHeaderTitles: Record<string, string> = {
+  oversikt: "Översikt",
+  bestallningar: "Beställningar",
+  produkter: "Meny & Produkter",
+  kategorier: "Kategorier",
+  tillagg: "Tillägg & Ingredienser",
+  fakturor: "Fakturor & Kvitton",
+  omdomen: "Betyg & Omdömen",
+  analyser: "Analyser",
+  oppettider: "Öppettider",
+  anvandare: "Användare",
+  installningar: "Inställningar",
 };
 
 const money = (sek: number) => `${new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 }).format(sek)} kr`;
@@ -164,11 +226,20 @@ function getMonotoneSpline(points: { x: number; y: number }[], baselineY: number
 
 export type OverviewChartProps = {
   data: OverviewData["chart"];
-  totalRevenue?: number;
+  totalGross?: number;
+  totalRefunds?: number;
+  totalNet?: number;
   totalOrders?: number;
+  definitions?: OverviewData["definitions"];
 };
 
-function OverviewChart({ data, totalRevenue = 0, totalOrders = 0 }: OverviewChartProps) {
+function OverviewChart({
+  data,
+  totalGross = 0,
+  totalRefunds = 0,
+  totalNet = 0,
+  totalOrders = 0,
+}: OverviewChartProps) {
   const chartData = data ?? [];
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState<number>(0);
@@ -186,9 +257,17 @@ function OverviewChart({ data, totalRevenue = 0, totalOrders = 0 }: OverviewChar
     return () => ro.disconnect();
   }, []);
 
-  // Format data: restaurant business hours (11:00 to 22:00)
+  // Format data: restaurant business hours (11:00 to 22:00) or date buckets
   const isHourly = chartData.some((p) => p.label.includes(":"));
-  let displayPoints: { key: string; label: string; revenueSek: number; orders: number }[] = [];
+  type ChartPoint = {
+    key: string;
+    label: string;
+    grossRevenueSek: number;
+    refundedSek: number;
+    netRevenueSek: number;
+    orders: number;
+  };
+  let displayPoints: ChartPoint[] = [];
 
   if (isHourly) {
     const hours = [
@@ -196,22 +275,42 @@ function OverviewChart({ data, totalRevenue = 0, totalOrders = 0 }: OverviewChar
       "17:00", "18:00", "19:00", "20:00", "21:00", "22:00"
     ];
     const map = new Map(chartData.map((p) => [p.label, p]));
-    displayPoints = hours.map((h) => map.get(h) || { key: h, label: h, revenueSek: 0, orders: 0 });
+    displayPoints = hours.map((h) => {
+      const p = map.get(h);
+      const gross = p?.grossRevenueSek ?? (p?.revenueSek ?? 0);
+      const ref = p?.refundedSek ?? 0;
+      const net = p?.netRevenueSek ?? (gross - ref);
+      return {
+        key: h,
+        label: h,
+        grossRevenueSek: gross,
+        refundedSek: ref,
+        netRevenueSek: net,
+        orders: p?.orders ?? 0,
+      };
+    });
   } else {
-    displayPoints = chartData.length > 0 ? chartData : [{ key: "1", label: "Idag", revenueSek: 0, orders: 0 }];
+    displayPoints = chartData.length > 0
+      ? chartData.map((p) => {
+          const gross = p.grossRevenueSek ?? (p.revenueSek ?? 0);
+          const ref = p.refundedSek ?? 0;
+          const net = p.netRevenueSek ?? (gross - ref);
+          return {
+            key: p.key,
+            label: p.label,
+            grossRevenueSek: gross,
+            refundedSek: ref,
+            netRevenueSek: net,
+            orders: p.orders ?? 0,
+          };
+        })
+      : [{ key: "1", label: "Idag", grossRevenueSek: 0, refundedSek: 0, netRevenueSek: 0, orders: 0 }];
   }
-
-  // Fallback: if all zero but totalRevenue > 0, set at 14:00 (index 3) without mutating
-  const hasDirectActivity = displayPoints.some((p) => p.revenueSek > 0 || p.orders > 0);
-  const targetIdx = isHourly ? 3 : Math.floor(displayPoints.length / 2);
-  const finalPoints = (!hasDirectActivity && totalRevenue > 0)
-    ? displayPoints.map((p, idx) => (idx === targetIdx ? { ...p, revenueSek: totalRevenue, orders: totalOrders } : p))
-    : displayPoints;
 
   // Dimensions
   const width = containerWidth > 0 ? containerWidth : 800;
-  const height = 265;
-  const left = 48;
+  const height = 275;
+  const left = 56;
   const right = 36;
   const top = 30;
   const bottom = 32;
@@ -219,96 +318,172 @@ function OverviewChart({ data, totalRevenue = 0, totalOrders = 0 }: OverviewChar
   const plotHeight = height - top - bottom;
   const baseline = top + plotHeight;
 
-  // Scales matching reference: Left Y (Revenue with 50 kr ticks), Right Y (Orders 0..6)
-  const rawMaxRev = Math.max(totalRevenue, ...finalPoints.map((p) => p.revenueSek));
-  const maxRevenueScale = rawMaxRev <= 0 ? 300 : Math.max(300, Math.ceil(rawMaxRev / 50) * 50);
-  const revenueTicks = [300, 250, 200, 150, 100, 50, 0].map((v) => Math.round((v / 300) * maxRevenueScale));
+  // Scales matching reference: Supports positive gross & possible negative net values
+  const allValues = [
+    totalGross,
+    totalRefunds,
+    totalNet,
+    ...displayPoints.flatMap((p) => [p.grossRevenueSek, p.refundedSek, p.netRevenueSek]),
+  ];
+  const rawMax = Math.max(300, ...allValues);
+  const rawMin = Math.min(0, ...allValues);
 
-  const maxOrdersScale = 6;
-  const ordersTicks = [6, 5, 4, 3, 2, 1, 0];
+  const maxRevenueScale = Math.ceil(rawMax / 50) * 50;
+  const minRevenueScale = rawMin < 0 ? Math.floor(rawMin / 50) * 50 : 0;
+  const revenueSpan = Math.max(50, maxRevenueScale - minRevenueScale);
 
-  const n = finalPoints.length;
+  // 7 Ticks across the revenue span
+  const revenueTicks = [0, 1, 2, 3, 4, 5, 6].map((i) =>
+    Math.round(maxRevenueScale - (i / 6) * revenueSpan)
+  );
+
+  const maxOrders = Math.max(6, ...displayPoints.map((p) => p.orders));
+  const maxOrdersScale = Math.max(6, Math.ceil(maxOrders));
+  const ordersTicks = [0, 1, 2, 3, 4, 5, 6].map((i) =>
+    Math.round(maxOrdersScale - (i / 6) * maxOrdersScale)
+  );
+
+  const zeroRatio = (0 - minRevenueScale) / revenueSpan;
+  const zeroY = baseline - zeroRatio * plotHeight;
+
+  const n = displayPoints.length;
   const step = n > 1 ? plotWidth / (n - 1) : plotWidth;
 
-  // Calculate points truthfully from actual data (no ghost curves on 0-activity hours!)
-  const revPoints = finalPoints.map((point, index) => {
-    const x = left + index * step;
-    const ratio = maxRevenueScale > 0 ? Math.min(1, Math.max(0, point.revenueSek / maxRevenueScale)) : 0;
-    const y = baseline - ratio * plotHeight;
-    return { x, y, raw: point };
-  });
+  const getY = (val: number) => {
+    const r = (val - minRevenueScale) / revenueSpan;
+    return baseline - Math.min(1, Math.max(0, r)) * plotHeight;
+  };
 
-  const orderPoints = finalPoints.map((point, index) => {
+  const grossPoints = displayPoints.map((point, index) => ({
+    x: left + index * step,
+    y: getY(point.grossRevenueSek),
+    raw: point,
+  }));
+
+  const netPoints = displayPoints.map((point, index) => ({
+    x: left + index * step,
+    y: getY(point.netRevenueSek),
+    raw: point,
+  }));
+
+  const refundPoints = displayPoints.map((point, index) => ({
+    x: left + index * step,
+    y: getY(point.refundedSek),
+    raw: point,
+  }));
+
+  const orderPoints = displayPoints.map((point, index) => {
     const x = left + index * step;
     const ratio = maxOrdersScale > 0 ? Math.min(1, Math.max(0, point.orders / maxOrdersScale)) : 0;
     const y = baseline - ratio * plotHeight;
     return { x, y, raw: point };
   });
 
-  const revSpline = getMonotoneSpline(revPoints, baseline);
+  const grossSpline = getMonotoneSpline(grossPoints, zeroY);
+  const netSpline = getMonotoneSpline(netPoints, zeroY);
+  const refundSpline = getMonotoneSpline(refundPoints, zeroY);
   const orderSpline = getMonotoneSpline(orderPoints, baseline);
 
   // Find peak point for default tooltip
   let peakIdx = 0;
-  let maxV = -1;
-  finalPoints.forEach((p, idx) => {
-    if (p.revenueSek > maxV) {
-      maxV = p.revenueSek;
+  let maxV = -Infinity;
+  displayPoints.forEach((p, idx) => {
+    if (p.grossRevenueSek > maxV) {
+      maxV = p.grossRevenueSek;
       peakIdx = idx;
     }
   });
-  if (maxV <= 0 && isHourly) peakIdx = 3; // default 14:00 (index 3 in 11:00..22:00)
+  if (maxV <= 0 && isHourly) peakIdx = 3;
 
   const activeIdx = hoveredIdx !== null ? hoveredIdx : peakIdx;
-  const activePoint = revPoints[activeIdx] || revPoints[0];
+  const activeGrossPoint = grossPoints[activeIdx] || grossPoints[0];
+  const activeNetPoint = netPoints[activeIdx] || netPoints[0];
+  const activeRefundPoint = refundPoints[activeIdx] || refundPoints[0];
   const activeOrderPoint = orderPoints[activeIdx] || orderPoints[0];
+  const hasRefunds = totalRefunds > 0 || displayPoints.some((p) => p.refundedSek > 0);
 
   return (
     <div ref={containerRef} className="relative w-full select-none">
-      {/* Top Section matching user reference: Two Metric Cards on left, Legends on right */}
+      {/* Top Section: 4 KPI Cards on left, Legends on right */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 px-1">
-        {/* Left: Two Metric Cards */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Card 1: Total intäkt */}
-          <div className="flex items-center gap-3 rounded-2xl border border-[#efe9dc] bg-[#fbf9f4] px-4 py-2 shadow-2xs">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f4ebd9] text-base">
+        {/* Left: Financial KPI Cards */}
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
+          {/* Card 1: Bruttoförsäljning */}
+          <div className="flex items-center gap-2 sm:gap-2.5 rounded-xl border border-[#efe9dc] bg-[#fbf9f4] px-3 py-1.5 shadow-2xs">
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg bg-[#f4ebd9] text-xs sm:text-sm">
               🪙
             </div>
-            <div>
-              <p className="text-[11px] font-medium text-[#7c828d] leading-tight">Total intäkt</p>
-              <p className="text-base sm:text-lg font-bold text-[#1f2328] leading-tight">
-                {money(totalRevenue)}
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-[11px] font-medium text-[#7c828d] leading-tight truncate">Brutto</p>
+              <p className="text-sm sm:text-base font-bold text-[#1f2328] leading-tight truncate" data-testid="chart-gross-total">
+                {money(totalGross)}
               </p>
             </div>
           </div>
 
-          {/* Card 2: Totalt antal beställningar */}
-          <div className="flex items-center gap-3 rounded-2xl border border-[#efe9dc] bg-[#fbf9f4] px-4 py-2 shadow-2xs">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f4ebd9] text-base">
+          {/* Card 2: Återbetalt */}
+          <div className="flex items-center gap-2 sm:gap-2.5 rounded-xl border border-[#efe9dc] bg-[#fbf9f4] px-3 py-1.5 shadow-2xs">
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg bg-[#fef2f2] text-xs sm:text-sm">
+              ↩️
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-[11px] font-medium text-[#7c828d] leading-tight truncate">Återbetalt</p>
+              <p className={`text-sm sm:text-base font-bold leading-tight truncate ${totalRefunds > 0 ? "text-[#e04f44]" : "text-[#1f2328]"}`} data-testid="chart-refunds-total">
+                {money(totalRefunds)}
+              </p>
+            </div>
+          </div>
+
+          {/* Card 3: Netto */}
+          <div className="flex items-center gap-2 sm:gap-2.5 rounded-xl border border-[#efe9dc] bg-[#fbf9f4] px-3 py-1.5 shadow-2xs">
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg bg-[#f0fdf4] text-xs sm:text-sm">
+              📊
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-[11px] font-medium text-[#7c828d] leading-tight truncate">Netto</p>
+              <p className={`text-sm sm:text-base font-bold leading-tight truncate ${totalNet < 0 ? "text-[#e04f44]" : "text-[#15803d]"}`} data-testid="chart-net-total">
+                {money(totalNet)}
+              </p>
+            </div>
+          </div>
+
+          {/* Card 4: Antal beställningar */}
+          <div className="flex items-center gap-2 sm:gap-2.5 rounded-xl border border-[#efe9dc] bg-[#fbf9f4] px-3 py-1.5 shadow-2xs">
+            <div className="flex h-7 w-7 sm:h-8 sm:w-8 shrink-0 items-center justify-center rounded-lg bg-[#f4ebd9] text-xs sm:text-sm">
               🛒
             </div>
-            <div>
-              <p className="text-[11px] font-medium text-[#7c828d] leading-tight">Totalt antal beställningar</p>
-              <p className="text-base sm:text-lg font-bold text-[#1f2328] leading-tight">
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-[11px] font-medium text-[#7c828d] leading-tight truncate">Beställningar</p>
+              <p className="text-sm sm:text-base font-bold text-[#1f2328] leading-tight truncate" data-testid="chart-orders-total">
                 {totalOrders} st
               </p>
             </div>
           </div>
         </div>
 
-        {/* Right: Legends matching user reference */}
-        <div className="flex items-center gap-5 text-xs text-[#555a64]">
-          <span className="inline-flex items-center gap-2 font-medium">
-            <span className="size-3 rounded-full bg-[#c99a45]" />
-            <span>Intäkter (kr)</span>
+        {/* Right: Legends */}
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-[#555a64]">
+          <span className="inline-flex items-center gap-1.5 font-medium">
+            <span className="size-2.5 rounded-full bg-[#c99a45]" />
+            <span>Brutto</span>
           </span>
-          <span className="inline-flex items-center gap-2 font-medium">
-            <span className="inline-flex items-center">
-              <span className="w-2 h-0.5 bg-[#5a4d36]" />
-              <span className="size-2 rounded-full border-2 border-[#5a4d36] bg-white -mx-0.5" />
-              <span className="w-2 h-0.5 bg-[#5a4d36]" />
+          {hasRefunds && (
+            <span className="inline-flex items-center gap-1.5 font-medium">
+              <span className="size-2.5 rounded-full bg-[#e04f44]" />
+              <span>Återbetalt</span>
             </span>
-            <span>Antal beställningar</span>
+          )}
+          <span className="inline-flex items-center gap-1.5 font-medium">
+            <span className="size-2.5 rounded-full bg-[#15803d]" />
+            <span>Netto</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5 font-medium">
+            <span className="inline-flex items-center">
+              <span className="w-1.5 h-0.5 bg-[#5a4d36]" />
+              <span className="size-1.5 rounded-full border-2 border-[#5a4d36] bg-white -mx-0.5" />
+              <span className="w-1.5 h-0.5 bg-[#5a4d36]" />
+            </span>
+            <span>Ordrar</span>
           </span>
         </div>
       </div>
@@ -323,7 +498,6 @@ function OverviewChart({ data, totalRevenue = 0, totalOrders = 0 }: OverviewChar
           onMouseLeave={() => setHoveredIdx(null)}
         >
           <defs>
-            {/* Soft, light gradient area fill matching reference images 1 & 3 */}
             <linearGradient id="refRevenueGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#c99a45" stopOpacity="0.28" />
               <stop offset="60%" stopColor="#c99a45" stopOpacity="0.10" />
@@ -334,7 +508,7 @@ function OverviewChart({ data, totalRevenue = 0, totalOrders = 0 }: OverviewChar
             </filter>
           </defs>
 
-          {/* 7 Horizontal Dashed Gridlines & Dual Left/Right Ticks (Both aligned exactly!) */}
+          {/* Horizontal Dashed Gridlines & Dual Left/Right Ticks */}
           {revenueTicks.map((revTick, i) => {
             const y = top + (plotHeight * i) / (revenueTicks.length - 1);
             const ordTick = ordersTicks[i] ?? 0;
@@ -355,7 +529,7 @@ function OverviewChart({ data, totalRevenue = 0, totalOrders = 0 }: OverviewChar
                   x={left - 8}
                   y={y + 3.5}
                   textAnchor="end"
-                  fontSize="11"
+                  fontSize="10"
                   className="fill-[#7c828d] font-sans font-medium"
                 >
                   {revTick} kr
@@ -365,7 +539,7 @@ function OverviewChart({ data, totalRevenue = 0, totalOrders = 0 }: OverviewChar
                   x={width - right + 8}
                   y={y + 3.5}
                   textAnchor="start"
-                  fontSize="11"
+                  fontSize="10"
                   className="fill-[#7c828d] font-sans font-medium"
                 >
                   {ordTick}
@@ -374,15 +548,28 @@ function OverviewChart({ data, totalRevenue = 0, totalOrders = 0 }: OverviewChar
             );
           })}
 
-          {/* Golden Area Fill Under Revenue Curve */}
-          {revSpline.areaPath && (
-            <path d={revSpline.areaPath} fill="url(#refRevenueGrad)" />
+          {/* Zero baseline guide line if scale has negative values */}
+          {minRevenueScale < 0 && (
+            <line
+              x1={left}
+              x2={width - right}
+              y1={zeroY}
+              y2={zeroY}
+              stroke="#cbd5e1"
+              strokeDasharray="3 3"
+              strokeWidth="1.5"
+            />
           )}
 
-          {/* Golden Revenue Curve (Intäkter) */}
-          {revSpline.linePath && (
+          {/* Golden Area Fill Under Gross Revenue Curve */}
+          {grossSpline.areaPath && (
+            <path d={grossSpline.areaPath} fill="url(#refRevenueGrad)" />
+          )}
+
+          {/* Gross Revenue Curve (Gold) */}
+          {grossSpline.linePath && (
             <path
-              d={revSpline.linePath}
+              d={grossSpline.linePath}
               fill="none"
               stroke="#c99a45"
               strokeWidth="2.5"
@@ -391,74 +578,121 @@ function OverviewChart({ data, totalRevenue = 0, totalOrders = 0 }: OverviewChar
             />
           )}
 
-          {/* Brown Order Trend Curve (Antal beställningar) */}
-          {orderSpline.linePath && (
+          {/* Refund Curve (Rose/Red dashed) - only when refunds present */}
+          {hasRefunds && refundSpline.linePath && (
             <path
-              d={orderSpline.linePath}
+              d={refundSpline.linePath}
               fill="none"
-              stroke="#5a4d36"
-              strokeWidth="2.2"
+              stroke="#e04f44"
+              strokeWidth="2"
+              strokeDasharray="4 3"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
           )}
 
-          {/* Vertical Dashed Guide Line matching reference images */}
-          {activePoint && (
+          {/* Net Revenue Curve (Emerald) */}
+          {netSpline.linePath && (
+            <path
+              d={netSpline.linePath}
+              fill="none"
+              stroke="#15803d"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
+
+          {/* Brown Order Trend Curve */}
+          {orderSpline.linePath && (
+            <path
+              d={orderSpline.linePath}
+              fill="none"
+              stroke="#5a4d36"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
+
+          {/* Vertical Dashed Guide Line */}
+          {activeGrossPoint && (
             <g>
               <line
-                x1={activePoint.x}
+                x1={activeGrossPoint.x}
                 y1={top}
-                x2={activePoint.x}
+                x2={activeGrossPoint.x}
                 y2={baseline}
                 stroke="#c99a45"
                 strokeDasharray="4 4"
                 strokeWidth="1.5"
                 strokeOpacity="0.6"
               />
-              {/* Little accent triangle marker at baseline */}
               <polygon
-                points={`${activePoint.x - 3.5},${baseline} ${activePoint.x + 3.5},${baseline} ${activePoint.x},${baseline - 5}`}
+                points={`${activeGrossPoint.x - 3.5},${baseline} ${activeGrossPoint.x + 3.5},${baseline} ${activeGrossPoint.x},${baseline - 5}`}
                 fill="#837147"
               />
             </g>
           )}
 
-          {/* Clean Ribbon: Only ONE Glowing Dot on Active/Hovered Point (Golden Revenue Curve) */}
-          {activePoint && (
+          {/* Glowing Dots on Active/Hovered Point */}
+          {activeGrossPoint && (
             <circle
-              cx={activePoint.x}
-              cy={activePoint.y}
-              r="5.5"
+              cx={activeGrossPoint.x}
+              cy={activeGrossPoint.y}
+              r="5"
               fill="#ffffff"
               stroke="#c99a45"
-              strokeWidth="3"
+              strokeWidth="2.5"
               filter="url(#peakGlow)"
               className="transition-all duration-150"
             />
           )}
 
-          {/* Only ONE Glowing Dot on Active/Hovered Point (Brown Order Curve - if orders > 0) */}
-          {activeOrderPoint && activePoint.raw.orders > 0 && (
+          {activeNetPoint && (
             <circle
-              cx={activeOrderPoint.x}
-              cy={activeOrderPoint.y}
-              r="4.5"
+              cx={activeNetPoint.x}
+              cy={activeNetPoint.y}
+              r="4"
               fill="#ffffff"
-              stroke="#5a4d36"
-              strokeWidth="2.5"
+              stroke="#15803d"
+              strokeWidth="2"
               className="transition-all duration-150"
             />
           )}
 
-          {/* X Axis Time Labels */}
-          {finalPoints.map((point, index) => (
+          {hasRefunds && activeRefundPoint && activeRefundPoint.raw.refundedSek > 0 && (
+            <circle
+              cx={activeRefundPoint.x}
+              cy={activeRefundPoint.y}
+              r="4"
+              fill="#ffffff"
+              stroke="#e04f44"
+              strokeWidth="2"
+              className="transition-all duration-150"
+            />
+          )}
+
+          {activeOrderPoint && activeGrossPoint.raw.orders > 0 && (
+            <circle
+              cx={activeOrderPoint.x}
+              cy={activeOrderPoint.y}
+              r="3.5"
+              fill="#ffffff"
+              stroke="#5a4d36"
+              strokeWidth="2"
+              className="transition-all duration-150"
+            />
+          )}
+
+          {/* X Axis Time/Date Labels */}
+          {displayPoints.map((point, index) => (
             <text
               key={point.key}
               x={left + index * step}
               y={height - 8}
               textAnchor="middle"
-              fontSize="11"
+              fontSize="10"
               className={`transition-colors font-medium ${
                 index === activeIdx ? "fill-[#1f2328] font-bold" : "fill-[#7c828d]"
               }`}
@@ -468,7 +702,7 @@ function OverviewChart({ data, totalRevenue = 0, totalOrders = 0 }: OverviewChar
           ))}
 
           {/* Invisible Hover Rects */}
-          {finalPoints.map((point, index) => {
+          {displayPoints.map((point, index) => {
             const halfStep = step / 2;
             const x = Math.max(left, left + index * step - halfStep);
             return (
@@ -486,36 +720,63 @@ function OverviewChart({ data, totalRevenue = 0, totalOrders = 0 }: OverviewChar
           })}
         </svg>
 
-        {/* Floating Light Glassy Tooltip (Lighter ivory frosted glass) */}
-        {activePoint && (
+        {/* Floating Light Glassy Tooltip */}
+        {activeGrossPoint && (
           <div
-            className="pointer-events-none absolute z-30 -translate-x-1/2 rounded-2xl border border-[#e2dac8] bg-[#f8f5ee]/95 px-3.5 py-2 shadow-lg shadow-stone-900/8 backdrop-blur-md text-left transition-all duration-150 ring-1 ring-black/5"
+            className="pointer-events-none absolute z-30 -translate-x-1/2 rounded-xl border border-[#e2dac8] bg-[#f8f5ee]/95 px-3.5 py-1.5 shadow-lg shadow-stone-900/8 backdrop-blur-md text-left transition-all duration-150 ring-1 ring-black/5"
             style={{
-              left: `${activePoint.x}px`,
-              top: `${Math.max(2, activePoint.y - 66)}px`,
+              left: `${activeGrossPoint.x}px`,
+              top: `${Math.max(2, Math.min(activeGrossPoint.y, activeNetPoint.y) - 86)}px`,
             }}
           >
             <div className="flex items-center justify-between gap-3 border-b border-[#ede5d3] pb-1 mb-1">
-              <span className="text-[11px] font-bold tracking-wide uppercase text-[#8c827a]">
-                {activePoint.raw.label}
+              <span className="text-[10px] font-bold tracking-wide uppercase text-[#8c827a]">
+                {activeGrossPoint.raw.label}
               </span>
-              <span className="text-[10px] font-semibold text-[#837147] bg-[#f0e8d6] px-1.5 py-0.5 rounded-md">
-                {activePoint.raw.orders} {activePoint.raw.orders === 1 ? "order" : "ordrar"}
+              <span className="text-[9px] font-semibold text-[#837147] bg-[#f0e8d6] px-1.5 py-0.5 rounded-md">
+                {activeGrossPoint.raw.orders} {activeGrossPoint.raw.orders === 1 ? "order" : "ordrar"}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-xs font-bold text-[#1f2328] whitespace-nowrap">
-              <span className="inline-block size-2 rounded-full bg-[#c99a45] ring-2 ring-[#c99a45]/20" />
-              <span className="font-serif text-sm font-bold text-[#1f2328]">
-                {activePoint.raw.revenueSek > 0 ? `${money(activePoint.raw.revenueSek)}` : "0 kr"}
-              </span>
-              <span className="text-[#8c827a] font-normal text-[11px]">
-                ({activePoint.raw.orders} {activePoint.raw.orders === 1 ? "beställning" : "beställningar"})
-              </span>
+            <div className="space-y-0.5 text-xs">
+              <div className="flex items-center justify-between gap-3 text-[10.5px]">
+                <span className="inline-flex items-center gap-1.5 text-[#7c828d]">
+                  <span className="size-1.5 rounded-full bg-[#c99a45]" />
+                  Brutto:
+                </span>
+                <span className="font-bold text-[#1f2328]">{money(activeGrossPoint.raw.grossRevenueSek)}</span>
+              </div>
+              {activeGrossPoint.raw.refundedSek > 0 && (
+                <div className="flex items-center justify-between gap-3 text-[10.5px]">
+                  <span className="inline-flex items-center gap-1.5 text-[#e04f44]">
+                    <span className="size-1.5 rounded-full bg-[#e04f44]" />
+                    Återbetalt:
+                  </span>
+                  <span className="font-bold text-[#e04f44]">-{money(activeGrossPoint.raw.refundedSek)}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between gap-3 text-[10.5px] pt-0.5 border-t border-[#ede5d3]/60">
+                <span className="inline-flex items-center gap-1.5 text-[#15803d] font-semibold">
+                  <span className="size-1.5 rounded-full bg-[#15803d]" />
+                  Netto:
+                </span>
+                <span className={`font-bold ${activeGrossPoint.raw.netRevenueSek < 0 ? "text-[#e04f44]" : "text-[#15803d]"}`}>
+                  {money(activeGrossPoint.raw.netRevenueSek)}
+                </span>
+              </div>
             </div>
             {/* Tooltip downward caret */}
             <div className="absolute left-1/2 -bottom-1.5 -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-6 border-t-[#f8f5ee] filter drop-shadow-[0_1px_1px_rgba(0,0,0,0.06)]" />
           </div>
         )}
+      </div>
+
+      {/* Chart Footer Notice */}
+      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-[10.5px] text-[#8c827a] px-1 border-t border-[#f2ede4] pt-2">
+        <span className="inline-flex items-center gap-1">
+          <span>ℹ️</span>
+          <span>Återbetalningar visas enligt registreringsdatum.</span>
+        </span>
+        <span>Driftsdata för slutförda transaktioner (inkl. moms).</span>
       </div>
     </div>
   );
@@ -566,6 +827,7 @@ function toDashboardOrder(order: AdminOrderSummary): DashboardOrder {
     PREPARING: { label: "Tillagas", dotColor: "bg-[#f59e0b]", textColor: "text-[#b45309]", bgColor: "bg-[#fffbeb]" },
     READY_FOR_PICKUP: { label: "Redo", dotColor: "bg-[#16a34a]", textColor: "text-[#15803d]", bgColor: "bg-[#f0fdf4]" },
     PICKED_UP: { label: "Uthämtad", dotColor: "bg-[#94a3b8]", textColor: "text-[#475569]", bgColor: "bg-[#f8fafc]" },
+    CANCELLED: { label: "Avbruten", dotColor: "bg-[#ef4444]", textColor: "text-[#b91c1c]", bgColor: "bg-[#fef2f2]" },
   };
   const actions: Record<string, DashboardOrder["primaryAction"]> = {
     CONFIRMED: { label: "Bekräfta mottagning", variant: "gold" },
@@ -592,11 +854,12 @@ function toDashboardOrder(order: AdminOrderSummary): DashboardOrder {
     items: order.items.map((item) => ({ name: item.name, size: item.variant ?? undefined, quantity: item.quantity, price: 0 })),
     total: order.totalSek,
     paymentMethod: order.paymentMethod === "card" ? "Stripe - Kort" : order.paymentMethod === "swish" ? "Swish" : "Betala på plats",
-    paymentStatus: order.paymentStatus === "paid" ? "Betald" : "Väntar på betalning",
+    paymentStatus: order.paymentStatus === "refunded" ? "Återbetald" : order.paymentStatus === "paid" ? "Betald" : "Väntar på betalning",
     status: styles[order.fulfillmentStatus]?.label as OrderStatus ?? "Ny",
     rawStatus: order.fulfillmentStatus,
     statusBadge: styles[order.fulfillmentStatus] ?? styles.CONFIRMED,
     primaryAction: actions[order.fulfillmentStatus],
+    sellerSnapshot: order.sellerSnapshot ?? null,
   };
 }
 
@@ -616,6 +879,13 @@ function getReceiptInputFromOrder(ord: DashboardOrder): ReceiptPdfInput {
           unitPriceSek: Math.round(ord.total / Math.max(1, it.quantity)),
         }))
       : [{ description: "Restaurangbeställning", quantity: 1, unitPriceSek: ord.total }],
+    seller: ord.sellerSnapshot ? {
+      name: ord.sellerSnapshot.name,
+      legalName: ord.sellerSnapshot.legalName,
+      street: ord.sellerSnapshot.street,
+      city: ord.sellerSnapshot.city,
+      phone: ord.sellerSnapshot.phone,
+    } : undefined,
   };
 }
 
@@ -678,14 +948,20 @@ export function AdminDashboard({
   const datePresets = useMemo(() => getStockholmDatePresets(), []);
   const [overviewPeriod, setOverviewPeriod] = useState<OverviewPeriod>("today");
   const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
+  const [mobileDateDropdownOpen, setMobileDateDropdownOpen] = useState(false);
   const [dateRangeLabel, setDateRangeLabel] = useState(() => datePresets[0].range);
   const [highlightedOrderId, setHighlightedOrderId] = useState<string | null>(null);
   const dateDropdownRef = useRef<HTMLDivElement>(null);
+  const mobileDateDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dateDropdownRef.current && !dateDropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (dateDropdownRef.current && !dateDropdownRef.current.contains(target)) {
         setDateDropdownOpen(false);
+      }
+      if (mobileDateDropdownRef.current && !mobileDateDropdownRef.current.contains(target)) {
+        setMobileDateDropdownOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -699,6 +975,7 @@ export function AdminDashboard({
       setDateRangeLabel(found.range);
     }
     setDateDropdownOpen(false);
+    setMobileDateDropdownOpen(false);
   };
 
 
@@ -715,16 +992,23 @@ export function AdminDashboard({
   const isManualEnabled = overview?.settings?.onlineOrderingEnabled ?? true;
 
   const isActuallyOpen =
-    manualOverride === "open"
-      ? true
-      : manualOverride === "closed" || !isManualEnabled
+    manualOverride === "closed" || !isManualEnabled
       ? false
       : isScheduleOpen;
 
   const isManuallyClosed = manualOverride === "closed" || (!isManualEnabled && isScheduleOpen);
 
   const [orderSearchQuery, setOrderSearchQuery] = useState("");
-  const apiFilter: AdminOrderFilter = ({ Alla: "ALL", Nya: "CONFIRMED", Mottagna: "ACKNOWLEDGED", Förbereds: "PREPARING", Klara: "READY_FOR_PICKUP", Slutförda: "PICKED_UP" } as Record<string, AdminOrderFilter>)[orderFilter] ?? "ALL";
+  const apiFilter: AdminOrderFilter = ({
+    Alla: "ALL",
+    Nya: "CONFIRMED",
+    Mottagna: "ACKNOWLEDGED",
+    Förbereds: "PREPARING",
+    Klara: "READY_FOR_PICKUP",
+    Slutförda: "PICKED_UP",
+    Avbrutna: "CANCELLED",
+    Återbetalda: "REFUNDED",
+  } as Record<string, AdminOrderFilter>)[orderFilter] ?? "ALL";
   const ordersApi = useAdminOrders(
     activeTab === "bestallningar" || activeTab === "oversikt" || activeTab === "fakturor",
     activeTab === "fakturor" ? "ALL" : apiFilter,
@@ -809,42 +1093,6 @@ export function AdminDashboard({
     }
   }
 
-  // Settings tab form state
-  const [currentPw, setCurrentPw] = useState("");
-  const [newPw, setNewPw] = useState("");
-  const [confirmPw, setConfirmPw] = useState("");
-  const [showCurrentPw, setShowCurrentPw] = useState(false);
-  const [showNewPw, setShowNewPw] = useState(false);
-  const [showConfirmPw, setShowConfirmPw] = useState(false);
-  const [pwMsg, setPwMsg] = useState<string | null>(null);
-  const [passwordBusy, setPasswordBusy] = useState(false);
-
-  async function handlePasswordChange(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (newPw.length < 8 || newPw !== confirmPw) {
-      setPwMsg("Kontrollera det nya lösenordet och bekräftelsen.");
-      return;
-    }
-    setPasswordBusy(true);
-    setPwMsg(null);
-    try {
-      const csrf = document.cookie.split(";").map((part) => part.trim()).find((part) => part.startsWith("falken_admin_csrf="))?.split("=")[1];
-      const response = await fetch("/api/admin/auth/change-password", {
-        method: "POST",
-        headers: { "content-type": "application/json", "x-csrf-token": csrf ? decodeURIComponent(csrf) : "" },
-        body: JSON.stringify({ currentPassword: currentPw, newPassword: newPw }),
-      });
-      if (!response.ok) throw new Error(response.status === 429 ? "För många försök. Försök igen senare." : "Lösenordet kunde inte ändras. Kontrollera ditt nuvarande lösenord.");
-      setCurrentPw(""); setNewPw(""); setConfirmPw("");
-      router.replace("/admin/login");
-      router.refresh();
-    } catch (error) {
-      setPwMsg(error instanceof Error ? error.message : "Lösenordet kunde inte ändras.");
-      setPasswordBusy(false);
-    }
-  }
-
-  
   const handleSelectOrderFromNotification = (publicId: string) => {
     setActiveTab("bestallningar");
     void ordersApi.open(publicId);
@@ -875,13 +1123,6 @@ export function AdminDashboard({
       READY_FOR_PICKUP: (order.paymentMethod === "card" || order.paymentMethod === "swish") ? "PICKED_UP" : null,
     } as Record<string, string | null>)[order.fulfillmentStatus];
     if (to) await ordersApi.transition(orderId, order.fulfillmentStatus, to);
-  }
-
-  async function handleCancelOrder(orderId: string) {
-    const order = ordersApi.list?.orders.find((item) => item.publicId === orderId);
-    if (!order) return;
-    if (!window.confirm(`Avbryta beställning ${orderId}? Åtgärden kan inte ångras.`)) return;
-    await ordersApi.transition(orderId, order.fulfillmentStatus, "CANCELLED");
   }
 
   const filteredOrders = orders;
@@ -1187,71 +1428,186 @@ export function AdminDashboard({
       {/* ========================================================================= */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Top Header Bar */}
-        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[#e8e2d5] bg-[#f9f8f4]/95 px-5 py-3.5 backdrop-blur-xs">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setSidebarOpen((prev) => !prev)}
-              className="rounded-lg p-1.5 text-[#555a64] hover:bg-black/5 hover:text-[#1f2328] focus:outline-none"
-              aria-label="Öppna meny"
-            >
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="3" y1="12" x2="21" y2="12" />
-                <line x1="3" y1="6" x2="21" y2="6" />
-                <line x1="3" y1="18" x2="21" y2="18" />
-              </svg>
-            </button>
-            <div>
-              <h1 className="font-serif text-xl sm:text-2xl font-bold tracking-tight text-[#1f2328] leading-tight">
-                Admin Dashboard
-              </h1>
-              <p className="text-[11px] text-[#7c828d]">
-                Falken Restaurang &amp; Pizzeria
-              </p>
+        <header className="sticky top-0 z-30 border-b border-[#e8e2d5] bg-[#f9f8f4]/95 backdrop-blur-xs">
+          {/* Main Top Row */}
+          <div className="flex items-center justify-between px-3 py-2.5 sm:px-5 sm:py-3.5 gap-2">
+            {/* Left: Hamburger & Title */}
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <button
+                type="button"
+                onClick={() => setSidebarOpen((prev) => !prev)}
+                className="rounded-lg p-1.5 text-[#555a64] hover:bg-black/5 hover:text-[#1f2328] focus:outline-none shrink-0 cursor-pointer"
+                aria-label="Öppna meny"
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </svg>
+              </button>
+              <div className="min-w-0">
+                <h1 className="font-serif text-lg sm:text-2xl font-bold tracking-tight text-[#1f2328] leading-tight truncate">
+                  Admin Dashboard
+                </h1>
+                <p className="text-[10px] sm:text-[11px] text-[#7c828d] truncate">
+                  Falken Restaurang &amp; Pizzeria
+                </p>
+              </div>
             </div>
-          </div>
 
-          {/* Right Header Controls */}
-          <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2">
-            {activeTab === "oversikt" && (
-              <div className="relative" ref={dateDropdownRef}>
+            {/* Right Controls: Desktop (md+) shows all controls; Mobile (<md) shows quick actions (notifications + avatar) */}
+            <div className="flex items-center justify-end gap-1.5 sm:gap-2 shrink-0">
+              {/* Desktop-only Date Picker and Store Status Toggle */}
+              <div className="hidden md:flex items-center gap-1.5 sm:gap-2">
+                {activeTab === "oversikt" && (
+                  <div className="relative" ref={dateDropdownRef}>
+                    <button
+                      type="button"
+                      onClick={() => setDateDropdownOpen((prev) => !prev)}
+                      className="inline-flex items-center gap-2 rounded-full border border-[#e4ded2] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#555a64] shadow-xs hover:border-[#a78347] transition sm:text-xs cursor-pointer"
+                      aria-expanded={dateDropdownOpen}
+                    >
+                      <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 text-[#8a7040]" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                        <line x1="16" y1="2" x2="16" y2="6" />
+                        <line x1="8" y1="2" x2="8" y2="6" />
+                        <line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                      <span className="whitespace-nowrap">{dateRangeLabel}</span>
+                      <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 text-[#8c827a]" fill="currentColor">
+                        <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                    {dateDropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-72 sm:w-80 rounded-2xl border border-[#e4ded2] bg-white p-2 shadow-lg z-50 text-xs">
+                        <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#7c828d]">Välj tidsintervall</p>
+                        {datePresets.map((preset) => (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() => handleSelectPeriod(preset.id)}
+                            className={`w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl text-left transition whitespace-nowrap cursor-pointer ${
+                              overviewPeriod === preset.id ? "bg-[#f5efdf] text-[#8a7040] font-bold" : "text-[#1f2328] hover:bg-[#f5f1e8]"
+                            }`}
+                          >
+                            <span className="text-xs font-semibold">{preset.label}</span>
+                            <span className="text-[11px] text-[#7c828d]">{preset.range}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <button
                   type="button"
-                  onClick={() => setDateDropdownOpen((prev) => !prev)}
-                  className="inline-flex items-center gap-2 rounded-full border border-[#e4ded2] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#555a64] shadow-xs hover:border-[#a78347] transition sm:text-xs"
-                  aria-expanded={dateDropdownOpen}
+                  role="switch"
+                  aria-checked={isActuallyOpen}
+                  disabled={!overview || orderingBusy}
+                  onClick={() => void handleOrderingToggle()}
+                  title={
+                    !overview
+                      ? "Laddar status…"
+                      : isActuallyOpen
+                      ? `Öppet nu (${scheduleStatus?.label ?? ""}). Klicka för att stänga.`
+                      : isManuallyClosed
+                      ? "Stängt manuellt. Klicka för att öppna onlinebeställningar."
+                      : `Stängt enligt schema (${scheduleStatus?.label ?? "utanför öppettider"}). Klicka för att öppna onlinebeställningar.`
+                  }
+                  className="inline-flex items-center gap-2 rounded-full border border-[#e4ded2] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#555a64] shadow-xs hover:border-[#b88e4d] transition disabled:opacity-60 sm:text-xs cursor-pointer"
                 >
-                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 text-[#8a7040]" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                    <line x1="16" y1="2" x2="16" y2="6" />
-                    <line x1="8" y1="2" x2="8" y2="6" />
-                    <line x1="3" y1="10" x2="21" y2="10" />
-                  </svg>
-                  <span className="whitespace-nowrap">{dateRangeLabel}</span>
-                  <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 text-[#8c827a]" fill="currentColor">
-                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
-                  </svg>
+                  <span
+                    aria-hidden="true"
+                    className={`size-2 rounded-full ${
+                      isActuallyOpen
+                        ? "bg-[#4caf73] animate-pulse"
+                        : "bg-[#ce2b37]"
+                    }`}
+                  />
+                  <span className="whitespace-nowrap">
+                    {!overview
+                      ? "Laddar…"
+                      : isActuallyOpen
+                      ? "Öppet nu"
+                      : isManuallyClosed
+                      ? "Stängt manuellt"
+                      : "Stängt nu"}
+                  </span>
+                  <span
+                    className={`relative inline-block h-5 w-9 rounded-full transition ${
+                      isActuallyOpen ? "bg-[#4caf73]" : "bg-[#ce2b37]"
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${
+                        isActuallyOpen ? "left-[18px]" : "left-0.5"
+                      }`}
+                    />
+                  </span>
                 </button>
-                {dateDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-72 sm:w-80 rounded-2xl border border-[#e4ded2] bg-white p-2 shadow-lg z-50 text-xs">
-                    <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#7c828d]">Välj tidsintervall</p>
-                    {datePresets.map((preset) => (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => handleSelectPeriod(preset.id)}
-                        className={`w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl text-left transition whitespace-nowrap ${
-                          overviewPeriod === preset.id ? "bg-[#f5efdf] text-[#8a7040] font-bold" : "text-[#1f2328] hover:bg-[#f5f1e8]"
-                        }`}
+              </div>
+
+              {/* Universal Notification Dropdown */}
+              <AdminNotificationsDropdown onSelectOrder={handleSelectOrderFromNotification} />
+
+              {/* Universal User Profile Avatar Pill */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowProfileMenu((prev) => !prev)}
+                  className="flex items-center gap-2 rounded-full border border-[#e4ded2] bg-white py-1 pl-1 pr-1 sm:pr-2.5 shadow-xs hover:border-[#b88e4d] transition focus:outline-none cursor-pointer"
+                >
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#a67c4e] text-xs font-bold text-white">
+                    {displayName.trim().slice(0, 2).toUpperCase() || "AH"}
+                  </div>
+                  <div className="hidden text-left sm:block leading-tight">
+                    <span className="block text-xs font-bold text-[#1f2328]">
+                      {displayName || "Admin"}
+                    </span>
+                    <span className="block text-[10px] text-[#7c828d]">
+                      Restaurangägare
+                    </span>
+                  </div>
+                </button>
+
+                {/* Profile Menu Popover */}
+                {showProfileMenu && (
+                  <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-[#e4ded2] bg-white p-3 shadow-lg z-50 text-xs">
+                    <div className="border-b border-[#ede7db] pb-2">
+                      <p className="font-bold text-[#1f2328]">{displayName || "Admin"}</p>
+                      <p className="text-[11px] text-[#7c828d] truncate">{adminEmail}</p>
+                    </div>
+                    <div className="py-2 space-y-1">
+                      <Link
+                        href="/"
+                        target="_blank"
+                        className="block px-2 py-1.5 rounded-lg text-[#1f2328] hover:bg-[#f5f1e8]"
                       >
-                        <span className="text-xs font-semibold">{preset.label}</span>
-                        <span className="text-[11px] text-[#7c828d]">{preset.range}</span>
+                        Öppna restaurangens hemsida
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveTab("installningar");
+                          setShowProfileMenu(false);
+                        }}
+                        className="w-full text-left px-2 py-1.5 rounded-lg text-[#1f2328] hover:bg-[#f5f1e8]"
+                      >
+                        Kontoinställningar
                       </button>
-                    ))}
+                    </div>
+                    <div className="border-t border-[#ede7db] pt-2">
+                      <AdminLogoutButton className="w-full justify-center" />
+                    </div>
                   </div>
                 )}
               </div>
-            )}
+            </div>
+          </div>
+
+          {/* Mobile Secondary Toolbar (< md): Dedicated row for Store Status & Date Range on small screens */}
+          <div className="flex md:hidden items-center justify-between gap-2 border-t border-[#ede7db] bg-[#fcfbf8] px-3 py-2">
+            {/* Mobile Store Status Switch */}
             <button
               type="button"
               role="switch"
@@ -1267,7 +1623,7 @@ export function AdminDashboard({
                   ? "Stängt manuellt. Klicka för att öppna onlinebeställningar."
                   : `Stängt enligt schema (${scheduleStatus?.label ?? "utanför öppettider"}). Klicka för att öppna onlinebeställningar.`
               }
-              className="inline-flex items-center gap-2 rounded-full border border-[#e4ded2] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#555a64] shadow-xs hover:border-[#b88e4d] transition disabled:opacity-60 sm:text-xs"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#e4ded2] bg-white px-2.5 py-1 text-xs font-semibold text-[#555a64] shadow-2xs hover:border-[#b88e4d] transition disabled:opacity-60 cursor-pointer"
             >
               <span
                 aria-hidden="true"
@@ -1287,71 +1643,62 @@ export function AdminDashboard({
                   : "Stängt nu"}
               </span>
               <span
-                className={`relative inline-block h-5 w-9 rounded-full transition ${
+                className={`relative inline-block h-4.5 w-8 rounded-full transition ${
                   isActuallyOpen ? "bg-[#4caf73]" : "bg-[#ce2b37]"
                 }`}
               >
                 <span
-                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${
-                    isActuallyOpen ? "left-[18px]" : "left-0.5"
+                  className={`absolute top-0.5 h-3.5 w-3.5 rounded-full bg-white shadow transition-all ${
+                    isActuallyOpen ? "left-[16px]" : "left-0.5"
                   }`}
                 />
               </span>
             </button>
-            <AdminNotificationsDropdown onSelectOrder={handleSelectOrderFromNotification} />
 
-            {/* User Profile Avatar Pill */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowProfileMenu((prev) => !prev)}
-                className="flex items-center gap-2 rounded-full border border-[#e4ded2] bg-white py-1 pl-1 pr-2.5 shadow-xs hover:border-[#b88e4d] transition focus:outline-none"
-              >
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#a67c4e] text-xs font-bold text-white">
-                  {displayName.trim().slice(0, 2).toUpperCase() || "AH"}
-                </div>
-                <div className="hidden text-left sm:block leading-tight">
-                  <span className="block text-xs font-bold text-[#1f2328]">
-                    {displayName || "Admin"}
-                  </span>
-                  <span className="block text-[10px] text-[#7c828d]">
-                    Restaurangägare
-                  </span>
-                </div>
-              </button>
-
-              {/* Profile Menu Popover */}
-              {showProfileMenu && (
-                <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-[#e4ded2] bg-white p-3 shadow-lg z-50 text-xs">
-                  <div className="border-b border-[#ede7db] pb-2">
-                    <p className="font-bold text-[#1f2328]">{displayName || "Admin"}</p>
-                    <p className="text-[11px] text-[#7c828d] truncate">{adminEmail}</p>
+            {/* Mobile Date Dropdown (or Tab Indicator if not on oversikt) */}
+            {activeTab === "oversikt" ? (
+              <div className="relative" ref={mobileDateDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setMobileDateDropdownOpen((prev) => !prev)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#e4ded2] bg-white px-2.5 py-1 text-xs font-semibold text-[#555a64] shadow-2xs hover:border-[#a78347] transition cursor-pointer"
+                  aria-expanded={mobileDateDropdownOpen}
+                >
+                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 text-[#8a7040]" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                  <span className="whitespace-nowrap">{dateRangeLabel}</span>
+                  <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 text-[#8c827a]" fill="currentColor">
+                    <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.25a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                  </svg>
+                </button>
+                {mobileDateDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-[#e4ded2] bg-white p-2 shadow-lg z-50 text-xs">
+                    <p className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#7c828d]">Välj tidsintervall</p>
+                    {datePresets.map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => handleSelectPeriod(preset.id)}
+                        className={`w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl text-left transition whitespace-nowrap cursor-pointer ${
+                          overviewPeriod === preset.id ? "bg-[#f5efdf] text-[#8a7040] font-bold" : "text-[#1f2328] hover:bg-[#f5f1e8]"
+                        }`}
+                      >
+                        <span className="text-xs font-semibold">{preset.label}</span>
+                        <span className="text-[11px] text-[#7c828d]">{preset.range}</span>
+                      </button>
+                    ))}
                   </div>
-                  <div className="py-2 space-y-1">
-                    <Link
-                      href="/"
-                      target="_blank"
-                      className="block px-2 py-1.5 rounded-lg text-[#1f2328] hover:bg-[#f5f1e8]"
-                    >
-                      Öppna restaurangens hemsida
-                    </Link>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setActiveTab("installningar");
-                        setShowProfileMenu(false);
-                      }}
-                      className="w-full text-left px-2 py-1.5 rounded-lg text-[#1f2328] hover:bg-[#f5f1e8]"
-                    >
-                      Kontoinställningar
-                    </button>
-                  </div>
-                  <div className="border-t border-[#ede7db] pt-2">
-                    <AdminLogoutButton className="w-full justify-center" />
-                  </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            ) : (
+              <span className="text-[11px] font-medium text-[#8c827a]">
+                {tabHeaderTitles[activeTab] ?? activeTab}
+              </span>
+            )}
           </div>
         </header>
 
@@ -1362,17 +1709,70 @@ export function AdminDashboard({
               {overviewError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-2.5 text-xs text-red-800">{overviewError} Visade värden är 0 tills serverdatan kan hämtas.</p>}
               {orderingError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-2.5 text-xs text-red-800">{orderingError}</p>}
               
-              {/* TOP 5 KPI STAT CARDS */}
-              <section aria-label="Översikt" aria-busy={overviewLoading}>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-2.5">
+              {/* RECONCILIATION DISCREPANCY WARNING BANNER */}
+              {overview?.metrics.reconciliation?.status === "discrepancy_detected" && (
+                <div
+                  role="alert"
+                  data-testid="reconciliation-warning"
+                  className="rounded-2xl border border-amber-300 bg-amber-50 p-3.5 sm:p-4 text-amber-950 shadow-xs"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-xl sm:text-2xl shrink-0" aria-hidden="true">⚠️</span>
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h3 className="text-sm font-bold text-amber-950">
+                          Ekonomiska avvikelser upptäckta – siffrorna behöver stämmas av.
+                        </h3>
+                        <span className="text-[11px] font-bold bg-amber-200/70 text-amber-900 px-2 py-0.5 rounded-full">
+                          {overview.metrics.reconciliation.discrepancies.length} {overview.metrics.reconciliation.discrepancies.length === 1 ? "avvikelse" : "avvikelser"}
+                        </span>
+                      </div>
+                      <p className="text-xs text-amber-900/90 leading-relaxed">
+                        Transaktionsavvikelser identifierades mellan beställningar och betalningsposter. Ej verifierade elektroniska belopp har exkluderats från brutto- och nettointäkter för att förhindra felaktig redovisning.
+                      </p>
+                      {/* Discrepancy details */}
+                      <div className="mt-2.5 space-y-1.5 border-t border-amber-200/70 pt-2 text-[11px]">
+                        {overview.metrics.reconciliation.discrepancies.map((d, i) => (
+                          <div key={i} className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-amber-950/90">
+                            <span className="font-mono font-semibold bg-amber-100/90 border border-amber-300/60 px-1.5 py-0.5 rounded text-[10.5px]">
+                              Order {d.orderId}
+                            </span>
+                            <span className="font-semibold bg-amber-200/60 px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider text-amber-900">
+                              {d.type}
+                            </span>
+                            <span className="text-amber-900/80">{d.detail}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* RECONCILIATION CLEAN NOTICE */}
+              {overview?.metrics.reconciliation?.status === "clean" && (
+                <div
+                  data-testid="reconciliation-clean"
+                  className="flex items-center gap-2 text-[11.5px] font-medium text-[#15803d] bg-[#f0fdf4] border border-[#dcfce7] px-3 py-1.5 rounded-xl shadow-2xs"
+                >
+                  <span className="inline-block size-2 rounded-full bg-[#15803d]" />
+                  <span>Ekonomisk avstämning: OK – alla transaktioner i vald period är fullt verifierade mot betalningsposter.</span>
+                </div>
+              )}
+
+              {/* TOP FINANCIAL & OPERATIONAL KPI STAT CARDS */}
+              <section aria-label="Ekonomisk översikt" aria-busy={overviewLoading}>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-2.5">
                   {[
                     {
-                      title: overviewPeriod === "today" ? "Dagens intäkt" : overviewPeriod === "yesterday" ? "Gårdagens intäkt" : "Total intäkt",
-                      value: overview ? money(overview.metrics.revenueSek) : "—",
-                      change: overview ? `${overview.metrics.paidStripeOrders} betalda online` : "Laddar...",
+                      id: "gross",
+                      title: "Bruttoförsäljning",
+                      testId: "kpi-gross-revenue",
+                      value: overview ? money(overview.metrics.grossRevenueSek) : "—",
+                      change: overview ? `${overview.metrics.paidOnlineOrders ?? overview.metrics.paidStripeOrders} betalda online` : "Laddar...",
                       changeColor: "text-[#15803d]",
                       icon: (
-                        <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
                           <rect x="2" y="5" width="20" height="14" rx="2" />
                           <line x1="2" y1="10" x2="22" y2="10" />
                           <circle cx="12" cy="15" r="1.5" />
@@ -1381,12 +1781,47 @@ export function AdminDashboard({
                       iconBg: "bg-[#f5efdf] text-[#a78347]",
                     },
                     {
+                      id: "refunds",
+                      title: "Registrerade återbetalningar",
+                      testId: "kpi-refunds",
+                      value: overview ? money(overview.metrics.refundedSek) : "—",
+                      valueColor: overview && overview.metrics.refundedSek > 0 ? "text-[#e04f44]" : "text-[#1f2328]",
+                      change: overview ? (overview.metrics.refundBreakdown?.refundCount ? `${overview.metrics.refundBreakdown.refundCount} st registrerade` : "Inga återbetalningar") : "Laddar...",
+                      changeColor: overview && overview.metrics.refundedSek > 0 ? "text-[#e04f44]" : "text-[#7c828d]",
+                      icon: (
+                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+                          <polyline points="9 14 4 9 9 4" />
+                          <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+                        </svg>
+                      ),
+                      iconBg: "bg-[#fef2f2] text-[#e04f44]",
+                    },
+                    {
+                      id: "net",
+                      title: "Nettoförsäljning",
+                      testId: "kpi-net-revenue",
+                      value: overview ? money(overview.metrics.netRevenueSek) : "—",
+                      valueColor: overview ? (overview.metrics.netRevenueSek < 0 ? "text-[#e04f44]" : "text-[#15803d]") : "text-[#1f2328]",
+                      change: "Brutto minus återbetalningar",
+                      changeColor: "text-[#7c828d]",
+                      icon: (
+                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+                          <line x1="18" y1="20" x2="18" y2="10" />
+                          <line x1="12" y1="20" x2="12" y2="4" />
+                          <line x1="6" y1="20" x2="6" y2="14" />
+                        </svg>
+                      ),
+                      iconBg: "bg-[#f0fdf4] text-[#15803d]",
+                    },
+                    {
+                      id: "orders",
                       title: overviewPeriod === "today" ? "Beställningar idag" : overviewPeriod === "yesterday" ? "Beställningar igår" : "Beställningar",
+                      testId: "kpi-orders",
                       value: overview ? `${overview.metrics.orders} st` : "—",
                       change: overview ? `${overview.metrics.orders} genomförda` : "Laddar...",
                       changeColor: "text-[#7c828d]",
                       icon: (
-                        <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 7H6" />
                           <circle cx="10" cy="21" r="1" />
                           <circle cx="18" cy="21" r="1" />
@@ -1395,12 +1830,14 @@ export function AdminDashboard({
                       iconBg: "bg-[#f5efdf] text-[#a78347]",
                     },
                     {
+                      id: "active",
                       title: "Pågående ordrar",
+                      testId: "kpi-active-orders",
                       value: overview ? `${overview.metrics.activeOrders} st` : "—",
                       change: overview && overview.metrics.activeOrders > 0 ? "Kräver åtgärd" : "Inga aktiva just nu",
                       changeColor: overview && overview.metrics.activeOrders > 0 ? "text-[#b45309]" : "text-[#7c828d]",
                       icon: (
-                        <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
                           <circle cx="12" cy="12" r="9" />
                           <path d="M12 7v5l3 2" />
                         </svg>
@@ -1408,52 +1845,35 @@ export function AdminDashboard({
                       iconBg: "bg-[#f5efdf] text-[#a78347]",
                     },
                     {
-                      title: "Ej betalda",
-                      value: overview ? `${overview.metrics.unpaidOrders} st` : "—",
-                      valueColor: overview && overview.metrics.unpaidOrders > 0 ? "text-[#e04f44]" : "text-[#1f2328]",
-                      change: overview ? money(overview.metrics.unpaidSek) : "0 kr",
-                      changeColor: "text-[#7c828d]",
-                      hasArrow: true,
-                      icon: (
-                        <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="2" y="5" width="20" height="14" rx="2" />
-                          <line x1="2" y1="10" x2="22" y2="10" />
-                        </svg>
-                      ),
-                      iconBg: "bg-[#fef2f2] text-[#e04f44]",
-                    },
-                    {
+                      id: "avg",
                       title: "Snitt ordervärde",
+                      testId: "kpi-average-order",
                       value: overview ? (overview.metrics.averageOrderSek > 0 ? money(overview.metrics.averageOrderSek) : "0 kr") : "—",
                       change: "Per slutförd order",
                       changeColor: "text-[#7c828d]",
                       icon: (
-                        <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M4 19V5M10 19V9M16 19V3M22 19v-7" />
                         </svg>
                       ),
                       iconBg: "bg-[#f5efdf] text-[#a78347]",
                     },
-                  ].map((card, idx) => (
+                  ].map((card) => (
                     <div
-                      key={card.title}
-                      className={`min-w-0 rounded-xl border border-[#e7e1d5] bg-white p-2.5 sm:p-3 shadow-xs ${
-                        idx === 4 ? "col-span-2 sm:col-span-1" : ""
-                      }`}
+                      key={card.id}
+                      data-testid={card.testId}
+                      className="min-w-0 rounded-xl border border-[#e7e1d5] bg-white p-2.5 sm:p-3 shadow-xs"
                     >
                       <div className="flex items-center justify-between gap-1">
-                        <p className="text-[11px] font-semibold text-[#7c828d] whitespace-nowrap">{card.title}</p>
-                        <div className="flex items-center gap-0.5">
-                          <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full ${card.iconBg}`}>
-                            {card.icon}
-                          </span>
-                          {card.hasArrow && <span className="text-[10px] text-[#a09a90]">›</span>}
-                        </div>
+                        <p className="text-[10.5px] font-semibold text-[#7c828d] truncate">{card.title}</p>
+                        <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full ${card.iconBg}`}>
+                          {card.icon}
+                        </span>
                       </div>
-                      <p className={`mt-1 text-base sm:text-lg font-bold tracking-tight ${card.valueColor ?? "text-[#1f2328]"}`}>
+                      <p className={`mt-1 text-base sm:text-lg font-bold tracking-tight truncate ${card.valueColor ?? "text-[#1f2328]"}`}>
                         {card.value}
                       </p>
-                      <p className={`mt-0.5 text-[10px] sm:text-[11px] font-medium whitespace-nowrap ${card.changeColor}`}>
+                      <p className={`mt-0.5 text-[10px] sm:text-[10.5px] font-medium truncate ${card.changeColor}`}>
                         {card.change}
                       </p>
                     </div>
@@ -1500,7 +1920,14 @@ export function AdminDashboard({
 
                   {/* The Combo Chart */}
                   <div className="mt-3 w-full">
-                    <OverviewChart data={overview?.chart ?? []} totalRevenue={overview?.metrics.revenueSek ?? 0} totalOrders={overview?.metrics.orders ?? 0} />
+                    <OverviewChart
+                      data={overview?.chart ?? []}
+                      totalGross={overview?.metrics.grossRevenueSek ?? 0}
+                      totalRefunds={overview?.metrics.refundedSek ?? 0}
+                      totalNet={overview?.metrics.netRevenueSek ?? 0}
+                      totalOrders={overview?.metrics.orders ?? 0}
+                      definitions={overview?.definitions}
+                    />
                   </div>
                 </div>
                   {/* Orders Table Card (8 cols) */}
@@ -1520,7 +1947,7 @@ export function AdminDashboard({
 
                         {/* Filter buttons */}
                         <div className="flex flex-wrap items-center gap-1.5 text-xs font-medium">
-                          {(["Alla", "Nya", "Mottagna", "Förbereds", "Klara", "Slutförda"] as const).map((filter) => {
+                          {(["Alla", "Nya", "Mottagna", "Förbereds", "Klara", "Slutförda", "Avbrutna", "Återbetalda"] as const).map((filter) => {
                             return (
                               <button
                                 key={filter}
@@ -1622,7 +2049,11 @@ export function AdminDashboard({
                                 <td className="py-3.5 px-3">
                                   <PaymentMethodBadge method={ord.paymentMethod} />
                                   <div className="mt-0.5">
-                                    {ord.paymentStatus === "Betald" ? (
+                                    {ord.paymentStatus === "Återbetald" ? (
+                                      <span className="inline-block text-[10.5px] font-semibold text-[#6b7280]">
+                                        Återbetald
+                                      </span>
+                                    ) : ord.paymentStatus === "Betald" ? (
                                       <span className="inline-block text-[10.5px] font-semibold text-[#15803d]">
                                         Betald
                                       </span>
@@ -1954,7 +2385,7 @@ export function AdminDashboard({
 
                 {/* Status Filter Pills */}
                 <div className="flex flex-wrap items-center gap-1 rounded-xl bg-white border border-[#e4ded2] p-1 text-xs">
-                  {(["Alla", "Nya", "Mottagna", "Förbereds", "Klara", "Slutförda"] as const).map((filter) => (
+                  {(["Alla", "Nya", "Mottagna", "Förbereds", "Klara", "Slutförda", "Avbrutna", "Återbetalda"] as const).map((filter) => (
                     <button
                       key={filter}
                       type="button"
@@ -2074,7 +2505,11 @@ export function AdminDashboard({
                               <td className="py-3.5 px-3">
                                 <PaymentMethodBadge method={ord.paymentMethod} />
                                 <div className="mt-0.5">
-                                  {ord.paymentStatus === "Betald" ? (
+                                  {ord.paymentStatus === "Återbetald" ? (
+                                    <span className="inline-block text-[10.5px] font-semibold text-[#6b7280]">
+                                      Återbetald
+                                    </span>
+                                  ) : ord.paymentStatus === "Betald" ? (
                                     <span className="inline-block text-[10.5px] font-semibold text-[#15803d]">
                                       Betald
                                     </span>
@@ -2194,112 +2629,7 @@ export function AdminDashboard({
             /* ========================================================================= */
             /* TAB: INSTÄLLNINGAR FULL VIEW                                              */
             /* ========================================================================= */
-            <div className="max-w-2xl space-y-6">
-              <div className="border-b border-[#e8e2d5] pb-4">
-                <h2 className="font-serif text-2xl font-bold text-[#1f2328]">Säkerhet &amp; Inställningar</h2>
-                <p className="text-xs text-[#7c828d]">Hantera administratörskontot och lösenord</p>
-              </div>
-
-              <div className="rounded-2xl border border-[#e7e1d5] bg-white p-6 shadow-xs space-y-5">
-                <h3 className="text-sm font-bold text-[#1f2328]">Byt lösenord för {adminEmail}</h3>
-
-                {pwMsg && (
-                  <div
-                    className={`rounded-xl p-3 text-xs font-medium ${
-                      pwMsg.startsWith("success:")
-                        ? "bg-[#f0fdf4] text-[#15803d] border border-[#bbf7d0]"
-                        : "bg-[#fef2f2] text-[#b91c1c] border border-[#fecaca]"
-                    }`}
-                  >
-                    {pwMsg.replace("success:", "")}
-                  </div>
-                )}
-
-                <form onSubmit={handlePasswordChange} className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold text-[#1f2328]">
-                      Nuvarande lösenord
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showCurrentPw ? "text" : "password"}
-                        required
-                        value={currentPw}
-                        onChange={(e) => setCurrentPw(e.target.value)}
-                        className="w-full rounded-xl border border-[#e4ded2] bg-[#faf8f4] px-3.5 py-2.5 pr-11 text-xs text-[#1f2328] outline-none transition focus:border-[#b88e4d] focus:bg-white"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowCurrentPw((prev) => !prev)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#7c828d] transition hover:text-[#1f2328] focus:outline-none"
-                        aria-label={showCurrentPw ? "Dölj lösenord" : "Visa lösenord"}
-                        title={showCurrentPw ? "Dölj lösenord" : "Visa lösenord"}
-                      >
-                        {showCurrentPw ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold text-[#1f2328]">
-                      Nytt lösenord
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showNewPw ? "text" : "password"}
-                        required
-                        placeholder="Minst 8 tecken"
-                        value={newPw}
-                        onChange={(e) => setNewPw(e.target.value)}
-                        className="w-full rounded-xl border border-[#e4ded2] bg-[#faf8f4] px-3.5 py-2.5 pr-11 text-xs text-[#1f2328] outline-none transition focus:border-[#b88e4d] focus:bg-white"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowNewPw((prev) => !prev)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#7c828d] transition hover:text-[#1f2328] focus:outline-none"
-                        aria-label={showNewPw ? "Dölj lösenord" : "Visa lösenord"}
-                        title={showNewPw ? "Dölj lösenord" : "Visa lösenord"}
-                      >
-                        {showNewPw ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold text-[#1f2328]">
-                      Bekräfta nytt lösenord
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showConfirmPw ? "text" : "password"}
-                        required
-                        placeholder="Upprepa lösenordet"
-                        value={confirmPw}
-                        onChange={(e) => setConfirmPw(e.target.value)}
-                        className="w-full rounded-xl border border-[#e4ded2] bg-[#faf8f4] px-3.5 py-2.5 pr-11 text-xs text-[#1f2328] outline-none transition focus:border-[#b88e4d] focus:bg-white"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPw((prev) => !prev)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#7c828d] transition hover:text-[#1f2328] focus:outline-none"
-                        aria-label={showConfirmPw ? "Dölj lösenord" : "Visa lösenord"}
-                        title={showConfirmPw ? "Dölj lösenord" : "Visa lösenord"}
-                      >
-                        {showConfirmPw ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={passwordBusy}
-                    className="rounded-xl bg-[#a78347] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#96743b] transition disabled:opacity-50"
-                  >
-                    {passwordBusy ? "Uppdaterar…" : "Uppdatera lösenord"}
-                  </button>
-                </form>
-              </div>
-            </div>
+            <AdminSettingsTab adminEmail={adminEmail} />
           ) : activeTab === "fakturor" ? (
             <AdminInvoicesTab
               orders={ordersApi.list?.orders ?? []}
@@ -2313,6 +2643,10 @@ export function AdminDashboard({
             />
           ) : activeTab === "oppettider" ? (
             <AdminHoursTab />
+          ) : activeTab === "kategorier" ? (
+            <AdminCategoriesTab />
+          ) : activeTab === "tillagg" ? (
+            <AdminModifiersTab />
           ) : (
             /* Fallback generic view for other tabs */
             <div className="rounded-2xl border border-[#e7e1d5] bg-white p-8 shadow-xs text-center space-y-4">
@@ -2346,6 +2680,8 @@ export function AdminDashboard({
           onClose={() => ordersApi.setSelected(null)}
           onTransition={(to) => void ordersApi.transition(ordersApi.selected!.publicId, ordersApi.selected!.fulfillmentStatus, to)}
           onCollectPayment={(method) => void ordersApi.collectPayment(ordersApi.selected!.publicId, method)}
+          onCancelOrder={(category, note) => ordersApi.cancelOrder(ordersApi.selected!.publicId, category, note)}
+          onRecordRefund={(data) => ordersApi.recordRefund(ordersApi.selected!.publicId, data)}
           onViewReceipt={(ord) => {
             setViewingReceipt({
               orderNumber: ord.publicId,
@@ -2353,13 +2689,20 @@ export function AdminDashboard({
               phone: ord.phone,
               date: ord.createdAt ? new Date(ord.createdAt).toLocaleDateString("sv-SE") : new Date().toLocaleDateString("sv-SE"),
               paymentMethod: ord.paymentMethod === "card" ? "Stripe · kort" : ord.paymentMethod === "swish" ? "Swish" : "Betala på plats",
-              paymentStatus: ord.paymentStatus === "paid" ? "Betald" : "Väntar på betalning",
+              paymentStatus: ord.paymentStatus === "refunded" ? "Återbetald" : ord.paymentStatus === "paid" ? "Betald" : "Väntar på betalning",
               totalSek: ord.totalSek,
               items: ord.items.map((it) => ({
                 description: it.name,
                 quantity: it.quantity,
                 unitPriceSek: it.basePriceSek || Math.round(it.lineTotalSek / Math.max(1, it.quantity)),
               })),
+              seller: ord.sellerSnapshot ? {
+                name: ord.sellerSnapshot.name,
+                legalName: ord.sellerSnapshot.legalName,
+                street: ord.sellerSnapshot.street,
+                city: ord.sellerSnapshot.city,
+                phone: ord.sellerSnapshot.phone,
+              } : undefined,
             });
           }}
         />
@@ -2407,19 +2750,21 @@ export function AdminDashboard({
               <span>Visa kvitto</span>
             </button>
 
-            {/* 3: Avbryt beställning */}
-            <button
-              type="button"
-              onClick={() => {
-                const ord = activeActionMenu.order;
-                setActiveActionMenu(null);
-                void handleCancelOrder(ord.id);
-              }}
-              className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 transition cursor-pointer border-t border-[#f2ede4] mt-1 pt-1.5"
-            >
-              <span className="text-sm">🚫</span>
-              <span>Avbryt beställning</span>
-            </button>
+            {/* 3: Avbryt / Återbetala beställning */}
+            {activeActionMenu.order.rawStatus !== "CANCELLED" && activeActionMenu.order.paymentStatus !== "Återbetald" && (
+              <button
+                type="button"
+                onClick={() => {
+                  const ord = activeActionMenu.order;
+                  setActiveActionMenu(null);
+                  void ordersApi.open(ord.id);
+                }}
+                className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 transition cursor-pointer border-t border-[#f2ede4] mt-1 pt-1.5"
+              >
+                <span className="text-sm">🚫</span>
+                <span>{activeActionMenu.order.paymentStatus === "Betald" ? "Återbetala / Hantera" : "Avbryt beställning"}</span>
+              </button>
+            )}
           </div>
         </div>,
         document.body

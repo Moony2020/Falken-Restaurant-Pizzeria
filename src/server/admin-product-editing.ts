@@ -13,6 +13,12 @@ const variant = z.object({
   priceStatus: z.enum(["confirmed", "needs_review"]),
 }).strict();
 
+const ingredient = z
+  .string()
+  .trim()
+  .min(1, "Ingrediens får inte vara tom")
+  .max(60, "Ingrediens kan max vara 60 tecken");
+
 export const productEditSchema = z.object({
   expectedRevision: z.number().int().min(0),
   nameSv: z.string().trim().min(1).max(140),
@@ -21,9 +27,21 @@ export const productEditSchema = z.object({
   active: z.boolean(),
   sortOrder: z.number().int().min(-10_000).max(10_000),
   variants: z.array(variant).min(1),
+  ingredients: z.array(ingredient).max(30, "Max 30 ingredienser per produkt").optional(),
 }).strict().superRefine((value, ctx) => {
   if (new Set(value.variants.map((item) => item.id)).size !== value.variants.length) {
     ctx.addIssue({ code: "custom", message: "Variant ids must be unique", path: ["variants"] });
+  }
+  if (value.ingredients !== undefined) {
+    const normalized = value.ingredients.map((ing) => ing.trim().toLowerCase());
+    const unique = new Set(normalized);
+    if (unique.size !== normalized.length) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Ingredienser kan inte innehålla dubbletter",
+        path: ["ingredients"],
+      });
+    }
   }
 });
 
@@ -36,6 +54,7 @@ type ProductLike = Partial<ProductDoc> & {
   sortOrder: number;
   active: boolean;
   variants: ProductDoc["variants"];
+  ingredients?: string[];
   __v?: number;
   updatedAt?: Date | string | null;
 };
@@ -49,6 +68,7 @@ const publicProduct = (product: ProductLike) => ({
   active: product.active,
   sortOrder: product.sortOrder,
   variants: product.variants,
+  ingredients: Array.isArray(product.ingredients) ? product.ingredients : [],
   revision: product.__v ?? 0,
   updatedAt: product.updatedAt ? new Date(product.updatedAt).toISOString() : null,
 });
@@ -80,6 +100,7 @@ function stableRequest(slug: string, input: ProductEdit) {
       available: item.available,
       priceStatus: item.priceStatus,
     })),
+    ingredients: input.ingredients !== undefined ? input.ingredients.map((item) => item.trim()) : null,
   });
 }
 
@@ -189,6 +210,7 @@ export async function updateAdminProduct(
           available: item.available,
           priceStatus: item.priceStatus,
         })),
+        ingredients: Array.isArray(current.ingredients) ? [...current.ingredients] : [],
       };
 
       current.nameSv = input.nameSv;
@@ -210,6 +232,14 @@ export async function updateAdminProduct(
           priceStatus: edited.priceStatus,
         };
       });
+
+      // CRITICAL A6.3b SAFETY:
+      // An omitted ingredients field MUST preserve existing product ingredients unchanged.
+      // An explicitly submitted array (including empty array) updates the recipe.
+      if (input.ingredients !== undefined) {
+        current.ingredients = input.ingredients.map((item) => item.trim());
+      }
+
       await current.save({ session });
 
       await AuditLogModel.create([{
@@ -236,6 +266,7 @@ export async function updateAdminProduct(
               available: item.available,
               priceStatus: item.priceStatus,
             })),
+            ingredients: Array.isArray(current.ingredients) ? [...current.ingredients] : [],
           },
         },
       }], { session });

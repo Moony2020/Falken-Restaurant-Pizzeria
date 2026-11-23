@@ -1,9 +1,14 @@
+"use client";
+
 import Link from "next/link";
-import { CURRENT_SEASON, hoursDisplay, mapsUrl, nav, site } from "@/data/site";
+import { CURRENT_SEASON, hoursDisplay, nav } from "@/data/site";
+import { useRestaurantSettings } from "@/lib/use-restaurant-settings";
 import { FacebookIcon, InstagramIcon, MailIcon, PhoneIcon, PinIcon } from "./icons";
 import { Logo } from "./logo";
 
 export function Footer() {
+  const { settings } = useRestaurantSettings();
+
   return (
     <footer className="bg-ink text-ivory">
       <div className="wrap grid gap-12 py-16 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1.2fr_1.2fr]">
@@ -14,22 +19,22 @@ export function Footer() {
           </p>
           <div className="flex items-center gap-3 pt-2">
             <a
-              href={site.social.facebook}
+              href={settings.social.facebook}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Följ Falken på Facebook"
+              aria-label={`Följ ${settings.name} på Facebook`}
               className="group flex size-10 items-center justify-center rounded-full border border-gold/40 bg-white/5 text-gold transition-all duration-300 hover:border-gold hover:bg-gold hover:text-ink hover:scale-105 shadow-sm"
-              title="Följ Falken på Facebook"
+              title={`Följ ${settings.name} på Facebook`}
             >
               <FacebookIcon className="size-5 transition-transform group-hover:scale-110" />
             </a>
             <a
-              href={site.social.instagram}
+              href={settings.social.instagram}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Följ Falken på Instagram"
+              aria-label={`Följ ${settings.name} på Instagram`}
               className="group flex size-10 items-center justify-center rounded-full border border-gold/40 bg-white/5 text-gold transition-all duration-300 hover:border-gold hover:bg-gold hover:text-ink hover:scale-105 shadow-sm"
-              title="Följ Falken på Instagram"
+              title={`Följ ${settings.name} på Instagram`}
             >
               <InstagramIcon className="size-5 transition-transform group-hover:scale-110" />
             </a>
@@ -52,21 +57,21 @@ export function Footer() {
         <div>
           <h2 className="font-display text-xl text-gold">Hitta hit</h2>
           <address className="mt-4 space-y-3 text-sm not-italic text-ivory/85">
-            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="flex gap-3 hover:text-gold">
+            <a href={settings.mapsUrl} target="_blank" rel="noopener noreferrer" className="flex gap-3 hover:text-gold">
               <PinIcon className="mt-0.5 size-5 shrink-0 text-gold" />
               <span>
-                {site.address.street}
+                {settings.address.street}
                 <br />
-                {site.address.zip} {site.address.city}
+                {settings.address.zip} {settings.address.city}
               </span>
             </a>
-            <a href={site.phoneHref} className="flex items-center gap-3 hover:text-gold">
+            <a href={settings.phoneHref} className="flex items-center gap-3 hover:text-gold">
               <PhoneIcon className="size-5 shrink-0 text-gold" />
-              {site.phone}
+              {settings.phone}
             </a>
-            <a href={`mailto:${site.email}`} className="flex items-center gap-3 break-all hover:text-gold">
+            <a href={`mailto:${settings.email}`} className="flex items-center gap-3 break-all hover:text-gold">
               <MailIcon className="size-5 shrink-0 text-gold" />
-              {site.email}
+              {settings.email}
             </a>
           </address>
         </div>
@@ -91,7 +96,7 @@ export function Footer() {
 
       <div className="border-t border-ink-3">
         <div className="wrap py-6 text-center text-xs text-muted-dark">
-          <p>© {site.legalName}. Alla rättigheter förbehållna.</p>
+          <p>© {settings.legalName}. Alla rättigheter förbehållna.</p>
         </div>
       </div>
     </footer>

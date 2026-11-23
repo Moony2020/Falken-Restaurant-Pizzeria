@@ -11,7 +11,8 @@ import {
   PinIcon,
 } from "@/components/icons";
 import { useRestaurantStatus } from "@/lib/use-restaurant-status";
-import { CURRENT_SEASON, hoursDisplay, mapsUrl, site } from "@/data/site";
+import { useRestaurantSettings } from "@/lib/use-restaurant-settings";
+import { CURRENT_SEASON, hoursDisplay } from "@/data/site";
 
 const emptySubscribe = () => () => {};
 const getClientDay = () => new Date().getDay();
@@ -41,6 +42,7 @@ function isDayMatchingRow(daysString: string, dayOfWeek: number): boolean {
 
 export function HomeVisit() {
   const { status } = useRestaurantStatus();
+  const { settings } = useRestaurantSettings();
   const currentDay = useSyncExternalStore(emptySubscribe, getClientDay, getServerDay);
 
   return (
@@ -68,7 +70,7 @@ export function HomeVisit() {
             Hitta till Falken
           </h3>
           <p className="mt-2 text-xs sm:text-sm text-muted leading-relaxed max-w-md">
-            Slå dig ner i vår ombonade restaurang på Skolgatan 4 eller sväng förbi för att hämta din nylagade beställning.
+            Slå dig ner i vår ombonade restaurang på {settings.address.street} eller sväng förbi för att hämta din nylagade beställning.
           </p>
 
           {/* Interactive Info Rows with Gold Badge Icons */}
@@ -76,7 +78,7 @@ export function HomeVisit() {
             
             {/* Address */}
             <a
-              href={mapsUrl}
+              href={settings.mapsUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="group flex items-start gap-3.5 p-3 rounded-xl border border-transparent transition-all duration-200 hover:border-gold/30 hover:bg-[#fbf9f5]"
@@ -87,12 +89,12 @@ export function HomeVisit() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-ink group-hover:text-gold-deep transition-colors">
-                    {site.legalName}
+                    {settings.legalName}
                   </p>
                   <ArrowIcon className="size-3.5 text-muted opacity-0 -translate-x-1 transition-all group-hover:opacity-100 group-hover:translate-x-0" />
                 </div>
                 <p className="text-xs text-muted mt-0.5">
-                  {site.address.street}, {site.address.zip} {site.address.city}
+                  {settings.address.street}, {settings.address.zip} {settings.address.city}
                 </p>
                 <span className="inline-block text-[0.68rem] text-emerald-700 font-medium mt-1">
                   • Gratis parkering direkt vid entrén
@@ -102,7 +104,7 @@ export function HomeVisit() {
 
             {/* Phone */}
             <a
-              href={site.phoneHref}
+              href={settings.phoneHref}
               className="group flex items-start gap-3.5 p-3 rounded-xl border border-transparent transition-all duration-200 hover:border-gold/30 hover:bg-[#fbf9f5]"
             >
               <div className="size-10 rounded-full border border-gold/40 bg-gold/10 flex items-center justify-center text-gold-deep shrink-0 transition-transform group-hover:scale-105">
@@ -111,7 +113,7 @@ export function HomeVisit() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-ink group-hover:text-gold-deep transition-colors">
-                    {site.phone}
+                    {settings.phone}
                   </p>
                   <span className="text-[0.7rem] font-medium text-gold-deep uppercase tracking-wider">Ring nu</span>
                 </div>
@@ -123,7 +125,7 @@ export function HomeVisit() {
 
             {/* Email */}
             <a
-              href={`mailto:${site.email}`}
+              href={`mailto:${settings.email}`}
               className="group flex items-start gap-3.5 p-3 rounded-xl border border-transparent transition-all duration-200 hover:border-gold/30 hover:bg-[#fbf9f5]"
             >
               <div className="size-10 rounded-full border border-gold/40 bg-gold/10 flex items-center justify-center text-gold-deep shrink-0 transition-transform group-hover:scale-105">
@@ -131,7 +133,7 @@ export function HomeVisit() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-ink break-all group-hover:text-gold-deep transition-colors">
-                  {site.email}
+                  {settings.email}
                 </p>
                 <p className="text-xs text-muted mt-0.5">
                   Frågor gällande catering, fakturor eller evenemang
@@ -145,13 +147,13 @@ export function HomeVisit() {
         {/* Action Buttons: Side-by-side on all screens with compact sizing */}
         <div className="relative z-10 mt-6 pt-4 border-t border-[#ede6da] flex items-center gap-2 sm:gap-3">
           <a
-            href={site.phoneHref}
+            href={settings.phoneHref}
             className="inline-flex flex-1 items-center justify-center gap-1.5 sm:gap-2 rounded-full bg-gradient-to-r from-gold via-[#d4af37] to-gold-deep text-ink font-semibold text-xs sm:text-sm px-2 sm:px-4 py-2.5 sm:py-3 min-h-10 sm:min-h-11 shadow-sm transition-all duration-200 hover:shadow-md hover:brightness-105 active:scale-[0.98] whitespace-nowrap"
           >
             <PhoneIcon className="size-3.5 sm:size-4 shrink-0" /> Ring och beställ
           </a>
           <a
-            href={mapsUrl}
+            href={settings.mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex flex-1 items-center justify-center gap-1.5 sm:gap-2 rounded-full border border-[#ede6da] bg-white px-2 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-semibold text-ink min-h-10 sm:min-h-11 transition-all duration-200 hover:border-gold hover:bg-[#fbf9f5] active:scale-[0.98] whitespace-nowrap"

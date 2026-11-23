@@ -1,3 +1,43 @@
+/**
+ * Seller identity for a receipt. Callers should prefer the immutable sellerSnapshot
+ * stored on the order. If the order pre-dates the snapshot feature (legacy order),
+ * supply LEGACY_SELLER_FALLBACK which uses the approved site defaults.
+ * Never reconstruct a snapshot by querying current settings and attributing it to a past sale.
+ */
+export type ReceiptSeller = {
+  /** Display / trading name shown on receipt. */
+  name: string;
+  /** Legal business name, if configured and materially different. */
+  legalName?: string;
+  /** Address line, e.g. "Skolgatan 4". */
+  street?: string;
+  /** City, e.g. "Vintrosa". */
+  city?: string;
+  /** Phone number, e.g. "019 29 48 98". */
+  phone?: string;
+};
+
+/** Legal name display policy: show legal name only when present and materially different from trading name. */
+export function shouldDisplayLegalName(seller: ReceiptSeller): boolean {
+  if (!seller.legalName) return false;
+  const legal = seller.legalName.trim();
+  const trade = seller.name.trim();
+  if (!legal) return false;
+  return legal.toLowerCase() !== trade.toLowerCase();
+}
+
+/**
+ * Safe fallback for legacy orders that have no sellerSnapshot.
+ * Values sourced from verified site defaults (data/site.ts). Do NOT backfill into the DB.
+ */
+export const LEGACY_SELLER_FALLBACK: ReceiptSeller = {
+  name: "Falken Restaurang & Pizzeria",
+  legalName: "Restaurang & Pizzeria Falken",
+  street: "Skolgatan 4",
+  city: "Vintrosa",
+  phone: "019 29 48 98",
+};
+
 export type ReceiptPdfInput = {
   orderNumber: string;
   customerName: string;
@@ -7,6 +47,8 @@ export type ReceiptPdfInput = {
   paymentStatus: string;
   totalSek: number;
   items: { description: string; quantity: number; unitPriceSek: number }[];
+  /** Seller identity. Use sellerSnapshot from order doc; fall back to LEGACY_SELLER_FALLBACK for old orders. */
+  seller?: ReceiptSeller;
 };
 
 function sanitizePdfText(str: string): string {
@@ -83,10 +125,18 @@ function pushPdfRoundedRect(
 }
 
 export function downloadReceiptPdf(input: ReceiptPdfInput): void {
+  const seller = input.seller ?? LEGACY_SELLER_FALLBACK;
+  const sellerNameLine = seller.name;
+  const sellerAddressLine = [seller.street, seller.city].filter(Boolean).join(", ");
+  const sellerPhoneLine = seller.phone ? `Tel: ${seller.phone}` : "";
+  const sellerSubtitle = [sellerAddressLine, sellerPhoneLine].filter(Boolean).join(" · ");
+
   const cleanOrderNumber = input.orderNumber.replace(/^#/, "");
-  const isPaid = input.paymentStatus.toLowerCase().includes("betald") || input.paymentStatus.toLowerCase() === "paid";
-  const docTitle = isPaid ? `Kvitto ${cleanOrderNumber}` : `Orderbekräftelse ${cleanOrderNumber}`;
-  const statusLabel = isPaid ? "Betald" : "Väntar på betalning";
+  const statusNormalized = input.paymentStatus.toLowerCase().trim();
+  const isRefunded = statusNormalized === "återbetald" || statusNormalized === "refunded";
+  const isPaid = !isRefunded && (statusNormalized.includes("betald") || statusNormalized === "paid");
+  const docTitle = isPaid || isRefunded ? `Kvitto ${cleanOrderNumber}` : `Orderbekräftelse ${cleanOrderNumber}`;
+  const statusLabel = isRefunded ? "Återbetald" : isPaid ? "Betald" : "Väntar på betalning";
 
   // Standard A4 dimensions in points: 595.28 x 841.89
   const pageWidth = 595.28;
@@ -144,11 +194,20 @@ export function downloadReceiptPdf(input: ReceiptPdfInput): void {
 
   let curY = cardTop - 22;
 
+  const showLegalName = shouldDisplayLegalName(seller);
   // Header branding in gold
-  pushCentered("FALKEN RESTAURANG & PIZZERIA", "/F1", 10.5, curY, 0.64, 0.53, 0.29);
+  pushCentered(sellerNameLine.toUpperCase(), "/F1", 10.5, curY, 0.64, 0.53, 0.29);
   curY -= 14;
-  pushCentered("Kungsbacka - Tel: 0300-123 45", "/F2", 8, curY, 0.49, 0.51, 0.55);
-  curY -= 16;
+  if (showLegalName && seller.legalName) {
+    pushCentered(seller.legalName, "/F2", 8, curY, 0.42, 0.42, 0.45);
+    curY -= 13;
+  }
+  if (sellerSubtitle) {
+    pushCentered(sellerSubtitle, "/F2", 8, curY, 0.49, 0.51, 0.55);
+    curY -= 16;
+  } else {
+    curY -= 4;
+  }
 
   // Pill badge background & text with rounded corners r=8
   const badgeText = docTitle;
@@ -216,10 +275,7 @@ export function downloadReceiptPdf(input: ReceiptPdfInput): void {
   pushDashedLine(curY);
   curY -= 18;
 
-  // Footer note
   pushCentered("Tack för din beställning hos Falken!", "/F2", 8, curY, 0.49, 0.51, 0.55);
-  curY -= 12;
-  pushCentered("Godkänd för F-skatt - Org.nr 556123-4567", "/F2", 7, curY, 0.63, 0.6, 0.56);
 
   const streamContent = streamOps.join("\n");
   const streamLen = new TextEncoder().encode(streamContent).length;
@@ -268,10 +324,20 @@ export function downloadReceiptPdf(input: ReceiptPdfInput): void {
 }
 
 export function printOrderReceipt(input: ReceiptPdfInput): void {
+  const seller = input.seller ?? LEGACY_SELLER_FALLBACK;
+  const sellerNameDisplay = seller.name;
+  const sellerSubtitleParts = [
+    [seller.street, seller.city].filter(Boolean).join(", "),
+    seller.phone ? `Tel: ${seller.phone}` : "",
+  ].filter(Boolean);
+  const sellerSubtitleHtml = sellerSubtitleParts.join(" · ");
+
   const cleanOrderNumber = input.orderNumber.replace(/^#/, "");
-  const isPaid = input.paymentStatus.toLowerCase().includes("betald") || input.paymentStatus.toLowerCase() === "paid";
-  const docTitle = isPaid ? `Kvitto ${cleanOrderNumber}` : `Orderbekräftelse ${cleanOrderNumber}`;
-  const statusLabel = isPaid ? "Betald" : "Väntar på betalning";
+  const statusNormalized = input.paymentStatus.toLowerCase().trim();
+  const isRefunded = statusNormalized === "återbetald" || statusNormalized === "refunded";
+  const isPaid = !isRefunded && (statusNormalized.includes("betald") || statusNormalized === "paid");
+  const docTitle = isPaid || isRefunded ? `Kvitto ${cleanOrderNumber}` : `Orderbekräftelse ${cleanOrderNumber}`;
+  const statusLabel = isRefunded ? "Återbetald" : isPaid ? "Betald" : "Väntar på betalning";
   const vatAmount = Math.round(input.totalSek * 0.1071);
   const subtotalExcl = input.totalSek - vatAmount;
   const suggestedFileName = `kvitto_${cleanOrderNumber}`;
@@ -482,8 +548,9 @@ export function printOrderReceipt(input: ReceiptPdfInput): void {
       <div class="print-meta-date">${nowDateFormatted}</div>
       <div class="container">
         <div class="header">
-          <p class="restaurant-name">Falken Restaurang &amp; Pizzeria</p>
-          <p class="subtitle">Kungsbacka · Tel: 0300-123 45</p>
+          <p class="restaurant-name">${sellerNameDisplay}</p>
+          ${shouldDisplayLegalName(seller) && seller.legalName ? `<p class="legal-name" style="font-size: 10px; color: #555a64; margin: 0 0 4px;">${seller.legalName}</p>` : ""}
+          ${sellerSubtitleHtml ? `<p class="subtitle">${sellerSubtitleHtml}</p>` : ""}
           <div class="doc-badge">${docTitle}</div>
         </div>
         <div class="meta">
@@ -504,7 +571,6 @@ export function printOrderReceipt(input: ReceiptPdfInput): void {
         </div>
         <div class="footer">
           <p style="font-style: italic;">Tack för din beställning hos Falken!</p>
-          <p style="font-size: 9.5px; color: #a09a90;">Godkänd för F-skatt · Org.nr 556123-4567</p>
         </div>
       </div>
     </div>

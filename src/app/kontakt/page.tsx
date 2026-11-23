@@ -1,17 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ClockIcon, MailIcon, PhoneIcon, PinIcon } from "@/components/icons";
+import { ClockIcon } from "@/components/icons";
 import { MapEmbed } from "@/components/map-embed";
 import { OpenStatus } from "@/components/open-status";
 import { ContactHero } from "@/components/contact-hero";
-import { buttonClass, eyebrow } from "@/components/ui";
+import {
+  ContactInfoCards,
+  ContactPickupCard,
+  ContactMapHeader,
+  ContactMapAddress,
+} from "@/components/contact-details";
+import { eyebrow } from "@/components/ui";
 import {
   CURRENT_SEASON,
   dagensLunch,
   hoursDisplay,
-  mapsUrl,
   PREP_MINUTES,
-  site,
   type Season,
 } from "@/data/site";
 
@@ -21,30 +25,6 @@ export const metadata: Metadata = {
     "Kontakta Restaurang & Pizzeria Falken, Skolgatan 4 i Vintrosa. Telefon 019 29 48 98, öppettider och vägbeskrivning.",
   alternates: { canonical: "/kontakt" },
 };
-
-const contacts = [
-  {
-    icon: PinIcon,
-    label: "Adress",
-    value: `${site.address.street}, ${site.address.zip} ${site.address.city}`,
-    href: mapsUrl,
-    external: true,
-  },
-  {
-    icon: PhoneIcon,
-    label: "Telefon",
-    value: site.phone,
-    href: site.phoneHref,
-    external: false,
-  },
-  {
-    icon: MailIcon,
-    label: "E-post",
-    value: site.email,
-    href: `mailto:${site.email}`,
-    external: false,
-  },
-];
 
 const faqs = [
   {
@@ -80,53 +60,7 @@ export default function KontaktPage() {
       <ContactHero />
 
       <div className="wrap grid gap-10 py-14 sm:py-20 lg:grid-cols-[1fr_1.1fr]">
-        <section aria-labelledby="contact-title">
-          <p className={eyebrow}>Hitta oss</p>
-          <h2
-            id="contact-title"
-            className="mt-1 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-5xl"
-          >
-            {site.legalName}
-          </h2>
-          <ul className="mt-8 space-y-3">
-            {contacts.map(({ icon: Icon, label, value, href, external }, idx) => (
-              <li key={label}>
-                <a
-                  href={href}
-                  {...(external
-                    ? { target: "_blank", rel: "noopener noreferrer" }
-                    : {})}
-                  className="group flex items-center gap-4 rounded-2xl border border-line bg-white p-4 shadow-card transition hover:border-gold" data-reveal="fade-up" data-delay={(idx * 100).toString()}
-                >
-                  <span className="grid size-12 shrink-0 place-items-center rounded-full bg-cream text-gold-deep transition group-hover:bg-gold group-hover:text-ink">
-                    <Icon className="size-5" />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-xs uppercase tracking-[0.18em] text-muted">
-                      {label}
-                    </span>
-                    <span className="block break-words font-medium">
-                      {value}
-                    </span>
-                  </span>
-                </a>
-              </li>
-            ))}
-          </ul>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <a
-              href={mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={buttonClass("ink")}
-            >
-              Vägbeskrivning
-            </a>
-            <Link href="/meny" className={buttonClass("gold")}>
-              Beställ online
-            </Link>
-          </div>
-        </section>
+        <ContactInfoCards />
 
         <section
           id="oppettider"
@@ -202,26 +136,7 @@ export default function KontaktPage() {
               </Link>
             </div>
           </div>
-          <div className="flex gap-4 rounded-2xl border border-line bg-white p-6 shadow-card">
-            <span className="grid size-12 shrink-0 place-items-center rounded-full bg-cream text-gold-deep">
-              <PhoneIcon className="size-5" />
-            </span>
-            <div>
-              <h2 className="font-display text-2xl font-semibold">
-                Avhämtning
-              </h2>
-              <p className="mt-1 text-sm text-muted">
-                Klart efter ca {PREP_MINUTES} minuter. Beställ online och välj
-                hämtningstid, eller ring oss på {site.phone}.
-              </p>
-              <Link
-                href="/meny"
-                className="mt-3 inline-block text-sm font-semibold text-gold-deep underline underline-offset-4"
-              >
-                Beställ online
-              </Link>
-            </div>
-          </div>
+          <ContactPickupCard />
         </div>
       </section>
 
@@ -256,29 +171,9 @@ export default function KontaktPage() {
 
       <section aria-labelledby="map-title" className="py-14 sm:py-20">
         <div className="wrap">
-          <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className={eyebrow}>Karta &amp; besök</p>
-              <h2
-                id="map-title"
-                className="mt-1 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-5xl"
-              >
-                Hitta till Falken
-              </h2>
-            </div>
-            <a
-              href={mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={buttonClass("ink")}
-            >
-              Få vägbeskrivning
-            </a>
-          </div>
+          <ContactMapHeader />
           <MapEmbed />
-          <p className="mt-4 text-sm text-muted">
-            {site.address.street}, {site.address.zip} {site.address.city}
-          </p>
+          <ContactMapAddress />
         </div>
       </section>
     </>

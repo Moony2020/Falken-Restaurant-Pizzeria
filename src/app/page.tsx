@@ -15,6 +15,7 @@ import { HomeCulinaryGrid } from "@/components/home-culinary-grid";
 import { HomeReviews } from "@/components/home-reviews";
 import { HomeVisit } from "@/components/home-visit";
 import { buttonClass, eyebrow } from "@/components/ui";
+import { getEffectiveRestaurantSettings } from "@/server/restaurant-settings-service";
 
 const steps = [
   {
@@ -39,7 +40,11 @@ const steps = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const settings = await getEffectiveRestaurantSettings();
+  const heroSrc = settings.heroImage || "/images/hero/menuhero.webp";
+  const heroAlt = settings.legalName || "Restaurang & Pizzeria Falken";
+
   return (
     <>
       <section aria-labelledby="hero-title" className="bg-[linear-gradient(to_bottom,var(--color-ink-2)_0%,rgba(28,31,36,0.85)_40%,rgba(28,31,36,0.25)_78%,var(--color-ivory)_100%)]">
@@ -49,8 +54,8 @@ export default function HomePage() {
             {/* Background hero photo with pizza perfectly on the right and warm restaurant wood on the left */}
             <div className="pointer-events-none absolute inset-0 z-0 select-none overflow-hidden">
               <Image
-                src="/images/hero/Hero-image.webp"
-                alt="Restaurang & Pizzeria Falken"
+                src={heroSrc}
+                alt={heroAlt}
                 fill
                 priority
                 quality={92}

@@ -4,12 +4,12 @@ import type { FulfillmentStatus } from "./models/constants.ts";
 import { audit, transitionOrder } from "./order-transitions.ts";
 import type { AdminPrincipal } from "./admin-auth.ts";
 
-const visibleStatuses = ["CONFIRMED", "ACKNOWLEDGED", "PREPARING", "READY_FOR_PICKUP", "PICKED_UP"] as const;
+const visibleStatuses = ["CONFIRMED", "ACKNOWLEDGED", "PREPARING", "READY_FOR_PICKUP", "PICKED_UP", "CANCELLED"] as const;
 const publicIdPattern = /^[0-9A-HJKMNP-TV-Z]{10}$/;
 export const adminOrderQuerySchema = z.object({
   page: z.coerce.number().int().min(1).max(10_000).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(20),
-  status: z.enum(["ALL", ...visibleStatuses]).default("ALL"),
+  status: z.enum(["ALL", "CANCELLED", "REFUNDED", ...visibleStatuses]).default("ALL"),
   q: z.string().trim().max(80).default(""),
 }).strict();
 export const adminTransitionSchema = z.object({
@@ -29,14 +29,25 @@ function escapeRegex(value: string) {
 }
 
 export function adminVisibleOrderFilter(status: string = "ALL", q = ""): Filter {
-  const filter: Filter = {
-    fulfillmentStatus: { $in: status === "ALL" ? visibleStatuses : [status] },
-    $or: [
-      { paymentMethod: "card", paymentProvider: "stripe", paymentStatus: "paid", paymentId: { $exists: true }, paidAt: { $exists: true } },
-      { paymentMethod: "swish", paymentProvider: "swish", paymentStatus: "paid", paymentId: { $exists: true }, paidAt: { $exists: true } },
-      { paymentMethod: "pay_on_pickup", paymentStatus: { $in: ["unpaid", "paid"] } },
-    ],
-  };
+  const filter: Filter = {};
+
+  if (status === "CANCELLED") {
+    filter.fulfillmentStatus = "CANCELLED";
+  } else if (status === "REFUNDED") {
+    filter.paymentStatus = "refunded";
+  } else if (status === "ALL") {
+    filter.fulfillmentStatus = { $in: visibleStatuses };
+  } else {
+    filter.fulfillmentStatus = status;
+  }
+
+  filter.$or = [
+    { paymentMethod: "card", paymentProvider: "stripe", paymentStatus: { $in: ["paid", "refunded"] } },
+    { paymentMethod: "swish", paymentProvider: "swish", paymentStatus: { $in: ["paid", "refunded"] } },
+    { paymentMethod: "pay_on_pickup", paymentStatus: { $in: ["unpaid", "paid", "refunded"] } },
+    { fulfillmentStatus: "CANCELLED", paymentStatus: { $in: ["failed", "unpaid", "refunded", "paid"] } },
+  ];
+
   if (q) {
     const regex = new RegExp(escapeRegex(q), "i");
     filter.$and = [{ $or: [
@@ -65,6 +76,23 @@ function summary(order: OrderRow) {
       quantity: item.quantity,
     })),
     acknowledgedAt: order.acknowledgedAt?.toISOString() ?? null,
+    sellerSnapshot: order.sellerSnapshot ?? null,
+    cancelledAt: order.cancelledAt ? order.cancelledAt.toISOString() : null,
+    totalRefundedSek: order.totalRefundedSek ?? 0,
+    refundRecord: order.refundRecord
+      ? {
+          amountSek: order.refundRecord.amountSek,
+          reasonCategory: order.refundRecord.reasonCategory,
+          reasonNote: order.refundRecord.reasonNote,
+          canonicalProvider: order.refundRecord.canonicalProvider,
+          externalReference: order.refundRecord.externalReference,
+          canonicalReference: order.refundRecord.canonicalReference,
+          verificationTier: order.refundRecord.verificationTier,
+          recordedBy: order.refundRecord.recordedBy,
+          recordedAt: order.refundRecord.recordedAt.toISOString(),
+          idempotencyKey: order.refundRecord.idempotencyKey,
+        }
+      : null,
   };
 }
 
@@ -74,7 +102,7 @@ export async function listAdminOrders(input: z.infer<typeof adminOrderQuerySchem
   const filter = adminVisibleOrderFilter(input.status, input.q);
   const [rows, total, confirmedCount] = await Promise.all([
     OrderModel.find(filter).sort({ createdAt: -1, _id: -1 }).skip((input.page - 1) * input.limit).limit(input.limit)
-      .select("publicId contact createdAt pickupAt fulfillmentStatus paymentStatus paymentMethod totalSek items acknowledgedAt")
+      .select("publicId contact createdAt pickupAt fulfillmentStatus paymentStatus paymentMethod totalSek items acknowledgedAt sellerSnapshot cancelledAt totalRefundedSek refundRecord")
       .lean(),
     OrderModel.countDocuments(filter),
     OrderModel.countDocuments({ ...adminVisibleOrderFilter(), fulfillmentStatus: "CONFIRMED" }),
@@ -84,8 +112,8 @@ export async function listAdminOrders(input: z.infer<typeof adminOrderQuerySchem
 
 export async function getAdminOrder(publicId: string) {
   if (!validAdminOrderId(publicId)) return null;
-  const order = await OrderModel.findOne({ publicId, ...adminVisibleOrderFilter() })
-    .select("publicId contact createdAt pickupAt fulfillmentStatus paymentStatus paymentMethod paymentProvider totalSek subtotalSek discountSek currency items acknowledgedAt acknowledgedBy statusHistory paidAt onSiteCollection")
+  const order = await OrderModel.findOne({ publicId })
+    .select("publicId contact createdAt pickupAt fulfillmentStatus paymentStatus paymentMethod paymentProvider totalSek subtotalSek discountSek currency items acknowledgedAt acknowledgedBy statusHistory paidAt onSiteCollection sellerSnapshot cancelledAt totalRefundedSek refundRecord")
     .lean() as OrderRow | null;
   if (!order) return null;
   return {

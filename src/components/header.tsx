@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { nav, site } from "@/data/site";
+import { nav } from "@/data/site";
+import { useRestaurantSettings } from "@/lib/use-restaurant-settings";
 import { CartIcon, CloseIcon, MenuIcon, PhoneIcon } from "./icons";
 import { Logo } from "./logo";
 import { useOrder } from "./order/order-provider";
@@ -25,6 +26,7 @@ function getServerScrollSnapshot() {
 
 export function Header() {
   const pathname = usePathname();
+  const { settings } = useRestaurantSettings();
   const { count, openCart } = useOrder();
   const [menuOpen, setMenuOpen] = useState(false);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
@@ -181,8 +183,8 @@ export function Header() {
               Beställ online
             </Link>
             <a
-              href={site.phoneHref}
-              aria-label={`Ring ${site.phone}`}
+              href={settings.phoneHref}
+              aria-label={`Ring ${settings.phone}`}
               className="grid size-12 place-items-center rounded-full border border-gold/50 text-gold transition hover:border-gold hover:bg-gold/10"
             >
               <PhoneIcon className="size-5" />

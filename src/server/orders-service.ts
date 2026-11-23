@@ -4,7 +4,8 @@ import { isValidPickupTime } from "../lib/hours.ts";
 import { orderRequestSchema, type CartInput, type OrderRequest } from "./cart-schema.ts";
 import { loadCatalogForCart } from "./catalog-repo.ts";
 import { OrderModel, type OrderDoc } from "./models/order.ts";
-import { RestaurantSettingsModel } from "./models/restaurant-settings.ts";
+import { RestaurantSettingsModel, type RestaurantSettingsDoc } from "./models/restaurant-settings.ts";
+import { resolveEffectiveSettings } from "./restaurant-settings-service.ts";
 import { deriveAccessToken } from "./order-access.ts";
 import { ORDER_EXPIRY_MINUTES } from "./payments-config.ts";
 import { priceCart, type PricedLine, type PricingIssue } from "./pricing-engine.ts";
@@ -122,10 +123,14 @@ export async function createOrder(body: unknown, now: Date = new Date(), options
   if (already) return already;
 
   let isManuallyOpen = false;
+  // Server-side: fetch seller identity once; used both for ordering check and snapshot.
+  // sellerSnapshot is captured here and must never be accepted from the client.
+  let sellerSettingsDoc: RestaurantSettingsDoc | null = null;
   const assertOrderingEnabled = async () => {
-    const settings = await RestaurantSettingsModel.findById("restaurant")
-      .select("onlineOrderingEnabled manualOverride")
-      .lean();
+    sellerSettingsDoc = (await RestaurantSettingsModel.findById("restaurant")
+      .select("onlineOrderingEnabled manualOverride name legalName address phone")
+      .lean()) as RestaurantSettingsDoc | null;
+    const settings = sellerSettingsDoc;
     isManuallyOpen = settings?.manualOverride === "open";
     const isManuallyClosed =
       settings?.manualOverride === "closed" || settings?.onlineOrderingEnabled === false;
@@ -162,6 +167,18 @@ export async function createOrder(body: unknown, now: Date = new Date(), options
     await assertOrderingEnabled();
     const isPayOnPickup = req.paymentMethod === "pay_on_pickup";
     const fulfillmentStatus = isPayOnPickup ? "CONFIRMED" : "PENDING_PAYMENT";
+    // Build seller snapshot server-side from the already-fetched settings doc.
+    // resolveEffectiveSettings applies the same fallback logic as A7 public pages.
+    const effectiveSeller = resolveEffectiveSettings(sellerSettingsDoc as Parameters<typeof resolveEffectiveSettings>[0]);
+    const sellerSnapshot = {
+      name: effectiveSeller.name,
+      legalName: effectiveSeller.legalName || undefined,
+      street: effectiveSeller.address.street || undefined,
+      zip: effectiveSeller.address.zip || undefined,
+      city: effectiveSeller.address.city || undefined,
+      country: effectiveSeller.address.country || undefined,
+      phone: effectiveSeller.phone || undefined,
+    };
     const created = await OrderModel.create({
       idempotencyKey: req.idempotencyKey,
       requestHash,
@@ -176,6 +193,7 @@ export async function createOrder(body: unknown, now: Date = new Date(), options
       fulfillmentStatus,
       ...(isPayOnPickup ? {} : { paymentExpiresAt: new Date(now.getTime() + ORDER_EXPIRY_MINUTES * 60_000) }),
       statusHistory: [{ at: now, to: fulfillmentStatus, actorType: "customer", reason: isPayOnPickup ? "order_confirmed_pay_on_pickup" : "order_created" }],
+      sellerSnapshot,
     });
     if (isPayOnPickup) {
       void createNotificationForOrder(created._id).catch(() => {});

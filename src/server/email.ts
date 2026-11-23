@@ -45,14 +45,63 @@ export function generatePasswordResetEmailHtml(name: string, resetUrl: string): 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <meta name="supported-color-schemes" content="light dark">
   <title>Återställ ditt lösenord – Falken Restaurang & Pizzeria</title>
+  <style>
+    /* Mobile Responsive Optimizations */
+    @media only screen and (max-width: 540px) {
+      .email-wrapper {
+        padding: 14px 6px 24px 6px !important;
+      }
+      .email-container {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+      .email-card {
+        border-radius: 18px !important;
+      }
+      .email-card-content {
+        padding: 22px 14px 20px 14px !important;
+      }
+      .email-heading {
+        font-size: 20px !important;
+        line-height: 1.25 !important;
+        white-space: nowrap !important;
+      }
+      .email-btn {
+        padding: 13px 18px !important;
+        font-size: 13px !important;
+        white-space: nowrap !important;
+      }
+      .email-btn-text {
+        white-space: nowrap !important;
+      }
+      /* Responsive Footer - stack on mobile cleanly without broken text lines */
+      .email-footer-table,
+      .email-footer-table tbody,
+      .email-footer-table tr {
+        display: block !important;
+        width: 100% !important;
+      }
+      .email-footer-cell {
+        display: block !important;
+        width: 100% !important;
+        padding: 5px 0 !important;
+        text-align: center !important;
+      }
+      .email-footer-sep {
+        display: none !important;
+      }
+    }
+  </style>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f7f4ed; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1c1917; line-height: 1.6;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f7f4ed; padding: 36px 15px 44px 15px;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" class="email-wrapper" style="background-color: #f7f4ed; padding: 26px 10px 36px 10px; margin: 0; width: 100%;">
     <tr>
       <td align="center">
         <!-- Top Brand Header (matches Admin Login icon & typography) -->
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 640px; margin-bottom: 22px;">
+        <table role="presentation" width="100%" class="email-container" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; margin: 0 auto 18px auto;">
           <tr>
             <td align="center" style="text-align: center;">
               <!-- Admin Falcon Emblem Badge (exact same icon from admin login page) -->
@@ -93,54 +142,54 @@ export function generatePasswordResetEmailHtml(name: string, resetUrl: string): 
         </table>
 
         <!-- Main Floating Card -->
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 640px; background-color: #ffffff; border-radius: 24px; overflow: hidden; border: 1px solid #ebd9b5; box-shadow: 0 8px 30px rgba(60, 45, 20, 0.08);">
+        <table role="presentation" width="100%" class="email-container email-card" cellspacing="0" cellpadding="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 22px; overflow: hidden; border: 1px solid #ebd9b5; box-shadow: 0 8px 30px rgba(60, 45, 20, 0.08); margin: 0 auto;">
           <tr>
-            <td style="padding: 38px 42px 34px 42px;">
+            <td class="email-card-content" style="padding: 30px 24px 26px 24px;">
               <!-- Lock Badge -->
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                 <tr>
                   <td align="center">
-                    <div style="display: inline-block; width: 54px; height: 54px; border-radius: 50%; background-color: #faf6ed; border: 1px solid #ebd9b5; text-align: center; line-height: 52px;">
-                      <span style="font-size: 24px; vertical-align: middle;">🔒</span>
+                    <div style="display: inline-block; width: 50px; height: 50px; border-radius: 50%; background-color: #faf6ed; border: 1px solid #ebd9b5; text-align: center; line-height: 48px;">
+                      <span style="font-size: 22px; vertical-align: middle;">🔒</span>
                     </div>
                   </td>
                 </tr>
               </table>
 
-              <!-- Heading -->
-              <h1 style="margin: 14px 0 0 0; font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; font-size: 28px; font-weight: 700; color: #111111; text-align: center; letter-spacing: -0.01em;">
+              <!-- Heading (Strictly one line on desktop and mobile) -->
+              <h1 class="email-heading" style="margin: 12px 0 0 0; font-family: 'Playfair Display', Georgia, 'Times New Roman', serif; font-size: 23px; font-weight: 700; color: #111111; text-align: center; letter-spacing: -0.01em; white-space: nowrap;">
                 Återställ lösenord
               </h1>
 
               <!-- Gold decorative underline -->
-              <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin: 10px auto 26px auto;">
+              <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin: 8px auto 22px auto;">
                 <tr>
                   <td width="44" height="2" style="background-color: #c5a059; border-radius: 2px; line-height: 2px; font-size: 1px;">&nbsp;</td>
                 </tr>
               </table>
 
               <!-- Greeting -->
-              <h2 style="margin: 0 0 14px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 17px; font-weight: 700; color: #111111;">
+              <h2 style="margin: 0 0 12px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 16.5px; font-weight: 700; color: #111111;">
                 Hej ${recipientName}!
               </h2>
 
-              <p style="margin: 0 0 14px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14.5px; color: #333333; line-height: 1.65;">
+              <p style="margin: 0 0 12px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: #333333; line-height: 1.6;">
                 Vi har tagit emot en begäran om att återställa lösenordet för ditt administratörskonto på Falken Restaurang &amp; Pizzeria.
               </p>
-              <p style="margin: 0 0 28px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14.5px; color: #333333; line-height: 1.65;">
+              <p style="margin: 0 0 24px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: #333333; line-height: 1.6;">
                 Klicka på knappen nedan för att välja ett nytt lösenord. Länken är aktiv i <strong>30 minuter</strong>.
               </p>
 
-              <!-- CTA Button -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 28px 0;">
+              <!-- CTA Button (Single line on mobile & desktop) -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 24px 0;">
                 <tr>
                   <td align="center">
                     <table role="presentation" cellspacing="0" cellpadding="0">
                       <tr>
                         <td align="center" style="border-radius: 12px; background: #b88628; background: linear-gradient(135deg, #c79633 0%, #8f5f13 100%); box-shadow: 0 4px 14px rgba(143, 95, 19, 0.35);">
-                          <a href="${resetUrl}" target="_blank" style="display: inline-block; padding: 15px 34px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; font-weight: 700; color: #ffffff; text-decoration: none; letter-spacing: 0.05em; text-transform: uppercase;">
-                            <span style="display: inline-block; vertical-align: middle; margin-right: 8px; font-size: 16px;">🔑</span>
-                            <span style="vertical-align: middle;">Återställ lösenord</span>
+                          <a href="${resetUrl}" target="_blank" class="email-btn" style="display: inline-block; padding: 13px 22px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13.5px; font-weight: 700; color: #ffffff; text-decoration: none; letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap;">
+                            <span style="display: inline-block; vertical-align: middle; margin-right: 6px; font-size: 15px;">🔑</span>
+                            <span class="email-btn-text" style="vertical-align: middle; white-space: nowrap;">Återställ lösenord</span>
                           </a>
                         </td>
                       </tr>
@@ -150,20 +199,20 @@ export function generatePasswordResetEmailHtml(name: string, resetUrl: string): 
               </table>
 
               <!-- Fallback Link Card -->
-              <div style="background-color: #faf8f3; border-radius: 12px; padding: 16px 18px; margin-bottom: 22px; border: 1px solid #ebd9b5;">
-                <p style="margin: 0 0 10px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #444444; font-weight: 500;">
+              <div style="background-color: #faf8f3; border-radius: 12px; padding: 14px 16px; margin-bottom: 20px; border: 1px solid #ebd9b5;">
+                <p style="margin: 0 0 8px 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12.5px; color: #444444; font-weight: 500;">
                   Fungerar inte knappen? Kopiera och klistra in följande länk i webbläsaren:
                 </p>
-                <div style="background-color: #ffffff; border-radius: 8px; padding: 10px 14px; border: 1px solid #e5ded2;">
+                <div style="background-color: #ffffff; border-radius: 8px; padding: 10px 12px; border: 1px solid #e5ded2;">
                   <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                     <tr>
-                      <td style="font-family: Monaco, Consolas, 'Courier New', monospace; font-size: 12px; word-break: break-all; color: #8c6721; line-height: 1.5;">
+                      <td style="font-family: Monaco, Consolas, 'Courier New', monospace; font-size: 11.5px; word-break: break-all; color: #8c6721; line-height: 1.5;">
                         <a href="${resetUrl}" target="_blank" style="color: #8c6721; text-decoration: none;">
                           ${resetUrl}
                         </a>
                       </td>
-                      <td width="28" align="right" valign="middle" style="padding-left: 8px;">
-                        <span style="font-size: 16px; color: #b88628;" title="Kopiera länk">&#128203;</span>
+                      <td width="26" align="right" valign="middle" style="padding-left: 6px;">
+                        <span style="font-size: 15px; color: #b88628;" title="Kopiera länk">&#128203;</span>
                       </td>
                     </tr>
                   </table>
@@ -171,12 +220,12 @@ export function generatePasswordResetEmailHtml(name: string, resetUrl: string): 
               </div>
 
               <!-- Security Notice -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-top: 1px solid #f0ece3; padding-top: 18px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-top: 1px solid #f0ece3; padding-top: 16px;">
                 <tr>
-                  <td width="24" valign="top" style="padding-right: 10px; line-height: 1;">
+                  <td width="24" valign="top" style="padding-right: 8px; line-height: 1;">
                     <span style="display: inline-block; width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 50%; border: 1.5px solid #d4af37; color: #d4af37; font-weight: bold; font-size: 11px; font-family: sans-serif;">i</span>
                   </td>
-                  <td valign="top" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12.5px; color: #444444; line-height: 1.5;">
+                  <td valign="top" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; color: #444444; line-height: 1.5;">
                     <strong>Viktigt:</strong> Om du inte har begärt denna återställning kan du tryggt ignorera detta e-postmeddelande. Ditt nuvarande lösenord förblir oförändrat och säkert.
                   </td>
                 </tr>
@@ -185,41 +234,41 @@ export function generatePasswordResetEmailHtml(name: string, resetUrl: string): 
           </tr>
         </table>
 
-        <!-- Footer Outside Card -->
-        <table role="presentation" width="100%" style="max-width: 640px; margin-top: 24px;">
+        <!-- Footer Outside Card (Responsive on Mobile) -->
+        <table role="presentation" width="100%" class="email-container" style="max-width: 600px; width: 100%; margin: 20px auto 0 auto;">
           <tr>
             <td align="center">
-              <!-- Contact Links (Clickable: Maps, Call, Email) -->
-              <table role="presentation" cellspacing="0" cellpadding="0" align="center" style="margin-bottom: 14px;">
+              <!-- Contact Links (Responsive: side-by-side on desktop, cleanly stacked on mobile) -->
+              <table role="presentation" cellspacing="0" cellpadding="0" align="center" class="email-footer-table" style="margin-bottom: 12px; text-align: center;">
                 <tr>
                   <!-- Location (Opens Google Maps) -->
-                  <td align="center" style="padding: 4px 10px;">
-                    <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #4a4237; text-decoration: none;">
-                      <span style="color: #b88628; font-size: 14px; margin-right: 4px;">📍</span>
-                      <span style="color: #4a4237;">${site.address.street}, ${site.address.city}</span>
+                  <td class="email-footer-cell" align="center" style="padding: 4px 8px;">
+                    <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12.5px; color: #4a4237; text-decoration: none; white-space: nowrap;">
+                      <span style="color: #b88628; font-size: 13px; margin-right: 4px;">📍</span>
+                      <span>${site.address.street}, ${site.address.city}</span>
                     </a>
                   </td>
-                  <td style="color: #c7beaf; font-size: 12px; padding: 0 4px;">|</td>
+                  <td class="email-footer-sep" style="color: #c7beaf; font-size: 12px; padding: 0 4px;">•</td>
                   <!-- Phone (Opens Call / tel:) -->
-                  <td align="center" style="padding: 4px 10px;">
-                    <a href="${site.phoneHref}" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #4a4237; text-decoration: none;">
-                      <span style="color: #b88628; font-size: 14px; margin-right: 4px;">📞</span>
-                      <span style="color: #4a4237;">${site.phone}</span>
+                  <td class="email-footer-cell" align="center" style="padding: 4px 8px;">
+                    <a href="${site.phoneHref}" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12.5px; color: #4a4237; text-decoration: none; white-space: nowrap;">
+                      <span style="color: #b88628; font-size: 13px; margin-right: 4px;">📞</span>
+                      <span>${site.phone}</span>
                     </a>
                   </td>
-                  <td style="color: #c7beaf; font-size: 12px; padding: 0 4px;">|</td>
+                  <td class="email-footer-sep" style="color: #c7beaf; font-size: 12px; padding: 0 4px;">•</td>
                   <!-- Email (Opens Mail client / mailto:) -->
-                  <td align="center" style="padding: 4px 10px;">
-                    <a href="mailto:${site.email}" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; color: #4a4237; text-decoration: none;">
-                      <span style="color: #b88628; font-size: 14px; margin-right: 4px;">✉️</span>
-                      <span style="color: #4a4237;">${site.email}</span>
+                  <td class="email-footer-cell" align="center" style="padding: 4px 8px;">
+                    <a href="mailto:${site.email}" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12.5px; color: #4a4237; text-decoration: none; word-break: break-all;">
+                      <span style="color: #b88628; font-size: 13px; margin-right: 4px;">✉️</span>
+                      <span>${site.email}</span>
                     </a>
                   </td>
                 </tr>
               </table>
 
               <!-- Gold hairline divider -->
-              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 14px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 12px;">
                 <tr>
                   <td align="center">
                     <div style="width: 88%; max-width: 560px; height: 1px; background-color: #dfd7c7;"></div>

@@ -66,7 +66,30 @@ export function sanitizeNote(note: string): string {
   return note.replace(/[\u0000-\u001f\u007f-\u009f]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
-const isWholeSek = (n: unknown): n is number => typeof n === "number" && Number.isInteger(n) && n >= 0;
+export const MIN_PRODUCT_PRICE_SEK = 1;
+export const MAX_PRODUCT_PRICE_SEK = 10_000;
+export const MIN_MODIFIER_PRICE_SEK = 1;
+export const MAX_MODIFIER_PRICE_SEK = 500;
+
+/** Validates that an amount is a finite, non-negative whole number of SEK. */
+export const isWholeSek = (n: unknown): n is number =>
+  typeof n === "number" && Number.isInteger(n) && Number.isFinite(n) && n >= 0;
+
+/** Sellable product variants must have a strictly positive whole integer price between 1 and 10,000 SEK. */
+export const isValidProductPriceSek = (n: unknown): n is number =>
+  typeof n === "number" &&
+  Number.isInteger(n) &&
+  Number.isFinite(n) &&
+  n >= MIN_PRODUCT_PRICE_SEK &&
+  n <= MAX_PRODUCT_PRICE_SEK;
+
+/** Paid extras must have a strictly positive whole integer price between 1 and 500 SEK (zero or free extras are prohibited). */
+export const isValidModifierPriceSek = (n: unknown): n is number =>
+  typeof n === "number" &&
+  Number.isInteger(n) &&
+  Number.isFinite(n) &&
+  n >= MIN_MODIFIER_PRICE_SEK &&
+  n <= MAX_MODIFIER_PRICE_SEK;
 
 export function priceCart(cart: CartInput, catalog: Catalog): PricingResult {
   const issues: PricingIssue[] = [];
@@ -86,7 +109,7 @@ export function priceCart(cart: CartInput, catalog: Catalog): PricingResult {
     if (!variant) return issue("unknown_variant", `${product.nameSv} has no size "${item.variantId}"`);
     if (!variant.available) return issue("variant_unavailable", `${product.nameSv} (${variant.label}) is not available`);
     // Unconfirmed prices are never sold: the owner must approve them first (plan §4, §11).
-    if (variant.priceStatus !== "confirmed" || !isWholeSek(variant.priceSek)) {
+    if (variant.priceStatus !== "confirmed" || !isValidProductPriceSek(variant.priceSek)) {
       return issue("price_unconfirmed", `The price of ${product.nameSv} (${variant.label}) is not confirmed yet`);
     }
 
@@ -132,7 +155,7 @@ export function priceCart(cart: CartInput, catalog: Catalog): PricingResult {
         continue;
       }
       const price = modifier.priceByVariantSek[variant.id];
-      if (modifier.priceStatus !== "confirmed" || !isWholeSek(price)) {
+      if (modifier.priceStatus !== "confirmed" || !isValidModifierPriceSek(price)) {
         issue("modifier_price_unconfirmed", `The price of ${modifier.labelSv} for ${variant.label} is not confirmed yet`);
         continue;
       }
