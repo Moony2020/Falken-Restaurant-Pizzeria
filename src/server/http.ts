@@ -29,21 +29,76 @@ export function clientIp(request: Request): string {
   return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 }
 
+/**
+ * Resolves trusted site hosts from environment and approved deployment platforms.
+ */
+function getTrustedHosts(): Set<string> {
+  const hosts = new Set<string>();
+
+  const configuredSite = process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL;
+  if (configuredSite) {
+    try {
+      hosts.add(new URL(configuredSite).host.toLowerCase());
+    } catch {
+      // ignore malformed custom env
+    }
+  }
+
+  // Known production platforms for this project
+  hosts.add("falkenrestaurant.onrender.com");
+  hosts.add("falken-restaurant-pizzeria.vercel.app");
+
+  // Local development / tests
+  hosts.add("localhost:3000");
+  hosts.add("127.0.0.1:3000");
+  hosts.add("localhost");
+  hosts.add("127.0.0.1");
+
+  return hosts;
+}
+
 /** Browsers send Origin on cross-site POSTs. Reject when it names another site (CSRF defence). */
 export function sameOrigin(request: Request): boolean {
   const origin = request.headers.get("origin");
   if (!origin) return true; // non-browser clients; they have no ambient cookies to abuse
   try {
-    const originHost = new URL(origin).host;
-    const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-    const hostHeader = request.headers.get("host")?.trim();
-    const urlHost = new URL(request.url).host;
+    const originUrl = new URL(origin);
+    const originHost = originUrl.host.toLowerCase();
+    const originProtocol = originUrl.protocol;
 
-    return (
-      originHost === forwardedHost ||
-      originHost === hostHeader ||
-      originHost === urlHost
-    );
+    // Reject non-HTTPS origin in production
+    const isProduction = process.env.NODE_ENV === "production";
+    const forwardedProto = request.headers.get("x-forwarded-proto");
+    const isHttpsRequest = forwardedProto === "https" || new URL(request.url).protocol === "https:";
+    if (isProduction && isHttpsRequest && originProtocol !== "https:") {
+      return false;
+    }
+
+    const trustedHosts = getTrustedHosts();
+
+    // Check if originHost is directly recognized
+    if (trustedHosts.has(originHost)) {
+      const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim()?.toLowerCase();
+      const hostHeader = request.headers.get("host")?.trim()?.toLowerCase();
+      const urlHost = new URL(request.url).host.toLowerCase();
+
+      // Ensure the request itself target matches the origin
+      if (
+        originHost === forwardedHost ||
+        originHost === hostHeader ||
+        originHost === urlHost
+      ) {
+        return true;
+      }
+    }
+
+    // Strict same-origin match when request.url host equals origin host
+    const directUrl = new URL(request.url);
+    if (originUrl.origin === directUrl.origin) {
+      return true;
+    }
+
+    return false;
   } catch {
     return false;
   }
