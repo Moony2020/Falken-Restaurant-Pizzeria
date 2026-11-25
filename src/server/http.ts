@@ -29,76 +29,242 @@ export function clientIp(request: Request): string {
   return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 }
 
-/**
- * Resolves trusted site hosts from environment and approved deployment platforms.
- */
-function getTrustedHosts(): Set<string> {
-  const hosts = new Set<string>();
+function parseHostAndPort(rawHost: string): { hostname: string; port: string | null } | null {
+  const trimmed = rawHost.trim().toLowerCase();
+  if (!trimmed) return null;
 
-  const configuredSite = process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL;
-  if (configuredSite) {
-    try {
-      hosts.add(new URL(configuredSite).host.toLowerCase());
-    } catch {
-      // ignore malformed custom env
-    }
+  if (trimmed.startsWith("[")) {
+    const closeBracket = trimmed.indexOf("]");
+    if (closeBracket === -1) return null; // Malformed IPv6
+    const hostname = trimmed.slice(1, closeBracket);
+    const rest = trimmed.slice(closeBracket + 1);
+    if (!rest) return { hostname: `[${hostname}]`, port: null };
+    if (!rest.startsWith(":")) return null; // Malformed
+    const port = rest.slice(1);
+    if (!/^\d+$/.test(port)) return null;
+    return { hostname: `[${hostname}]`, port };
   }
 
-  // Known production platforms for this project
-  hosts.add("falkenrestaurant.onrender.com");
-  hosts.add("falken-restaurant-pizzeria.vercel.app");
-
-  // Local development / tests
-  hosts.add("localhost:3000");
-  hosts.add("127.0.0.1:3000");
-  hosts.add("localhost");
-  hosts.add("127.0.0.1");
-
-  return hosts;
+  const parts = trimmed.split(":");
+  if (parts.length === 1) {
+    return { hostname: parts[0], port: null };
+  }
+  if (parts.length === 2) {
+    if (!/^\d+$/.test(parts[1])) return null;
+    return { hostname: parts[0], port: parts[1] };
+  }
+  // More than one colon without brackets is invalid
+  return null;
 }
 
-/** Browsers send Origin on cross-site POSTs. Reject when it names another site (CSRF defence). */
-export function sameOrigin(request: Request): boolean {
-  const origin = request.headers.get("origin");
-  if (!origin) return true; // non-browser clients; they have no ambient cookies to abuse
-  try {
-    const originUrl = new URL(origin);
-    const originHost = originUrl.host.toLowerCase();
-    const originProtocol = originUrl.protocol;
+function canonicalHost(rawHost: string, protocol = "https:"): string | null {
+  const parsed = parseHostAndPort(rawHost);
+  if (!parsed) return null;
 
-    // Reject non-HTTPS origin in production
-    const isProduction = process.env.NODE_ENV === "production";
-    const forwardedProto = request.headers.get("x-forwarded-proto");
-    const isHttpsRequest = forwardedProto === "https" || new URL(request.url).protocol === "https:";
-    if (isProduction && isHttpsRequest && originProtocol !== "https:") {
-      return false;
-    }
+  const defaultPort = protocol === "https:" || protocol === "https" ? "443" : protocol === "http:" || protocol === "http" ? "80" : null;
+  const isDefaultPort = !parsed.port || parsed.port === defaultPort;
 
-    const trustedHosts = getTrustedHosts();
+  return isDefaultPort ? parsed.hostname : `${parsed.hostname}:${parsed.port}`;
+}
 
-    // Check if originHost is directly recognized
-    if (trustedHosts.has(originHost)) {
-      const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim()?.toLowerCase();
-      const hostHeader = request.headers.get("host")?.trim()?.toLowerCase();
-      const urlHost = new URL(request.url).host.toLowerCase();
+function isInternalHost(rawHost: string): boolean {
+  const parsed = parseHostAndPort(rawHost);
+  if (!parsed) return false;
+  const h = parsed.hostname.startsWith("[") && parsed.hostname.endsWith("]")
+    ? parsed.hostname.slice(1, -1)
+    : parsed.hostname;
+  return (
+    h === "localhost" ||
+    h === "127.0.0.1" ||
+    h.startsWith("127.") ||
+    h === "0.0.0.0" ||
+    h === "::1" ||
+    h === "::" ||
+    h === "0:0:0:0:0:0:0:1" ||
+    h === "0:0:0:0:0:0:0:0"
+  );
+}
 
-      // Ensure the request itself target matches the origin
-      if (
-        originHost === forwardedHost ||
-        originHost === hostHeader ||
-        originHost === urlHost
-      ) {
-        return true;
+/**
+ * Resolves the trusted origin (or allowed origins) for the current deployment environment.
+ * In production:
+ *   1. Prioritizes explicitly configured SITE_URL (or NEXT_PUBLIC_SITE_URL).
+ *      - Fails closed if configured with localhost / loopback (including IPv6 [::1]).
+ *      - Fails closed if configured with an insecure http: protocol.
+ *      - Fails closed if conflicting with detected hosting platform (e.g. Vercel domain on Render).
+ *      - Never silently combines SITE_URL with other platform origins.
+ *   2. If SITE_URL is not set, detects whether running on Render (RENDER=true) or Vercel (VERCEL=1),
+ *      and binds ONLY to that platform's canonical origin (never both simultaneously).
+ *   3. If in production and neither valid SITE_URL nor platform is detected, fails closed (empty set).
+ * In non-production (development and testing):
+ *   Allows localhost / 127.0.0.1 / [::1] and configured SITE_URL.
+ */
+export function getDeploymentTrustedOrigins(): Set<string> {
+  const isProduction = process.env.NODE_ENV === "production";
+  const origins = new Set<string>();
+
+  const isRender = process.env.RENDER === "true" || Boolean(process.env.RENDER_SERVICE_ID);
+  const isVercel = process.env.VERCEL === "1" || Boolean(process.env.VERCEL_ENV);
+
+  const configuredSite = process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL;
+
+  if (isProduction) {
+    if (configuredSite) {
+      try {
+        const parsed = new URL(configuredSite);
+        const host = parsed.host.toLowerCase();
+        const hostname = parsed.hostname.toLowerCase();
+
+        // In production, configured site must be https
+        if (parsed.protocol !== "https:") {
+          return origins; // Fails closed
+        }
+
+        // In production, localhost or loopback (IPv4/IPv6) is never a trusted browser origin
+        if (isInternalHost(host) || isInternalHost(hostname) || hostname === "localhost" || hostname === "127.0.0.1") {
+          return origins; // Fails closed
+        }
+
+        // Detect conflicting deployment environment vs SITE_URL
+        if (isRender && hostname.endsWith(".vercel.app")) {
+          return origins; // Conflicting configuration fails closed
+        }
+        if (isVercel && hostname.endsWith(".onrender.com")) {
+          return origins; // Conflicting configuration fails closed
+        }
+
+        // Authoritative configured origin (strictly single deployment origin, no combining)
+        origins.add(parsed.origin.toLowerCase());
+        return origins;
+      } catch {
+        // Malformed URL fails closed
+        return origins;
       }
     }
 
-    // Strict same-origin match when request.url host equals origin host
-    const directUrl = new URL(request.url);
-    if (originUrl.origin === directUrl.origin) {
-      return true;
+    // Platform-specific defaults when SITE_URL is not provided
+    if (isRender) {
+      origins.add("https://falkenrestaurant.onrender.com");
+    } else if (isVercel) {
+      origins.add("https://falken-restaurant-pizzeria.vercel.app");
+    }
+    // If neither SITE_URL nor platform detection is set, fails closed (empty set).
+  } else {
+    // Non-production (dev, test)
+    if (configuredSite) {
+      try {
+        origins.add(new URL(configuredSite).origin.toLowerCase());
+      } catch {
+        // ignore malformed in dev
+      }
+    }
+    origins.add("http://localhost:3000");
+    origins.add("http://127.0.0.1:3000");
+    origins.add("http://[::1]:3000");
+    origins.add("http://localhost");
+    origins.add("http://127.0.0.1");
+    origins.add("http://[::1]");
+  }
+
+  return origins;
+}
+
+/**
+ * Browsers send Origin on cross-site POSTs. Reject when it names another site (CSRF defence).
+ * R2 Security Hardening Rules:
+ *  1. In production, Origin MUST use the 'https:' scheme. Any 'http:' Origin is rejected unconditionally.
+ *  2. In production, Origin MUST be an approved deployment origin (localhost and loopbacks forbidden).
+ *  3. Header-spoofing prevention:
+ *     - If the request targets a specific server, the Origin must match the deployment origin that
+ *       this specific deployment is serving (verified against host / forwarded-host / direct URL, including canonical ports).
+ *     - Conflicting host and x-forwarded-host headers are rejected.
+ *  4. Fails closed: if no trusted origins exist or mismatch occurs, returns false.
+ */
+export function sameOrigin(request: Request): boolean {
+  const origin = request.headers.get("origin");
+  if (!origin) return true; // non-browser clients; they have no ambient cookies to abuse
+
+  try {
+    const originUrl = new URL(origin);
+    const originProtocol = originUrl.protocol;
+    const originHost = originUrl.host.toLowerCase();
+    const isProduction = process.env.NODE_ENV === "production";
+
+    // Non-production (development / test) exact same-origin bypass
+    // Allows legitimate local domains such as http://shop.test during tests
+    if (!isProduction) {
+      try {
+        const directOrigin = new URL(request.url).origin.toLowerCase();
+        if (originUrl.origin.toLowerCase() === directOrigin) {
+          return true;
+        }
+      } catch {
+        // Continue to trusted origins check
+      }
     }
 
-    return false;
+    // In production, reject any Origin that does not use https:
+    if (isProduction && originProtocol !== "https:") {
+      return false;
+    }
+
+    // In production, reject any localhost / loopback Origin
+    if (isProduction && isInternalHost(originHost)) {
+      return false;
+    }
+
+    const trustedOrigins = getDeploymentTrustedOrigins();
+    if (trustedOrigins.size === 0) {
+      return false; // Fail closed if no trusted origins configured or on conflict
+    }
+
+    // Origin must be in the approved deployment trusted origins
+    const normalizedOrigin = originUrl.origin.toLowerCase();
+    if (!trustedOrigins.has(normalizedOrigin)) {
+      return false;
+    }
+
+    // Determine the host the request actually arrived at
+    const rawForwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim()?.toLowerCase();
+    const rawHostHeader = request.headers.get("host")?.trim()?.toLowerCase();
+    const rawUrlHost = new URL(request.url).host.toLowerCase();
+
+    const canonicalOriginHost = canonicalHost(originHost, originProtocol);
+    if (!canonicalOriginHost) return false;
+
+    // Verify proxy headers and host consistency
+    if (rawForwardedHost) {
+      // In reverse-proxy environments (Render/Vercel):
+      // forwardedHost must match originHost (including port matching!)
+      const canonicalForwarded = canonicalHost(rawForwardedHost, originProtocol);
+      if (!canonicalForwarded || canonicalOriginHost !== canonicalForwarded) {
+        return false;
+      }
+      // If hostHeader is also present and represents a public domain (not an internal container host),
+      // it must not conflict with forwardedHost
+      if (rawHostHeader && !isInternalHost(rawHostHeader)) {
+        const canonicalHeader = canonicalHost(rawHostHeader, originProtocol);
+        if (!canonicalHeader || canonicalHeader !== canonicalForwarded) {
+          return false;
+        }
+      }
+    } else if (rawHostHeader) {
+      const canonicalHeader = canonicalHost(rawHostHeader, originProtocol);
+      const canonicalUrl = canonicalHost(rawUrlHost, originProtocol);
+      if (
+        !canonicalHeader ||
+        (canonicalOriginHost !== canonicalHeader && canonicalOriginHost !== canonicalUrl)
+      ) {
+        return false;
+      }
+    } else {
+      const canonicalUrl = canonicalHost(rawUrlHost, originProtocol);
+      if (canonicalOriginHost !== canonicalUrl) {
+        return false;
+      }
+    }
+
+    return true;
   } catch {
     return false;
   }
