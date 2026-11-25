@@ -22,7 +22,11 @@ export function playOrderChime(): boolean {
     if (!ctx) return false;
 
     if (ctx.state === "suspended") {
-      void ctx.resume();
+      void ctx.resume().catch((err: unknown) => {
+        // Explicitly catch autoplay policy or user-gesture requirement rejections
+        // to prevent unhandled promise rejections without disrupting visual UI.
+        console.debug("AudioContext resume rejected:", err);
+      });
     }
 
     const now = ctx.currentTime;
