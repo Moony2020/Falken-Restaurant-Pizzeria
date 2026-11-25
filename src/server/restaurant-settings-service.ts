@@ -27,7 +27,7 @@ export const ALLOWED_HERO_IMAGES = [
 ] as const;
 
 export const ALLOWED_MENU_HERO_IMAGES = [
-  "/images/hero/Hero-image.webp",
+  "/images/menu/menu-hero.webp",
   "/images/hero/menuhero.webp",
   "/images/dishes/pizza/falken-special.webp",
   "/images/dishes/pizza/margherita.webp",

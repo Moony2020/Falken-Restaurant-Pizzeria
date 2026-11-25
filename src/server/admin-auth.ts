@@ -27,9 +27,13 @@ function derivePasswordKey(password: string, salt: Buffer, N = SCRYPT_N, r = SCR
 
 export function getAdminAuthConfig(input: NodeJS.ProcessEnv = process.env): AdminAuthConfig {
   const sessionSecret = input.ADMIN_SESSION_SECRET;
-  if (!sessionSecret || sessionSecret.length < 32) throw new Error("Invalid admin authentication configuration");
+  if (!sessionSecret || sessionSecret.length < 32) {
+    throw new Error("Invalid admin authentication configuration: ADMIN_SESSION_SECRET is missing or shorter than 32 characters");
+  }
   const configuredTtl = Number(input.ADMIN_SESSION_TTL_SECONDS ?? 43_200);
-  if (!Number.isInteger(configuredTtl) || configuredTtl < 900 || configuredTtl > 604_800) throw new Error("Invalid admin authentication configuration");
+  if (!Number.isInteger(configuredTtl) || configuredTtl < 900 || configuredTtl > 604_800) {
+    throw new Error("Invalid admin authentication configuration: ADMIN_SESSION_TTL_SECONDS must be an integer between 900 and 604800");
+  }
   return { sessionSecret, sessionTtlSeconds: configuredTtl };
 }
 

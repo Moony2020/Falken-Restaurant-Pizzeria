@@ -362,7 +362,7 @@ test("7. Public GET /api/restaurant/settings exposes updated branding and derive
   assert.equal(data.phoneHref, "tel:+4619998877"); // verified server-derived
   assert.equal(data.address.street, "Storgatan 1");
   assert.equal(data.address.city, "Vintrosa");
-  assert.equal(data.heroImage, "/images/hero/Hero-image.webp"); // default fallback preserved
+  assert.equal(data.heroImage, "/images/hero/menuhero.webp"); // default fallback preserved
   assert.equal(data.contactHeroImage, "/images/gallery/restaurant1.webp"); // default protected asset preserved
   assert.equal(data.prepMinutes, 10);
   assert.equal(data.revision, 2);
