@@ -32,6 +32,8 @@ export function AdminLoginForm() {
       if (!response.ok) {
         if (response.status === 429) {
           setMessage("För många misslyckade försök. Vänta en stund och försök igen.");
+        } else if (response.status === 403) {
+          setMessage("Åtkomst nekad: ogiltig förfrågan (CSRF/Origin).");
         } else {
           setMessage("Felaktig e-postadress eller lösenord.");
         }

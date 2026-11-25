@@ -34,7 +34,16 @@ export function sameOrigin(request: Request): boolean {
   const origin = request.headers.get("origin");
   if (!origin) return true; // non-browser clients; they have no ambient cookies to abuse
   try {
-    return new URL(origin).host === new URL(request.url).host;
+    const originHost = new URL(origin).host;
+    const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+    const hostHeader = request.headers.get("host")?.trim();
+    const urlHost = new URL(request.url).host;
+
+    return (
+      originHost === forwardedHost ||
+      originHost === hostHeader ||
+      originHost === urlHost
+    );
   } catch {
     return false;
   }
