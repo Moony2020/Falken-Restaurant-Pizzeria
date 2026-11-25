@@ -18,6 +18,7 @@ export type Invoice = {
   status: InvoiceStatus;
   paymentMethod?: string;
   items: { description: string; quantity: number; unitPriceSek: number; vatRate: number }[];
+  isDraft?: boolean;
 };
 
 export type AdminInvoicesTabProps = {
@@ -256,6 +257,7 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
         paidAmountSek: isPaid ? ord.totalSek : 0,
         status: (isPaid ? "paid" : "unpaid") as InvoiceStatus,
         paymentMethod: paymentLabel,
+        isDraft: false,
         items: ord.items && ord.items.length > 0
           ? ord.items.map((it) => ({
               description: `${it.quantity}x ${it.name}${it.variant ? ` (${it.variant})` : ""}`,
@@ -415,6 +417,7 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
           vatRate: 12,
         },
       ],
+      isDraft: true,
     };
 
     setCustomInvoices([created, ...customInvoices]);
@@ -423,7 +426,7 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
     setNewOrgNr("");
     setNewAmount("");
     setNewDesc("");
-    setFeedback(`Faktura ${num} skapades framgångsrikt!`);
+    setFeedback(`Tillfälligt utkast ${num} skapades (Utkast – sparas inte vid siduppdatering)`);
     setTimeout(() => setFeedback(null), 4000);
   };
 
@@ -632,10 +635,11 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
         <button
           type="button"
           onClick={() => setIsCreating(true)}
+          aria-label="Skapa tillfälligt fakturautkast"
           className="inline-flex items-center gap-2 rounded-xl bg-[#837147] px-4 py-2.5 text-xs sm:text-sm font-semibold text-white shadow-xs hover:bg-[#72623c] transition cursor-pointer"
         >
           <span className="text-base leading-none">+</span>
-          <span>Skapa faktura</span>
+          <span>Skapa fakturautkast</span>
         </button>
       </div>
 
@@ -998,6 +1002,7 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
                   pagedInvoices.map((inv) => {
                     const st = statusStyles[inv.status];
                     const isSelected = selectedIds.includes(inv.id);
+                    const isDraft = Boolean(inv.isDraft || inv.id.startsWith("custom-") || inv.invoiceNumber.startsWith("F-MANUELL-"));
                     return (
                       <tr
                         key={inv.id}
@@ -1019,9 +1024,19 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
                           />
                         </td>
                         <td className="py-3.5 px-3 font-bold text-[#1f2328]">
-                          <span className="hover:text-[#837147] hover:underline underline-offset-2">
-                            {inv.invoiceNumber}
-                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="hover:text-[#837147] hover:underline underline-offset-2">
+                              {inv.invoiceNumber}
+                            </span>
+                            {isDraft && (
+                              <span
+                                data-testid="draft-disclosure-list"
+                                className="inline-flex items-center rounded-md border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-900 tracking-tight"
+                              >
+                                Utkast – sparas inte
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="py-3.5 px-3">
                           <p className="font-semibold text-[#1f2328]">{inv.customerName}</p>
@@ -1222,7 +1237,13 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
       </div>
 
       {/* Selected Invoice / Receipt Modal - Modern Restaurant Faktura */}
-      {selectedInvoice && (
+      {selectedInvoice && (() => {
+        const isSelectedDraft = Boolean(
+          selectedInvoice.isDraft ||
+          selectedInvoice.id.startsWith("custom-") ||
+          selectedInvoice.invoiceNumber.startsWith("F-MANUELL-")
+        );
+        return (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-3 backdrop-blur-xs sm:p-6 print:p-0 print:bg-white print:static print:inset-auto"
           onClick={() => setSelectedInvoice(null)}
@@ -1249,12 +1270,36 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
               <p className="text-[11px] sm:text-xs text-[#7c828d] mt-1">
                 Kungsbacka - Falken.se - Tel: 0300-123 45
               </p>
-              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#f4ebd9] px-3 py-0.5 text-[11px] sm:text-xs font-semibold text-[#837147]">
-                <span>Kvitto</span>
+              <div className="mt-2 inline-flex flex-wrap items-center justify-center gap-1.5 rounded-full bg-[#f4ebd9] px-3 py-1 text-[11px] sm:text-xs font-semibold text-[#837147]">
+                <span>{isSelectedDraft ? "Fakturautkast" : "Kvitto"}</span>
                 <span>•</span>
                 <span>{selectedInvoice.invoiceNumber}</span>
+                {isSelectedDraft && (
+                  <span
+                    data-testid="draft-disclosure-preview-badge"
+                    className="rounded-md border border-amber-300 bg-amber-100/90 px-1.5 py-0.5 text-[10px] font-bold text-amber-900 tracking-tight"
+                  >
+                    Utkast – sparas inte
+                  </span>
+                )}
               </div>
             </div>
+
+            {/* Draft Warning Disclosure (Requirement 3C) */}
+            {isSelectedDraft && (
+              <div
+                data-testid="draft-disclosure-preview"
+                className="rounded-2xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950"
+              >
+                <div className="flex items-center gap-1.5 font-bold text-xs text-amber-950">
+                  <span aria-hidden="true">⚠️</span>
+                  <span>Utkast – sparas inte</span>
+                </div>
+                <p className="mt-1 text-[11px] leading-relaxed text-amber-900/90">
+                  Detta är ett manuellt utkast i webbläsaren. Posten sparas inte i databasen och utgör inte ett officiellt bokföringsunderlag.
+                </p>
+              </div>
+            )}
 
             {/* Meta details */}
             <div className="space-y-1.5 text-xs py-2 border-b border-dashed border-[#dcd5c7]">
@@ -1338,7 +1383,7 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
 
             {/* Action buttons - HIDDEN in print */}
             <div className="print:hidden flex flex-col gap-2 pt-2 border-t border-[#e8e2d5]">
-              {onOpenOrder && (
+              {onOpenOrder && !isSelectedDraft && (
                 <button
                   type="button"
                   onClick={() => {
@@ -1351,6 +1396,11 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
                   <span className="text-xs">👁️</span>
                   <span className="truncate">Gå till beställning {selectedInvoice.id.replace(/^F-/, "")} →</span>
                 </button>
+              )}
+              {isSelectedDraft && (
+                <p className="text-center text-[10.5px] font-semibold text-amber-900 bg-amber-50 border border-amber-200/80 rounded-lg py-1 px-2">
+                  Utkast – sparas inte i databasen eller bokföringen
+                </p>
               )}
               <div className="flex items-center gap-2">
                 <button
@@ -1388,7 +1438,8 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Send Invoice Modal */}
       {sendingInvoice && (
@@ -1408,11 +1459,18 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
                 </span>
                 <div>
                   <h3 className="font-serif text-base font-bold text-[#1f2328]">
-                    Skicka kvitto till kund
+                    {Boolean(sendingInvoice.isDraft || sendingInvoice.id.startsWith("custom-") || sendingInvoice.invoiceNumber.startsWith("F-MANUELL-"))
+                      ? "Dela fakturautkast med kund"
+                      : "Skicka kvitto till kund"}
                   </h3>
-                  <p className="text-[11px] text-[#7c828d]">
-                    {sendingInvoice.customerName} - {sendingInvoice.invoiceNumber}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-[#7c828d]">
+                    <span>{sendingInvoice.customerName} - {sendingInvoice.invoiceNumber}</span>
+                    {Boolean(sendingInvoice.isDraft || sendingInvoice.id.startsWith("custom-") || sendingInvoice.invoiceNumber.startsWith("F-MANUELL-")) && (
+                      <span className="rounded-md border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[9.5px] font-bold text-amber-900">
+                        Utkast – sparas inte
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               <button
@@ -1424,6 +1482,21 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
                 ✕
               </button>
             </div>
+
+            {Boolean(sendingInvoice.isDraft || sendingInvoice.id.startsWith("custom-") || sendingInvoice.invoiceNumber.startsWith("F-MANUELL-")) && (
+              <div
+                data-testid="draft-disclosure-send"
+                className="rounded-2xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950"
+              >
+                <div className="flex items-center gap-1.5 font-bold text-xs text-amber-950">
+                  <span aria-hidden="true">⚠️</span>
+                  <span>Utkast – sparas inte</span>
+                </div>
+                <p className="mt-1 text-[11px] leading-relaxed text-amber-900/90">
+                  Detta är ett lokalt utkast i webbläsaren. Posten är inte sparad i databasen och saknar en publik webborder.
+                </p>
+              </div>
+            )}
 
             {/* Recipient Details */}
             <div className="rounded-2xl border border-[#e8e2d5] bg-white p-3.5 space-y-1.5 text-xs">
@@ -1520,9 +1593,9 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
             <div className="flex items-start justify-between border-b border-[#e8e2d5] pb-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#837147]">
-                  Ny kundfaktura
+                  Manuellt fakturautkast
                 </p>
-                <h2 className="font-serif text-2xl font-bold">Skapa ny faktura</h2>
+                <h2 className="font-serif text-2xl font-bold">Skapa tillfälligt fakturautkast</h2>
               </div>
               <button
                 type="button"
@@ -1533,7 +1606,21 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
               </button>
             </div>
 
-            <form onSubmit={handleCreateInvoice} className="mt-5 space-y-4 text-xs sm:text-sm">
+            {/* Draft Warning Disclosure (Requirement 3A) */}
+            <div
+              data-testid="draft-disclosure-create"
+              className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-3 sm:p-3.5 text-amber-950"
+            >
+              <div className="flex items-center gap-1.5 font-bold text-xs sm:text-sm text-amber-950">
+                <span aria-hidden="true">⚠️</span>
+                <span>Utkast – sparas inte</span>
+              </div>
+              <p className="mt-1 text-[11px] sm:text-xs leading-relaxed text-amber-900/90">
+                Detta formulär skapar endast ett tillfälligt utkast i webbläsarens minne. Posten sparas inte i databasen eller bokföringen och försvinner vid siduppdatering.
+              </p>
+            </div>
+
+            <form onSubmit={handleCreateInvoice} className="mt-4 space-y-4 text-xs sm:text-sm">
               <div>
                 <label className="block text-xs font-bold uppercase text-[#8c827a] mb-1">
                   Företagsnamn / Kund *
@@ -1602,7 +1689,7 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
                   type="submit"
                   className="rounded-xl bg-[#837147] px-5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[#72623c]"
                 >
-                  Spara &amp; Skapa
+                  Skapa tillfälligt utkast
                 </button>
               </div>
             </form>
