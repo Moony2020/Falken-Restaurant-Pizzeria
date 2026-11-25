@@ -57,6 +57,17 @@ export function AdminOrderDialog({
   const [refundDialogOpen, setRefundDialogOpen] = useState(false);
 
   useEffect(() => {
+    const bodyOverflow = document.body.style.overflow;
+    const rootOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = bodyOverflow;
+      document.documentElement.style.overflow = rootOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     closeRef.current?.focus();
     const keydown = (event: KeyboardEvent) => {
@@ -74,8 +85,6 @@ export function AdminOrderDialog({
   useEffect(() => {
     if (!paymentConfirmationOpen) return;
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     const dialog = paymentDialogRef.current;
     const buttons = [...(dialog?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ?? [])];
     buttons[0]?.focus();
@@ -86,7 +95,7 @@ export function AdminOrderDialog({
       if (!event.shiftKey && document.activeElement === buttons.at(-1)) { event.preventDefault(); buttons[0]?.focus(); }
     };
     document.addEventListener("keydown", keydown);
-    return () => { document.removeEventListener("keydown", keydown); document.body.style.overflow = overflow; previous?.focus(); };
+    return () => { document.removeEventListener("keydown", keydown); previous?.focus(); };
   }, [paymentConfirmationOpen]);
 
   return (
