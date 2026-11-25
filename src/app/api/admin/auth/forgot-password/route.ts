@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { createPasswordResetToken, getAdminAuthConfig, normaliseStaffEmail } from "@/server/admin-auth.ts";
-import { connectDb } from "@/server/db.ts";
-import { sendPasswordResetEmail } from "@/server/email.ts";
-import { guardWrite, json, readJsonBody, serverError } from "@/server/http.ts";
-import { rateLimit } from "@/server/rate-limit.ts";
+import { createPasswordResetToken, getAdminAuthConfig, normaliseStaffEmail } from "../../../../../server/admin-auth.ts";
+import { connectDb } from "../../../../../server/db.ts";
+import { sendPasswordResetEmail } from "../../../../../server/email.ts";
+import { guardWrite, json, readJsonBody, serverError } from "../../../../../server/http.ts";
+import { rateLimit } from "../../../../../server/rate-limit.ts";
 
 const forgotSchema = z
   .object({
@@ -50,11 +50,17 @@ export async function POST(request: Request) {
         : (process.env.SITE_URL?.replace(/\/$/, "") || reqUrl.origin);
       const resetUrl = `${siteUrl}/admin/reset-password?token=${encodeURIComponent(tokenResult.rawToken)}`;
 
-      await sendPasswordResetEmail({
+      const emailResult = await sendPasswordResetEmail({
         to: tokenResult.email,
         name: tokenResult.displayName,
         resetUrl,
       });
+
+      if (!emailResult.sent) {
+        console.error(
+          `[AUTH] Password reset email failed to deliver to ${tokenResult.email} (mode: ${emailResult.mode}, code: ${emailResult.error || "delivery_failed"})`,
+        );
+      }
     }
 
     // Always return a positive message to avoid email enumeration

@@ -329,8 +329,9 @@ export async function sendPasswordResetEmail(input: SendResetEmailInput): Promis
       site.email;
     const senderName = process.env.BREVO_SENDER_NAME?.trim() || "Falken Restaurang & Pizzeria";
 
+    let response: Response;
     try {
-      const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      response = await fetch("https://api.brevo.com/v3/smtp/email", {
         method: "POST",
         headers: {
           accept: "application/json",
@@ -345,20 +346,19 @@ export async function sendPasswordResetEmail(input: SendResetEmailInput): Promis
           textContent: text,
         }),
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Brevo API ${response.status}: ${errorText}`);
-      }
-
-      console.log(`[EMAIL] Password reset email sent successfully to ${to} via Brevo API`);
-      return { sent: true, mode: "brevo", resetUrl };
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error(`[EMAIL ERROR] Failed to send via Brevo API to ${to}:`, errorMsg);
-      logDevResetBox(to, resetUrl, errorMsg);
-      return { sent: true, mode: "dev", resetUrl, error: errorMsg };
+    } catch {
+      console.error(`[EMAIL ERROR] Failed to send via Brevo API to ${to}: code=brevo_network_error`);
+      return { sent: false, mode: "brevo", resetUrl, error: "brevo_network_error" };
     }
+
+    if (!response.ok) {
+      const statusCode = response.status;
+      console.error(`[EMAIL ERROR] Failed to send via Brevo API to ${to}: code=brevo_http_error_${statusCode}`);
+      return { sent: false, mode: "brevo", resetUrl, error: `brevo_http_error_${statusCode}` };
+    }
+
+    console.log(`[EMAIL] Password reset email sent successfully to ${to} via Brevo API`);
+    return { sent: true, mode: "brevo", resetUrl };
   }
 
   // 2. Standard SMTP (Supports Brevo SMTP relay or any provider)
@@ -384,29 +384,33 @@ export async function sendPasswordResetEmail(input: SendResetEmailInput): Promis
 
       console.log(`[EMAIL] Password reset email sent successfully to ${to} via SMTP (${smtp.host})`);
       return { sent: true, mode: "smtp", resetUrl };
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error(`[EMAIL ERROR] Failed to send via SMTP to ${to}:`, errorMsg);
-      // Fallback: log the reset URL to console so developer/admin is never blocked
-      logDevResetBox(to, resetUrl, errorMsg);
-      return { sent: true, mode: "dev", resetUrl, error: errorMsg };
+    } catch {
+      console.error(`[EMAIL ERROR] Failed to send via SMTP to ${to}: code=smtp_send_error`);
+      return { sent: false, mode: "smtp", resetUrl, error: "smtp_send_error" };
     }
   }
 
-  // If SMTP is not yet configured, log cleanly to server terminal for instant local usage
+  // 3. Fallback when no provider is configured
+  // Production environments MUST fail closed
+  if (process.env.NODE_ENV === "production") {
+    console.error(`[EMAIL ERROR] Password reset delivery failed for ${to}: code=no_provider_configured`);
+    return { sent: false, mode: "dev", resetUrl, error: "no_provider_configured" };
+  }
+
+  // Local development only: log cleanly to server terminal for instant local usage
   logDevResetBox(to, resetUrl);
   return { sent: true, mode: "dev", resetUrl };
 }
 
-function logDevResetBox(to: string, resetUrl: string, errorNotice?: string) {
+function logDevResetBox(to: string, resetUrl: string) {
+  if (process.env.NODE_ENV === "production") return;
   const border = "═".repeat(78);
   console.log(`
 ╔${border}╗
 ║                    FALKEN ADMIN - ÅTERSTÄLLNINGSLÄNK                         ║
 ╠${border}╣
 ║ Mottagare:  ${to.padEnd(65)}║
-${errorNotice ? `║ OBS:        SMTP misslyckades (${errorNotice.slice(0, 50).padEnd(50)}) ║\n` : ""
-}║ Reset URL:  ${resetUrl.padEnd(65)}║
+║ Reset URL:  ${resetUrl.padEnd(65)}║
 ║ Giltig i:   30 minuter                                                       ║
 ╚${border}╝
 `);
