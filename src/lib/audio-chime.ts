@@ -38,7 +38,7 @@ function scheduleTone(
 }
 
 /**
- * Plays a warm, clear, ~1.85s multi-tone notification chime for incoming orders.
+ * Plays a warm, clear, ~3.2s double multi-tone notification chime for incoming orders.
  * Synthesized using Web Audio API — 100% self-contained, no external mp3 files required.
  */
 export function playOrderChime(): boolean {
@@ -54,11 +54,13 @@ export function playOrderChime(): boolean {
       });
     }
 
-    // Rising D-major chime (D5 -> F#5 -> A5 -> D6), ~1.85s total duration
-    scheduleTone(ctx, 587.33, 0.0, 0.38, 0.28);
-    scheduleTone(ctx, 739.99, 0.16, 0.42, 0.3);
-    scheduleTone(ctx, 880.0, 0.34, 0.61, 0.35);
-    scheduleTone(ctx, 1174.66, 0.78, 1.07, 0.32);
+    // Two rising D-major chimes (D5 -> F#5 -> A5 -> D6), ~3.2s total duration
+    for (const phraseOffset of [0, 1.35]) {
+      scheduleTone(ctx, 587.33, phraseOffset + 0.0, 0.35, 0.3);
+      scheduleTone(ctx, 739.99, phraseOffset + 0.16, 0.4, 0.32);
+      scheduleTone(ctx, 880.0, phraseOffset + 0.34, 0.55, 0.36);
+      scheduleTone(ctx, 1174.66, phraseOffset + 0.54, phraseOffset === 0 ? 0.65 : 1.3, 0.34);
+    }
 
     return true;
   } catch (err) {
