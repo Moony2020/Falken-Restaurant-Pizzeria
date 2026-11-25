@@ -17,20 +17,21 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    services:
-      mongo:
-        image: mongo:7
-        ports:
-          - 27017:27017
     env:
       # Throwaway database inside the job container. Real secrets are never needed for CI.
-      MONGODB_URI_TEST: mongodb://127.0.0.1:27017/falken_test
+      MONGODB_URI_TEST: mongodb://127.0.0.1:27018/falken_test?replicaSet=rs0&directConnection=true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
+      - name: Start MongoDB replica set (falken-mongo-test)
+        run: |
+          docker run -d --name falken-mongo-test -p 127.0.0.1:27018:27018 -p 127.0.0.1:27017:27018 mongo:7 mongod --port 27018 --replSet rs0 --bind_ip_all
+          until docker exec falken-mongo-test mongosh --port 27018 --eval "print('ready')" --quiet; do sleep 1; done
+          docker exec falken-mongo-test mongosh --port 27018 --eval "rs.initiate({_id: 'rs0', members: [{_id: 0, host: '127.0.0.1:27018'}]})"
+          until docker exec falken-mongo-test mongosh --port 27018 --eval "if (!db.hello().isWritablePrimary) quit(1)" --quiet; do sleep 1; done
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck

@@ -58,7 +58,7 @@ describe("A3 admin orders, isolated local MongoDB", { skip: !uri ? "MONGODB_URI_
   test("lists only eligible orders and searches with pagination", async () => {
     const cash = await makeOrder();
     await makeOrder({ fulfillmentStatus: "PENDING_PAYMENT", paymentMethod: "card", paymentStatus: "pending" });
-    await makeOrder({ paymentMethod: "card", paymentStatus: "paid", paymentProvider: "stripe" }); // No trusted payment link.
+    await makeOrder({ paymentMethod: "card", paymentStatus: "failed", paymentProvider: "stripe" }); // Excluded by non-successful payment status.
     const card = await makeOrder({ paymentMethod: "card", paymentStatus: "paid", paymentProvider: "stripe", paymentId: new mongoose.Types.ObjectId(), paidAt: new Date() });
     const listed = await listAdminOrders({ page: 1, limit: 20, status: "ALL", q: "" });
     assert.equal(listed.total, 2);

@@ -44,6 +44,7 @@ function nextPublicId(): string {
 
 test("R3B Financial Dashboard UI & Analytics Integration Matrix (R3B-01 through R3B-12)", async (t) => {
   before(async () => {
+    process.env.ADMIN_SESSION_SECRET = "falken-r3b-test-admin-secret-min-32-chars-long";
     await mongoose.connect(TEST_URI);
   });
 

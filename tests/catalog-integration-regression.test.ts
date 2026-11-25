@@ -24,10 +24,8 @@ const VALID_PICKUP_AT = "2026-10-22T11:00:00.000Z"; // Valid slot on 15-min grid
 const APPROVED_IMAGE = "/images/dishes/pizza/vesuvio.webp";
 
 before(async () => {
-  // Fail-closed guard
-  if (process.env.MONGODB_URI && (process.env.MONGODB_URI.includes("mongodb.net") || process.env.MONGODB_URI.includes("mongodb+srv"))) {
-    throw new Error("FAIL-CLOSED: MONGODB_URI points to remote/Atlas! ABORTING.");
-  }
+  // Clear any ambient remote MONGODB_URI loaded from .env.local to avoid connecting or failing
+  delete process.env.MONGODB_URI;
 
   await mongoose.disconnect();
   await mongoose.connect(TEST_MONGODB_URI, {

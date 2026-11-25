@@ -51,6 +51,7 @@ function nextPublicId(): string {
 
 test("R3A Financial Reporting Backend — Isolated Acceptance Matrix (R3A-01 through R3A-18)", async (t) => {
   before(async () => {
+    process.env.ADMIN_SESSION_SECRET = "falken-r3a-test-admin-secret-min-32-chars-long";
     await mongoose.connect(TEST_URI);
   });
 
@@ -541,6 +542,7 @@ test("R3A Financial Reporting Backend — Isolated Acceptance Matrix (R3A-01 thr
       externalReference: extRef,
       idempotencyKey: idemKey,
       staff: adminActor,
+      now: paidAt,
     });
     assert.equal(firstCall.ok, true);
     assert.equal((firstCall as { changed: boolean }).changed, true);
@@ -554,6 +556,7 @@ test("R3A Financial Reporting Backend — Isolated Acceptance Matrix (R3A-01 thr
       externalReference: extRef,
       idempotencyKey: idemKey,
       staff: adminActor,
+      now: paidAt,
     });
     assert.equal(replayCall.ok, true);
     assert.equal((replayCall as { changed: boolean }).changed, false, "Idempotent replay must report changed: false");
