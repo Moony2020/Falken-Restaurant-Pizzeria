@@ -5,7 +5,13 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { EyeIcon, EyeOffIcon, ArrowIcon } from "@/components/icons";
 
-export function AdminResetPasswordForm() {
+export function AdminResetPasswordForm({
+  verifyTimeoutMs = 5000,
+  slowThresholdMs = 2500,
+}: {
+  verifyTimeoutMs?: number;
+  slowThresholdMs?: number;
+} = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token") || "";
@@ -14,6 +20,9 @@ export function AdminResetPasswordForm() {
   const [tokenValid, setTokenValid] = useState<boolean | null>(() => (!token ? false : null));
   const [userEmail, setUserEmail] = useState<string>("");
   const [userName, setUserName] = useState<string>("");
+  const [verificationNotice, setVerificationNotice] = useState<string | null>(null);
+  const [slowVerification, setSlowVerification] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -39,29 +48,100 @@ export function AdminResetPasswordForm() {
     return () => clearTimeout(timer);
   }, [success, countdown, router]);
 
-  // Validate token on mount
+  // Validate token on mount with bounded timeout (default 5s) and graceful fallback
   useEffect(() => {
     if (!token) return;
 
     let isMounted = true;
+    const controller = new AbortController();
+
+    // Visual hint if verification takes longer than slowThresholdMs (default 2.5s)
+    const slowTimer = setTimeout(() => {
+      if (isMounted) setSlowVerification(true);
+    }, slowThresholdMs);
+
+    // Hard timeout after verifyTimeoutMs (default 5s) to prevent indefinite spinner lockup
+    const timeoutTimer = setTimeout(() => {
+      controller.abort();
+    }, verifyTimeoutMs);
+
     async function verify() {
       try {
-        const res = await fetch(`/api/admin/auth/verify-reset-token?token=${encodeURIComponent(token)}`);
-        const data = await res.json().catch(() => null);
+        const res = await fetch(`/api/admin/auth/verify-reset-token?token=${encodeURIComponent(token)}`, {
+          signal: controller.signal,
+          cache: "no-store",
+          headers: { Accept: "application/json" },
+        });
+
+        // NOTE: timeouts are NOT cleared here — the AbortController signal remains armed through
+        // the full async operation (fetch + response body read + JSON parse). Clearing here would
+        // leave a stalled res.json() uncovered.
+
+        if (!isMounted) return;
+        if (controller.signal.aborted) {
+          throw new DOMException("The operation was aborted.", "AbortError");
+        }
+
+        if (res.ok) {
+          // res.json() is also covered by the signal — a body-read stall will trigger the abort.
+          // Do NOT swallow errors with .catch(() => null): an aborted or failed body read must
+          // enter the catch block below and NOT be misclassified as an invalid/expired token.
+          const data = await res.json();
+          if (controller.signal.aborted) {
+            throw new DOMException("The operation was aborted.", "AbortError");
+          }
+          clearTimeout(slowTimer);
+          clearTimeout(timeoutTimer);
+          if (!isMounted) return;
+          if (data?.valid === true) {
+            setTokenValid(true);
+            setUserEmail(data.email || "");
+            setUserName(data.name || "");
+            setVerificationNotice(null);
+          } else if (data?.valid === false) {
+            // Explicitly confirmed invalid or expired by the server
+            setTokenValid(false);
+            setVerificationNotice(null);
+          } else {
+            // Unexpected payload shape — do not falsely mark token invalid
+            setTokenValid(true);
+            setVerificationNotice(
+              "Förhandsgranskning kunde inte slutföras. Länken valideras automatiskt när du sparar ditt lösenord."
+            );
+          }
+        } else if (res.status === 400) {
+          clearTimeout(slowTimer);
+          clearTimeout(timeoutTimer);
+          // Explicitly invalid token format or missing token
+          setTokenValid(false);
+          setVerificationNotice(null);
+        } else {
+          clearTimeout(slowTimer);
+          clearTimeout(timeoutTimer);
+          // Server 5xx or transient response: gracefully allow form submission; server will validate on submit
+          setTokenValid(true);
+          setVerificationNotice(
+            "Förhandsgranskning kunde inte slutföras. Länken valideras automatiskt när du sparar ditt lösenord."
+          );
+        }
+      } catch {
+        clearTimeout(slowTimer);
+        clearTimeout(timeoutTimer);
 
         if (!isMounted) return;
 
-        if (res.ok && data?.valid) {
-          setTokenValid(true);
-          setUserEmail(data.email || "");
-          setUserName(data.name || "");
-        } else {
-          setTokenValid(false);
-        }
-      } catch {
-        if (isMounted) setTokenValid(false);
+        // Aborted (timeout) or network/body-read glitch (e.g. dev server compilation queue):
+        // Do NOT falsely mark token as invalid or silently valid — set unverified fallback + amber notice.
+        // The server will perform definitive validation on POST /api/admin/auth/reset-password.
+        setTokenValid(true);
+        setVerificationNotice(
+          "Förhandsgranskningen tog längre tid än väntat. Du kan fylla i ditt lösenord ändå – länken verifieras när du sparar."
+        );
       } finally {
-        if (isMounted) setChecking(false);
+        if (isMounted) {
+          setChecking(false);
+          setSlowVerification(false);
+        }
       }
     }
 
@@ -69,8 +149,11 @@ export function AdminResetPasswordForm() {
 
     return () => {
       isMounted = false;
+      clearTimeout(slowTimer);
+      clearTimeout(timeoutTimer);
+      controller.abort();
     };
-  }, [token]);
+  }, [token, retryCount, slowThresholdMs, verifyTimeoutMs]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -113,9 +196,16 @@ export function AdminResetPasswordForm() {
   // Loading state
   if (checking) {
     return (
-      <div className="py-8 text-center space-y-3">
+      <div className="py-8 text-center space-y-4">
         <div className="mx-auto size-9 animate-spin rounded-full border-2 border-gold border-t-transparent" />
-        <p className="text-xs text-muted">Verifierar återställningslänk…</p>
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-ink">Verifierar återställningslänk…</p>
+          {slowVerification && (
+            <p className="text-[11px] text-muted animate-pulse">
+              Förbereder anslutningen, vänligen vänta ett ögonblick…
+            </p>
+          )}
+        </div>
       </div>
     );
   }
@@ -138,6 +228,16 @@ export function AdminResetPasswordForm() {
         </div>
 
         <div className="flex flex-col gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => {
+              setChecking(true);
+              setRetryCount((c) => c + 1);
+            }}
+            className="flex min-h-11 w-full items-center justify-center rounded-xl border border-line bg-white px-5 text-xs font-semibold text-ink shadow-2xs transition hover:bg-gold/10 hover:border-gold/30 cursor-pointer"
+          >
+            Försök verifiera igen
+          </button>
           <Link
             href="/admin/forgot-password"
             className="flex min-h-12 w-full items-center justify-center rounded-xl bg-gold px-5 font-semibold text-ink shadow-sm transition hover:bg-gold-light"
@@ -193,6 +293,22 @@ export function AdminResetPasswordForm() {
       {userEmail && (
         <div className="rounded-xl border border-line bg-paper px-3.5 py-2.5 text-xs text-muted">
           Återställer lösenord för <span className="font-semibold text-ink">{userName ? `${userName} (${userEmail})` : userEmail}</span>
+        </div>
+      )}
+      {verificationNotice && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs text-amber-900 leading-relaxed space-y-1.5">
+          <p>{verificationNotice}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setChecking(true);
+              setVerificationNotice(null);
+              setRetryCount((c) => c + 1);
+            }}
+            className="font-semibold underline hover:text-amber-950 cursor-pointer"
+          >
+            Försök verifiera igen
+          </button>
         </div>
       )}
       <form onSubmit={submit} className="space-y-5" noValidate>

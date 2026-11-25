@@ -1,6 +1,6 @@
-import { getAdminAuthConfig, verifyPasswordResetToken } from "@/server/admin-auth.ts";
-import { connectDb } from "@/server/db.ts";
-import { json, serverError } from "@/server/http.ts";
+import { getAdminAuthConfig, verifyPasswordResetToken } from "@/server/admin-auth";
+import { connectDb } from "@/server/db";
+import { json, serverError } from "@/server/http";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
