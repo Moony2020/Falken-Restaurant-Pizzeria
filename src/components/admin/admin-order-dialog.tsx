@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { AdminOrderDetail } from "@/server/admin-orders";
 import { AdminCancelDialog } from "./admin-cancel-dialog";
 import { AdminRefundDialog } from "./admin-refund-dialog";
@@ -49,6 +50,7 @@ export function AdminOrderDialog({
   }) => Promise<{ ok: boolean; error?: string }>;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
+  const paymentDialogRef = useRef<HTMLElement>(null);
   const [collectionMethod, setCollectionMethod] = useState<"cash" | "card_terminal">("cash");
   const [paymentConfirmationOpen, setPaymentConfirmationOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -58,7 +60,7 @@ export function AdminOrderDialog({
     const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     closeRef.current?.focus();
     const keydown = (event: KeyboardEvent) => {
-      if (cancelDialogOpen || refundDialogOpen) return;
+      if (cancelDialogOpen || refundDialogOpen || document.getElementById("payment-confirmation-title")) return;
       if (event.key === "Escape") onClose();
       if (event.key !== "Tab") return;
       const buttons = [...(closeRef.current?.closest('[role="dialog"]')?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href]') ?? [])];
@@ -69,6 +71,24 @@ export function AdminOrderDialog({
     return () => { document.removeEventListener("keydown", keydown); previous?.focus(); };
   }, [onClose, cancelDialogOpen, refundDialogOpen]);
 
+  useEffect(() => {
+    if (!paymentConfirmationOpen) return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const dialog = paymentDialogRef.current;
+    const buttons = [...(dialog?.querySelectorAll<HTMLButtonElement>("button:not(:disabled)") ?? [])];
+    buttons[0]?.focus();
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { event.preventDefault(); setPaymentConfirmationOpen(false); }
+      if (event.key !== "Tab" || buttons.length === 0) return;
+      if (event.shiftKey && document.activeElement === buttons[0]) { event.preventDefault(); buttons.at(-1)?.focus(); }
+      if (!event.shiftKey && document.activeElement === buttons.at(-1)) { event.preventDefault(); buttons[0]?.focus(); }
+    };
+    document.addEventListener("keydown", keydown);
+    return () => { document.removeEventListener("keydown", keydown); document.body.style.overflow = overflow; previous?.focus(); };
+  }, [paymentConfirmationOpen]);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-xs sm:p-6"
@@ -76,7 +96,7 @@ export function AdminOrderDialog({
         if (event.target === event.currentTarget && !cancelDialogOpen && !refundDialogOpen) onClose();
       }}
     >
-      <section role="dialog" aria-modal="true" aria-labelledby="admin-order-title" className="relative my-auto max-h-[82dvh] w-full max-w-2xl space-y-4 sm:space-y-5 overflow-y-auto rounded-2xl sm:rounded-3xl border border-[#e4ded2] bg-[#fbf9f4] p-4 sm:p-8 text-[#1f2328] shadow-2xl">
+      <section role="dialog" aria-modal="true" aria-labelledby="admin-order-title" inert={paymentConfirmationOpen} className="relative my-auto max-h-[82dvh] w-full max-w-2xl space-y-4 sm:space-y-5 overflow-y-auto rounded-2xl sm:rounded-3xl border border-[#e4ded2] bg-[#fbf9f4] p-4 sm:p-8 text-[#1f2328] shadow-2xl">
         {/* Close button top-right: perfectly circular, touch-friendly, aspect-square with SVG icon */}
         <button
           ref={closeRef}
@@ -239,9 +259,9 @@ export function AdminOrderDialog({
           </section>
         )}
 
-        {paymentConfirmationOpen && (
-          <div className="absolute inset-0 z-[60] grid place-items-center rounded-3xl bg-[#1f2328]/55 p-4" role="presentation">
-            <section role="alertdialog" aria-modal="true" aria-labelledby="payment-confirmation-title" className="w-full max-w-md rounded-3xl border border-[#e4ded2] bg-[#fbf9f4] p-6 shadow-2xl">
+        {paymentConfirmationOpen && typeof document !== "undefined" && createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#1f2328]/55 p-4" role="presentation" onMouseDown={(event) => event.stopPropagation()}>
+            <section ref={paymentDialogRef} role="alertdialog" aria-modal="true" aria-labelledby="payment-confirmation-title" className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-3xl border border-[#e4ded2] bg-[#fbf9f4] p-6 shadow-2xl">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#a78347]">Betalning vid avhämtning</p>
@@ -259,7 +279,7 @@ export function AdminOrderDialog({
               </div>
             </section>
           </div>
-        )}
+        , document.body)}
 
         {order.onSiteCollection && (
           <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">

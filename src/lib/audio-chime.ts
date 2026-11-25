@@ -12,8 +12,33 @@ function getAudioContext(): AudioContext | null {
   return audioCtx;
 }
 
+function scheduleTone(
+  ctx: AudioContext,
+  frequency: number,
+  startOffsetSeconds: number,
+  durationSeconds: number,
+  peakGain: number,
+) {
+  const startTime = ctx.currentTime + startOffsetSeconds;
+  const endTime = startTime + durationSeconds;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(frequency, startTime);
+
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(peakGain, startTime + 0.025);
+  gain.gain.exponentialRampToValueAtTime(0.001, endTime);
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(startTime);
+  osc.stop(endTime);
+}
+
 /**
- * Plays a warm, professional, two-tone notification chime for incoming orders.
+ * Plays a warm, clear, ~1.85s multi-tone notification chime for incoming orders.
  * Synthesized using Web Audio API — 100% self-contained, no external mp3 files required.
  */
 export function playOrderChime(): boolean {
@@ -29,37 +54,11 @@ export function playOrderChime(): boolean {
       });
     }
 
-    const now = ctx.currentTime;
-
-    // Tone 1: 587.33 Hz (D5)
-    const osc1 = ctx.createOscillator();
-    const gain1 = ctx.createGain();
-    osc1.type = "sine";
-    osc1.frequency.setValueAtTime(587.33, now);
-
-    gain1.gain.setValueAtTime(0, now);
-    gain1.gain.linearRampToValueAtTime(0.25, now + 0.02);
-    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
-
-    osc1.connect(gain1);
-    gain1.connect(ctx.destination);
-    osc1.start(now);
-    osc1.stop(now + 0.35);
-
-    // Tone 2: 880.00 Hz (A5) - starts shortly after tone 1
-    const osc2 = ctx.createOscillator();
-    const gain2 = ctx.createGain();
-    osc2.type = "sine";
-    osc2.frequency.setValueAtTime(880.0, now + 0.12);
-
-    gain2.gain.setValueAtTime(0, now + 0.12);
-    gain2.gain.linearRampToValueAtTime(0.35, now + 0.15);
-    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
-
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
-    osc2.start(now + 0.12);
-    osc2.stop(now + 0.85);
+    // Rising D-major chime (D5 -> F#5 -> A5 -> D6), ~1.85s total duration
+    scheduleTone(ctx, 587.33, 0.0, 0.38, 0.28);
+    scheduleTone(ctx, 739.99, 0.16, 0.42, 0.3);
+    scheduleTone(ctx, 880.0, 0.34, 0.61, 0.35);
+    scheduleTone(ctx, 1174.66, 0.78, 1.07, 0.32);
 
     return true;
   } catch (err) {
