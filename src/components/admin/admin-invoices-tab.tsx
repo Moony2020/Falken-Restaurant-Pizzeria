@@ -657,15 +657,15 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
       )}
 
       {/* Real KPI Cards calculated from real restaurant data */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 min-[900px]:!grid-cols-4">
         {/* Card 1: Obetalda */}
         <div className="flex items-center gap-3.5 rounded-2xl border border-[#efe9dc] bg-[#fffcf5] p-4 shadow-xs">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#fff6e0] text-xl text-[#b45309]">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#fff6e0] text-xl text-[#b45309] max-[480px]:h-9 max-[480px]:w-9 max-[480px]:text-base">
             📄
           </div>
           <div>
             <p className="text-xs font-medium text-[#7c828d] leading-tight">Obetalda</p>
-            <p className="mt-0.5 text-xl font-bold text-[#1f2328] leading-tight">
+            <p className="mt-0.5 text-xl font-bold leading-tight text-[#1f2328] max-[480px]:text-base">
               {formatSek(metrics.unpaidSum)}
             </p>
             <p className="text-[11px] text-[#8c827a] mt-0.5">{metrics.unpaidCount} fakturor</p>
@@ -674,12 +674,12 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
 
         {/* Card 2: Betalda */}
         <div className="flex items-center gap-3.5 rounded-2xl border border-[#efe9dc] bg-[#fffcf5] p-4 shadow-xs">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#eefcf2] text-xl text-[#15803d]">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#eefcf2] text-xl text-[#15803d] max-[480px]:h-9 max-[480px]:w-9 max-[480px]:text-base">
             ✓
           </div>
           <div>
             <p className="text-xs font-medium text-[#7c828d] leading-tight">Betalda</p>
-            <p className="mt-0.5 text-xl font-bold text-[#1f2328] leading-tight">
+            <p className="mt-0.5 text-xl font-bold leading-tight text-[#1f2328] max-[480px]:text-base">
               {formatSek(metrics.paidSum)}
             </p>
             <p className="text-[11px] text-[#8c827a] mt-0.5">{metrics.paidCount} fakturor</p>
@@ -688,12 +688,12 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
 
         {/* Card 3: Förfallna */}
         <div className="flex items-center gap-3.5 rounded-2xl border border-[#fee2e2] bg-[#fff8f8] p-4 shadow-xs">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#fee2e2] text-xl text-[#b91c1c]">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#fee2e2] text-xl text-[#b91c1c] max-[480px]:h-9 max-[480px]:w-9 max-[480px]:text-base">
             ⚠️
           </div>
           <div>
             <p className="text-xs font-medium text-[#991b1b] leading-tight">Förfallna</p>
-            <p className="mt-0.5 text-xl font-bold text-[#b91c1c] leading-tight">
+            <p className="mt-0.5 text-xl font-bold leading-tight text-[#b91c1c] max-[480px]:text-base">
               {formatSek(metrics.overdueSum)}
             </p>
             <p className="text-[11px] text-[#8c827a] mt-0.5">{metrics.overdueCount} faktura</p>
@@ -702,14 +702,14 @@ export function AdminInvoicesTab({ orders = [], onOpenOrder }: AdminInvoicesTabP
 
         {/* Card 4: Totalt per vald period */}
         <div className="flex items-center gap-3.5 rounded-2xl border border-[#efe9dc] bg-[#fffcf5] p-4 shadow-xs">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#f5ede0] text-xl text-[#837147]">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#f5ede0] text-xl text-[#837147] max-[480px]:h-9 max-[480px]:w-9 max-[480px]:text-base">
             🪙
           </div>
           <div>
             <p className="text-xs font-medium text-[#7c828d] leading-tight">
               Totalt {periodLabelMap[periodFilter] || "denna månad"}
             </p>
-            <p className="mt-0.5 text-xl font-bold text-[#1f2328] leading-tight">
+            <p className="mt-0.5 text-xl font-bold leading-tight text-[#1f2328] max-[480px]:text-base">
               {formatSek(metrics.totalSum)}
             </p>
             <p className="text-[11px] text-[#8c827a] mt-0.5">

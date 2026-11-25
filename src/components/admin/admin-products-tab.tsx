@@ -332,24 +332,28 @@ export function AdminProductsTab() {
         </div>
       </header>
 
-      <div className="grid gap-3 rounded-2xl border border-[#e7e1d5] bg-white p-4 shadow-xs md:grid-cols-[minmax(0,1fr)_12rem_10rem]">
-        <label className="relative block">
+      <div className="grid grid-cols-1 gap-3 rounded-2xl border border-[#e7e1d5] bg-white p-4 shadow-xs sm:grid-cols-2 lg:flex lg:items-start lg:pb-0 lg:pt-8">
+        <label className="relative block sm:col-span-2 lg:min-w-0 lg:flex-1 lg:-translate-y-2">
           <span className="sr-only">Sök produkt</span>
           <svg aria-hidden="true" viewBox="0 0 24 24" className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#8c827a]" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
           <input value={query} onChange={(event) => changeFilter({ query: event.target.value })} placeholder="Sök produktnamn eller slug…" className="w-full rounded-xl border border-[#e4ded2] bg-[#faf8f4] py-2.5 pl-10 pr-3 text-sm text-[#1f2328] outline-none transition focus:border-[#b88e4d] focus:bg-white" />
         </label>
-        <label className="text-xs font-semibold text-[#5f625f]">Kategori
-          <select value={category} onChange={(event) => changeFilter({ category: event.target.value })} className="mt-1 block w-full rounded-xl border border-[#e4ded2] bg-white px-3 py-2.5 text-sm font-normal text-[#1f2328]">
+        <label className="relative block lg:w-44 lg:shrink-0 lg:-translate-y-2">
+          <span className="mb-1 block whitespace-nowrap text-xs font-semibold text-[#5f625f] lg:absolute lg:-top-5 lg:left-0">Kategori</span>
+          <select value={category} onChange={(event) => changeFilter({ category: event.target.value })} className="block w-full appearance-none rounded-xl border border-[#e4ded2] bg-white px-3 py-2.5 pr-10 text-sm font-normal text-[#1f2328] outline-none transition focus:border-[#b88e4d] focus:ring-1 focus:ring-[#b88e4d]">
             <option value="ALL">Alla kategorier</option>
             {data?.categories.map((item) => <option key={item.slug} value={item.slug}>{item.nameSv}</option>)}
           </select>
+          <svg aria-hidden="true" viewBox="0 0 20 20" className="pointer-events-none absolute right-2.5 top-[calc(50%+0.625rem)] h-3.5 w-3.5 -translate-y-1/2 text-[#8c827a] lg:top-1/2" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.25a.75.75 0 0 1-1.06 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clipRule="evenodd" /></svg>
         </label>
-        <label className="text-xs font-semibold text-[#5f625f]">Status
-          <select value={status} onChange={(event) => changeFilter({ status: event.target.value as "ALL" | "ACTIVE" | "INACTIVE" })} className="mt-1 block w-full rounded-xl border border-[#e4ded2] bg-white px-3 py-2.5 text-sm font-normal text-[#1f2328]">
+        <label className="relative block lg:w-36 lg:shrink-0 lg:-translate-y-2">
+          <span className="mb-1 block whitespace-nowrap text-xs font-semibold text-[#5f625f] lg:absolute lg:-top-5 lg:left-0">Status</span>
+          <select value={status} onChange={(event) => changeFilter({ status: event.target.value as "ALL" | "ACTIVE" | "INACTIVE" })} className="block w-full appearance-none rounded-xl border border-[#e4ded2] bg-white px-3 py-2.5 pr-10 text-sm font-normal text-[#1f2328] outline-none transition focus:border-[#b88e4d] focus:ring-1 focus:ring-[#b88e4d]">
             <option value="ALL">Alla statusar</option>
             <option value="ACTIVE">Aktiv</option>
             <option value="INACTIVE">Inaktiv</option>
           </select>
+          <svg aria-hidden="true" viewBox="0 0 20 20" className="pointer-events-none absolute right-2.5 top-[calc(50%+0.625rem)] h-3.5 w-3.5 -translate-y-1/2 text-[#8c827a] lg:top-1/2" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.25a.75.75 0 0 1-1.06 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clipRule="evenodd" /></svg>
         </label>
       </div>
 

@@ -310,8 +310,8 @@ export function AdminModifiersTab() {
       </header>
 
       {/* Filter and Search Bar */}
-      <div className="grid gap-3 rounded-2xl border border-[#e7e1d5] bg-white p-4 shadow-xs md:grid-cols-[minmax(0,1fr)_12rem_11rem_10rem]">
-        <label className="relative block">
+      <div className="grid grid-cols-1 gap-3 rounded-2xl border border-[#e7e1d5] bg-white p-4 shadow-xs min-[480px]:grid-cols-3 lg:flex lg:items-start lg:pb-0 lg:pt-8">
+        <label className="relative block min-[480px]:col-span-3 lg:min-w-0 lg:flex-1 lg:-translate-y-2">
           <span className="sr-only">Sök tillägg</span>
           <svg
             aria-hidden="true"
@@ -332,12 +332,12 @@ export function AdminModifiersTab() {
           />
         </label>
 
-        <label className="block">
+        <label className="relative block lg:w-36 lg:shrink-0 lg:-translate-y-2">
           <span className="sr-only">Filtrera på status</span>
           <select
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}
-            className="w-full rounded-xl border border-[#dcd4c5] bg-[#fbfaf8] py-2 px-3 text-xs text-[#1f2328] outline-hidden focus:border-[#a78347] focus:bg-white focus:ring-1 focus:ring-[#a78347]"
+            className="w-full appearance-none rounded-xl border border-[#dcd4c5] bg-[#fbfaf8] py-2 pl-3 pr-9 text-xs text-[#1f2328] outline-hidden focus:border-[#a78347] focus:bg-white focus:ring-1 focus:ring-[#a78347]"
           >
             <option value="ALL">Alla statusar</option>
             <option value="ACTIVE">Endast aktiva</option>
@@ -345,14 +345,17 @@ export function AdminModifiersTab() {
             <option value="NEEDS_REVIEW">Kräver granskning</option>
             <option value="CONFIRMED">Bekräftat pris</option>
           </select>
+          <svg aria-hidden="true" viewBox="0 0 20 20" className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8c827a]" fill="currentColor">
+            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.25a.75.75 0 0 1-1.06 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clipRule="evenodd" />
+          </svg>
         </label>
 
-        <label className="block">
+        <label className="relative block lg:w-32 lg:shrink-0 lg:-translate-y-2">
           <span className="sr-only">Filtrera på grupp</span>
           <select
             value={groupFilter}
             onChange={(event) => setGroupFilter(event.target.value)}
-            className="w-full rounded-xl border border-[#dcd4c5] bg-[#fbfaf8] py-2 px-3 text-xs text-[#1f2328] outline-hidden focus:border-[#a78347] focus:bg-white focus:ring-1 focus:ring-[#a78347]"
+            className="w-full appearance-none rounded-xl border border-[#dcd4c5] bg-[#fbfaf8] py-2 pl-3 pr-9 text-xs text-[#1f2328] outline-hidden focus:border-[#a78347] focus:bg-white focus:ring-1 focus:ring-[#a78347]"
           >
             <option value="ALL">Alla grupper</option>
             <option value="extra">Extra ingredienser</option>
@@ -360,19 +363,25 @@ export function AdminModifiersTab() {
             <option value="saser">Såser &amp; tillbehör</option>
             <option value="glutenfri">Glutenfri</option>
           </select>
+          <svg aria-hidden="true" viewBox="0 0 20 20" className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8c827a]" fill="currentColor">
+            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.25a.75.75 0 0 1-1.06 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clipRule="evenodd" />
+          </svg>
         </label>
 
-        <label className="block">
+        <label className="relative block lg:w-40 lg:shrink-0 lg:-translate-y-2">
           <span className="sr-only">Sortera</span>
           <select
             value={sortBy}
             onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
-            className="w-full rounded-xl border border-[#dcd4c5] bg-[#fbfaf8] py-2 px-3 text-xs text-[#1f2328] outline-hidden focus:border-[#a78347] focus:bg-white focus:ring-1 focus:ring-[#a78347]"
+            className="w-full appearance-none rounded-xl border border-[#dcd4c5] bg-[#fbfaf8] py-2 pl-3 pr-9 text-xs text-[#1f2328] outline-hidden focus:border-[#a78347] focus:bg-white focus:ring-1 focus:ring-[#a78347]"
           >
             <option value="labelSv">Sortera: Namn (A–Ö)</option>
             <option value="groupSlug">Sortera: Grupp</option>
             <option value="maxQty">Sortera: Max antal</option>
           </select>
+          <svg aria-hidden="true" viewBox="0 0 20 20" className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#8c827a]" fill="currentColor">
+            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.25a.75.75 0 0 1-1.06 0L5.21 8.27a.75.75 0 0 1 .02-1.06z" clipRule="evenodd" />
+          </svg>
         </label>
       </div>
 
@@ -387,8 +396,13 @@ export function AdminModifiersTab() {
             Inga tillägg matchade sökningen eller filtret.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+          <div
+            className="overflow-x-auto overscroll-x-contain"
+            tabIndex={0}
+            role="region"
+            aria-label="Tilläggstabell — scrolla horisontellt på små skärmar"
+          >
+            <table className="min-w-[62rem] w-full text-left text-xs">
               <thead className="border-b border-[#e8e2d5] bg-[#fbfaf7] text-[11px] font-semibold uppercase tracking-wider text-[#7c828d]">
                 <tr>
                   <th className="py-3 px-4">Tillägg &amp; Slug</th>

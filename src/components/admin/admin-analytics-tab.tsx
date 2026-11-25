@@ -137,7 +137,18 @@ export function AdminAnalyticsTab({
         <div className="inline-flex items-center gap-2 rounded-xl border border-[#e4ded2] bg-white px-3.5 py-2 text-xs font-semibold text-[#1f2328] shadow-2xs">
           <span>📅</span>
           <span>1 nov. 2026 – 3 nov. 2026</span>
-          <span className="text-[#8c827a]">⌄</span>
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 20 20"
+            className="h-3.5 w-3.5 shrink-0 text-[#8c827a]"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 10.94l3.71-3.71a.75.75 0 1 1 1.06 1.06l-4.24 4.25a.75.75 0 0 1-1.06 0L5.21 8.27a.75.75 0 0 1 .02-1.06z"
+              clipRule="evenodd"
+            />
+          </svg>
         </div>
       </div>
 
