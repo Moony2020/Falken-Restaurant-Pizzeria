@@ -11,7 +11,7 @@ export function Footer() {
 
   return (
     <footer className="bg-ink text-ivory">
-      <div className="wrap grid gap-10 py-14 sm:grid-cols-2 sm:gap-x-12 sm:gap-y-10 lg:grid-cols-[1.3fr_0.8fr_1.45fr_1.35fr] lg:gap-10 xl:gap-12 lg:py-16">
+      <div className="wrap grid gap-10 py-14 min-[520px]:grid-cols-2 min-[520px]:gap-x-12 min-[520px]:gap-y-10 lg:grid-cols-[1.4fr_1fr_1.2fr_1.2fr] lg:gap-12 lg:py-16">
         <div className="space-y-5">
           <Logo />
           <p className="max-w-xs text-sm leading-relaxed text-muted-dark">
@@ -69,9 +69,9 @@ export function Footer() {
               <PhoneIcon className="size-5 shrink-0 text-gold" />
               {settings.phone}
             </a>
-            <a href={`mailto:${settings.email}`} className="flex items-center gap-3 hover:text-gold">
+            <a href={`mailto:${settings.email}`} className="flex items-center gap-3 break-all hover:text-gold">
               <MailIcon className="size-5 shrink-0 text-gold" />
-              <span className="break-words [word-break:break-word]">{settings.email}</span>
+              {settings.email}
             </a>
           </address>
         </div>

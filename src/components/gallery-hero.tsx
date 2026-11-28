@@ -1,11 +1,16 @@
+"use client";
+
 import Image from "next/image";
+import { useRestaurantSettings } from "@/lib/use-restaurant-settings";
 
 export function GalleryHero() {
+  const { settings } = useRestaurantSettings();
+
   return (
     <section className="relative w-full overflow-hidden bg-ink py-16 sm:py-24 md:py-28">
       {/* Background Image: Gallery Hero */}
       <Image
-        src="/images/gallery/gallery-hero.webp"
+        src={settings.galleryHeroImage || "/images/gallery/matsalen.webp"}
         alt="Falken Restaurang & Pizzeria – Galleri"
         fill
         priority

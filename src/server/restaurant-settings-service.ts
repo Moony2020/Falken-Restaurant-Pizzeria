@@ -34,9 +34,10 @@ export const ALLOWED_MENU_HERO_IMAGES = [
 ] as const;
 
 export const ALLOWED_GALLERY_HERO_IMAGES = [
-  "/images/gallery/gallery-hero.webp",
   "/images/gallery/matsalen.webp",
   "/images/gallery/inside.webp",
+  "/images/gallery/restaurant1.webp",
+  "/images/gallery/gallery-hero.webp",
 ] as const;
 
 export const ALLOWED_CONTACT_HERO_IMAGES = [
@@ -54,6 +55,10 @@ function resolveHeroImage(path: string | null | undefined) {
 
 function resolveMenuHeroImage(path: string | null | undefined) {
   return path === "/images/menu/menu-hero.webp" ? "/images/hero/Hero-image.webp" : path;
+}
+
+function resolveGalleryHeroImage(path: string | null | undefined) {
+  return (!path || path === "/images/gallery/gallery-hero.webp") ? "/images/gallery/matsalen.webp" : path;
 }
 
 export type ImageSlot = "hero" | "menuHero" | "galleryHero" | "contactHero";
@@ -347,7 +352,7 @@ export function resolveEffectiveSettings(
     heroImage: resolveHeroImage(doc?.heroImage) || heroImage || "/images/hero/menuhero.webp",
     menuHeroImage: resolveMenuHeroImage(doc?.menuHeroImage) || menuHeroImage || "/images/hero/Hero-image.webp",
     contactHeroImage: doc?.contactHeroImage || "/images/gallery/restaurant1.webp",
-    galleryHeroImage: doc?.galleryHeroImage || galleryHeroImage || "/images/gallery/gallery-hero.webp",
+    galleryHeroImage: resolveGalleryHeroImage(doc?.galleryHeroImage) || galleryHeroImage || "/images/gallery/matsalen.webp",
     prepMinutes: typeof doc?.prepMinutes === "number" ? doc.prepMinutes : PREP_MINUTES,
     lastPickupBeforeClose:
       typeof doc?.lastPickupBeforeClose === "number" ? doc.lastPickupBeforeClose : LAST_PICKUP_BEFORE_CLOSE,

@@ -89,4 +89,4 @@ export const menuHeroImage: string | null = "/images/hero/Hero-image.webp";
 export const contactHeroImage: string | null = "/images/hero/falken-kontakt.webp";
 
 /** Path under /public of a real photo for the gallery banner. While null, an illustration is shown. */
-export const galleryHeroImage: string | null = "/images/gallery/gallery-hero.webp";
+export const galleryHeroImage: string | null = "/images/gallery/matsalen.webp";

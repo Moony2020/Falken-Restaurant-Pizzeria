@@ -75,7 +75,7 @@ export const DEFAULT_PUBLIC_SETTINGS: PublicRestaurantSettings = {
   heroImage: heroImage || "/images/hero/menuhero.webp",
   menuHeroImage: menuHeroImage || "/images/hero/Hero-image.webp",
   contactHeroImage: "/images/gallery/restaurant1.webp",
-  galleryHeroImage: galleryHeroImage || "/images/gallery/gallery-hero.webp",
+  galleryHeroImage: galleryHeroImage || "/images/gallery/matsalen.webp",
   prepMinutes: PREP_MINUTES,
   lastPickupBeforeClose: LAST_PICKUP_BEFORE_CLOSE,
   revision: 0,
