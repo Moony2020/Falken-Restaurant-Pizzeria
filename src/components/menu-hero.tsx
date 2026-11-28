@@ -1,23 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { SearchIcon } from "@/components/icons";
 import { OpenStatus } from "@/components/open-status";
 import { useRestaurantSettings } from "@/lib/use-restaurant-settings";
 
-interface MenuHeroProps {
-  query: string;
-  setQuery: (query: string) => void;
-  disabled?: boolean;
-}
-
-export function MenuHero({ query, setQuery, disabled = false }: MenuHeroProps) {
+export function MenuHero() {
   const { settings } = useRestaurantSettings();
   const heroSrc = settings.menuHeroImage || "/images/hero/Hero-image.webp";
 
   return (
     <section aria-labelledby="menu-hero-title" className="bg-[linear-gradient(to_bottom,var(--color-ink-2)_0%,var(--color-ivory)_100%)]">
-      <div className="mx-auto w-full max-w-[1760px] px-3 pb-[10px] pt-2 sm:px-5 sm:pt-3 lg:px-7">
+      <div className="mx-auto w-full max-w-[1760px] px-3 pb-6 sm:pb-8 pt-2 sm:px-5 sm:pt-3 lg:px-7">
         <div className="relative isolate flex min-h-[23.5rem] items-center overflow-hidden rounded-[1.5rem] bg-[#1a1d22] px-5 py-6 ring-1 ring-white/10 sm:min-h-[25.5rem] sm:px-12 sm:py-10 lg:min-h-[calc(27rem+25px)] lg:px-14 xl:min-h-[calc(29rem+25px)] xl:px-16">
           {/* Background Hero Image */}
           <div className="pointer-events-none absolute inset-0 z-0 select-none overflow-hidden">
@@ -56,27 +49,7 @@ export function MenuHero({ query, setQuery, disabled = false }: MenuHeroProps) {
               <br className="hidden sm:inline" /> Alla priser anges i kronor.
             </p>
 
-            {/* Search Input */}
-            <div className="relative mt-6 w-full max-w-md sm:mt-7 sm:max-w-lg">
-              <label htmlFor="menu-search" className="sr-only">
-                Sök i menyn
-              </label>
-              <SearchIcon
-                className="pointer-events-none absolute left-4.5 top-1/2 z-10 size-5 -translate-y-1/2 text-stone-400"
-                aria-hidden="true"
-              />
-              <input
-                id="menu-search"
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Sök rätt, ingrediens eller nummer"
-                disabled={disabled}
-                className="h-12 sm:h-13 w-full rounded-full border border-white/20 bg-stone-900/60 pl-12 pr-5 text-sm sm:text-[0.95rem] text-white placeholder:text-stone-400 backdrop-blur-md transition duration-200 focus:border-[#c5a059] focus:bg-stone-950/80 focus:outline-none focus:ring-1 focus:ring-[#c5a059] disabled:opacity-50"
-              />
-            </div>
-
-            {/* Live Restaurant Open Status underneath search bar */}
+            {/* Live Restaurant Open Status */}
             <div className="mt-5 flex items-center sm:mt-6">
               <OpenStatus tone="dark" />
             </div>

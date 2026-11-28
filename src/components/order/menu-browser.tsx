@@ -153,7 +153,7 @@ export function MenuBrowser() {
 
   return (
     <>
-      <MenuHero query={query} setQuery={setQuery} disabled={!menu} />
+      <MenuHero />
 
       <div className="sticky top-16 z-30 bg-[#faf8f3]/95 backdrop-blur-md sm:top-20">
         <nav
