@@ -170,21 +170,21 @@ export function MenuBrowser() {
                     href="#alla"
                     onClick={(e) => selectTab(e, "alla")}
                     aria-current={!searching && isAll ? "true" : undefined}
-                    className={`group inline-flex min-h-[46px] items-center gap-2.5 rounded-full pl-1.5 pr-4 text-[0.84rem] sm:text-[0.88rem] font-semibold transition-all duration-200 select-none ${
+                    className={`group inline-flex min-h-[38px] sm:min-h-[42px] items-center gap-2 sm:gap-2.5 rounded-full pl-1 pr-3 sm:pl-1.5 sm:pr-3.5 text-xs sm:text-[0.84rem] font-semibold transition-all duration-200 select-none ${
                       !searching && isAll
                         ? "border border-[#181a1e] bg-[#181a1e] text-white shadow-sm"
                         : "border border-[#eae4d9] bg-white text-[#2d2926] shadow-[0_1px_4px_rgba(0,0,0,0.04)] hover:border-[#c5a059] hover:bg-stone-50/50"
                     }`}
                   >
                     <span
-                      className={`flex size-8 shrink-0 items-center justify-center rounded-full transition-colors ${
+                      className={`flex size-7 sm:size-7.5 shrink-0 items-center justify-center rounded-full transition-colors ${
                         !searching && isAll
                           ? "bg-[#dce6df] text-[#1c1f24]"
                           : "bg-[#eef2ef] text-[#2d2926]"
                       }`}
                       aria-hidden="true"
                     >
-                      <GridIcon className="size-3.5" />
+                      <GridIcon className="size-3 sm:size-3.5" />
                     </span>
                     <span>Alla</span>
                   </a>
@@ -202,14 +202,14 @@ export function MenuBrowser() {
                         href={`#${c.slug}`}
                         onClick={(e) => selectTab(e, c.slug)}
                         aria-current={current ? "true" : undefined}
-                        className={`group inline-flex min-h-[46px] items-center gap-2.5 rounded-full pl-1.5 pr-4 text-[0.84rem] sm:text-[0.88rem] font-semibold transition-all duration-200 select-none ${
+                        className={`group inline-flex min-h-[38px] sm:min-h-[42px] items-center gap-2 sm:gap-2.5 rounded-full pl-1 pr-3 sm:pl-1.5 sm:pr-3.5 text-xs sm:text-[0.84rem] font-semibold transition-all duration-200 select-none ${
                           current
                             ? "border border-[#181a1e] bg-[#181a1e] text-white shadow-sm"
                             : "border border-[#eae4d9] bg-white text-[#2d2926] shadow-[0_1px_4px_rgba(0,0,0,0.04)] hover:border-[#c5a059] hover:bg-stone-50/50"
                         }`}
                       >
                         <span
-                          className={`flex size-8 shrink-0 items-center justify-center rounded-full text-base sm:text-[1.05rem] leading-none transition-transform group-hover:scale-105 ${meta.bgColor}`}
+                          className={`flex size-7 sm:size-7.5 shrink-0 items-center justify-center rounded-full text-xs sm:text-sm leading-none transition-transform group-hover:scale-105 ${meta.bgColor}`}
                           aria-hidden="true"
                         >
                           {meta.emoji}
@@ -224,9 +224,9 @@ export function MenuBrowser() {
               state.status === "loading" &&
               Array.from({ length: 8 }, (_, i) => (
                 <li key={i} className="shrink-0" aria-hidden="true">
-                  <span className="flex h-[46px] w-28 animate-pulse items-center gap-2 rounded-full border border-[#eae4d9] bg-white pl-1.5 pr-4">
-                    <span className="size-8 rounded-full bg-cream" />
-                    <span className="h-3.5 w-14 rounded-full bg-cream" />
+                  <span className="flex h-[38px] sm:h-[42px] w-24 sm:w-28 animate-pulse items-center gap-2 rounded-full border border-[#eae4d9] bg-white pl-1 pr-3">
+                    <span className="size-7 sm:size-7.5 rounded-full bg-cream" />
+                    <span className="h-3 w-12 rounded-full bg-cream" />
                   </span>
                 </li>
               ))
