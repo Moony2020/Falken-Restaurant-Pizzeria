@@ -18,7 +18,7 @@ export function MenuHero({ query, setQuery, disabled = false }: MenuHeroProps) {
   return (
     <section aria-labelledby="menu-hero-title" className="bg-[linear-gradient(to_bottom,var(--color-ink-2)_0%,rgba(28,31,36,0.85)_40%,rgba(28,31,36,0.25)_78%,var(--color-ivory)_100%)]">
       <div className="mx-auto w-full max-w-[1760px] px-3 pb-2 pt-2 sm:px-5 sm:pt-3 lg:px-7">
-        <div className="relative isolate flex min-h-[23.5rem] items-center overflow-hidden rounded-[1.5rem] bg-[#1a1d22] px-5 py-6 shadow-[0_24px_50px_-24px_rgb(0_0_0/0.7)] ring-1 ring-white/10 sm:min-h-[25.5rem] sm:px-12 sm:py-10 lg:min-h-[calc(27rem+25px)] lg:px-14 xl:min-h-[calc(29rem+25px)] xl:px-16">
+        <div className="relative isolate flex min-h-[23.5rem] items-center overflow-hidden rounded-[1.5rem] bg-[#1a1d22] px-5 py-6 shadow-[0_12px_32px_-12px_rgba(0,0,0,0.25)] ring-1 ring-white/10 sm:min-h-[25.5rem] sm:px-12 sm:py-10 lg:min-h-[calc(27rem+25px)] lg:px-14 xl:min-h-[calc(29rem+25px)] xl:px-16">
           {/* Background Hero Image */}
           <div className="pointer-events-none absolute inset-0 z-0 select-none overflow-hidden">
             <Image
@@ -31,11 +31,11 @@ export function MenuHero({ query, setQuery, disabled = false }: MenuHeroProps) {
               className="object-cover object-[78%_center] sm:object-[74%_center] lg:object-[68%_center] xl:object-[62%_center]"
             />
 
-            {/* Soft, warm dark shadow on the left behind text matching homepage hero */}
-            <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 via-42% to-transparent" />
+            {/* Subtle, soft ambient dark shadow on the left behind text allowing natural wood to shine */}
+            <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-black/30 via-black/10 via-30% to-transparent" />
 
             {/* Mobile overlay */}
-            <div className="md:hidden absolute inset-0 bg-gradient-to-t from-black/60 via-black/40 to-black/20" />
+            <div className="md:hidden absolute inset-0 bg-gradient-to-t from-black/35 via-black/15 to-transparent" />
           </div>
 
           {/* Hero Content on the left */}
