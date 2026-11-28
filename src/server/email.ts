@@ -37,7 +37,7 @@ export function generatePasswordResetEmailHtml(name: string, resetUrl: string): 
     if (configuredSite && !configuredSite.includes("localhost") && !configuredSite.includes("127.0.0.1")) {
       return configuredSite.replace(/\/$/, "");
     }
-    return "https://falkenrestaurant.onrender.com";
+    return "https://falken-restaurant-pizzeria.vercel.app";
   })();
 
   return `<!DOCTYPE html>
