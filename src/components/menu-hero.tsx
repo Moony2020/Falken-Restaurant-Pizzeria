@@ -10,7 +10,7 @@ export function MenuHero() {
 
   return (
     <section aria-labelledby="menu-hero-title" className="bg-[linear-gradient(to_bottom,var(--color-ink-2)_0%,var(--color-ivory)_100%)]">
-      <div className="mx-auto w-full max-w-[1760px] px-3 pb-6 sm:pb-8 pt-2 sm:px-5 sm:pt-3 lg:px-7">
+      <div className="mx-auto w-full max-w-[1760px] px-3 pb-1.5 sm:pb-2 pt-2 sm:px-5 sm:pt-3 lg:px-7">
         <div className="relative isolate flex min-h-[23.5rem] items-center overflow-hidden rounded-[1.5rem] bg-[#1a1d22] px-5 py-6 ring-1 ring-white/10 sm:min-h-[25.5rem] sm:px-12 sm:py-10 lg:min-h-[calc(27rem+25px)] lg:px-14 xl:min-h-[calc(29rem+25px)] xl:px-16">
           {/* Background Hero Image */}
           <div className="pointer-events-none absolute inset-0 z-0 select-none overflow-hidden">

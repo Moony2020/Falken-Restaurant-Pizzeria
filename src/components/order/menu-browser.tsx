@@ -158,7 +158,7 @@ export function MenuBrowser() {
       <div className="sticky top-16 z-30 bg-[#faf8f3]/95 backdrop-blur-md sm:top-20">
         <nav
           aria-label="Menykategorier"
-          className="mx-auto w-full max-w-[1760px] px-3 py-2.5 sm:px-5 sm:py-3 lg:px-7"
+          className="mx-auto w-full max-w-[1760px] px-3 py-1.5 sm:px-5 sm:py-2 lg:px-7"
           aria-busy={state.status === "loading"}
         >
           <ul className="no-scrollbar flex flex-nowrap items-center gap-2.5 overflow-x-auto pb-1 scroll-smooth">
@@ -235,9 +235,9 @@ export function MenuBrowser() {
         </nav>
       </div>
 
-      <div id="menu-panel" className="mx-auto w-full max-w-[1760px] px-3 sm:px-5 lg:px-7 scroll-mt-44 py-6 sm:py-10">
+      <div id="menu-panel" className="mx-auto w-full max-w-[1760px] px-3 sm:px-5 lg:px-7 scroll-mt-44 pt-2 sm:pt-3 pb-8 sm:pb-12">
         {/* In-page menu search bar matching mockup */}
-        <div className="relative mb-6 sm:mb-8 w-full max-w-2xl">
+        <div className="relative mb-3 sm:mb-3.5 w-full max-w-2xl">
           <label htmlFor="in-menu-search" className="sr-only">
             Sök efter en rätt eller ingrediens
           </label>
