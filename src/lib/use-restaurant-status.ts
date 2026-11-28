@@ -29,6 +29,7 @@ let cachedSettings: {
 } = { onlineOrderingEnabled: true, manualOverride: null };
 
 let fetchPromise: Promise<void> | null = null;
+let latestFetchRequestId = 0;
 const listeners = new Set<() => void>();
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let channel: BroadcastChannel | null = null;
@@ -52,7 +53,7 @@ export function notifyStatusChange() {
     } catch {
       // Ignore storage errors
     }
-    void fetchRestaurantStatus();
+    void fetchRestaurantStatus(true);
   }
 }
 
@@ -60,28 +61,32 @@ function notify() {
   listeners.forEach((l) => l());
 }
 
-export function fetchRestaurantStatus(): Promise<void> {
-  if (fetchPromise) return fetchPromise;
-  fetchPromise = (async () => {
+export function fetchRestaurantStatus(force = false): Promise<void> {
+  if (fetchPromise && !force) return fetchPromise;
+  const requestId = ++latestFetchRequestId;
+  const request = (async () => {
     try {
       const res = await fetch("/api/restaurant/status", { cache: "no-store" });
       if (res.ok) {
         const data = (await res.json()) as RestaurantStatusResponse;
-        cachedSettings = {
-          onlineOrderingEnabled: data.onlineOrderingEnabled,
-          manualOverride: data.manualOverride ?? null,
-          season: data.season,
-          hours: data.hours,
-        };
-        notify();
+        if (requestId === latestFetchRequestId) {
+          cachedSettings = {
+            onlineOrderingEnabled: data.onlineOrderingEnabled,
+            manualOverride: data.manualOverride ?? null,
+            season: data.season,
+            hours: data.hours,
+          };
+          notify();
+        }
       }
     } catch {
       // Keep cached settings on network glitch
     } finally {
-      fetchPromise = null;
+      if (requestId === latestFetchRequestId) fetchPromise = null;
     }
   })();
-  return fetchPromise;
+  fetchPromise = request;
+  return request;
 }
 
 function startPolling() {
@@ -150,7 +155,7 @@ const getServerSnapshot = () => serverSnapshot;
 export function useRestaurantStatus(): {
   status: RestaurantStatus | null;
   loading: boolean;
-  reload: () => Promise<void>;
+  reload: (force?: boolean) => Promise<void>;
 } {
   const now = useNow();
   const settings = useSyncExternalStore(
@@ -159,8 +164,8 @@ export function useRestaurantStatus(): {
     getServerSnapshot,
   );
 
-  const reload = useCallback(async () => {
-    await fetchRestaurantStatus();
+  const reload = useCallback(async (force = false) => {
+    await fetchRestaurantStatus(force);
   }, []);
 
   if (now === null) {

@@ -45,6 +45,7 @@ export function AdminHoursTab() {
   const [season, setSeason] = useState<Season>("vinter");
   const [hours, setHours] = useState<CustomWeeklyHours>(() => getDefaultWeeklyHours("vinter"));
   const [manualOverride, setManualOverride] = useState<"open" | "closed" | null>(null);
+  const [syncedManualOverride, setSyncedManualOverride] = useState<"open" | "closed" | null>(null);
   const [announcement, setAnnouncement] = useState("");
 
   const currentStockholmDay = new Date().getDay(); // 0 = Sun ... 6 = Sat
@@ -80,6 +81,12 @@ export function AdminHoursTab() {
       active = false;
     };
   }, []);
+
+  const liveManualOverride = liveStatus?.manualOverride ?? null;
+  if (liveStatus?.hours && liveManualOverride !== syncedManualOverride) {
+    setSyncedManualOverride(liveManualOverride);
+    setManualOverride(liveManualOverride);
+  }
 
   // When changing season, prompt to load default hours for that season if desired
   function handleSeasonChange(newSeason: Season) {
