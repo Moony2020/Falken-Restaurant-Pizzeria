@@ -99,7 +99,7 @@ export function MenuBrowser() {
           className="wrap py-3"
           aria-busy={state.status === "loading"}
         >
-          <ul className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 lg:flex-wrap lg:overflow-visible lg:pb-0">
+          <ul className="no-scrollbar -mx-4 flex flex-nowrap items-center gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 scroll-smooth">
             {menu
               ? menu.categories.map((c) => {
                   const current = !searching && c.slug === active?.slug;

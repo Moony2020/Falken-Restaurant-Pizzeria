@@ -1,19 +1,15 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { ClockIcon } from "@/components/icons";
 import { MapEmbed } from "@/components/map-embed";
 import { OpenStatus } from "@/components/open-status";
 import { ContactHero } from "@/components/contact-hero";
 import {
   ContactInfoCards,
-  ContactPickupCard,
   ContactMapHeader,
-  ContactMapAddress,
 } from "@/components/contact-details";
 import { eyebrow } from "@/components/ui";
 import {
   CURRENT_SEASON,
-  dagensLunch,
   hoursDisplay,
   PREP_MINUTES,
   type Season,
@@ -45,7 +41,7 @@ const faqs = [
   },
   {
     q: "Vad ingår i dagens lunch?",
-    a: "Dagens lunch serveras vardagar 11:00–14:00 och inkluderar kaffe, bröd, smör, pizzasallad och dricka. Se lunchmenyn för vad du kan välja bland.",
+    a: "Dagens lunch serveras vardagar 11:00–14:00 och inkluderar kaffe, bröd, smör, pizzasallad och måltidsdryck. Se lunchmenyn för vad du kan välja bland.",
   },
 ];
 
@@ -59,121 +55,116 @@ export default function KontaktPage() {
     <>
       <ContactHero />
 
-      <div className="wrap grid gap-10 py-14 sm:py-20 lg:grid-cols-[1fr_1.1fr]">
+      {/* Main Content Grid: Dining & Service on left, Luxury Opening Hours on right */}
+      <div className="wrap grid gap-10 py-14 sm:py-20 lg:grid-cols-[1.1fr_1fr] items-start">
         <ContactInfoCards />
 
         <section
           id="oppettider"
           aria-labelledby="hours-title"
           data-reveal="fade-up"
-          className="scroll-mt-32 rounded-2xl bg-ink p-7 text-ivory sm:p-10"
+          className="scroll-mt-32 rounded-3xl border border-white/10 bg-gradient-to-b from-[#1b1e23] to-[#131518] p-7 sm:p-9 shadow-2xl relative overflow-hidden text-ivory"
         >
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2
-              id="hours-title"
-              className="flex items-center gap-3 text-3xl font-medium uppercase"
-            >
-              <ClockIcon className="size-7 text-gold" /> Öppettider
-            </h2>
-            <OpenStatus />
+          {/* Subtle warm gold ambient aura */}
+          <div
+            className="pointer-events-none absolute -right-20 -top-20 size-60 rounded-full bg-[#c5a059]/10 blur-3xl"
+            aria-hidden="true"
+          />
+
+          <div className="relative z-10">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2
+                id="hours-title"
+                className="flex items-center gap-3 font-display text-2xl sm:text-3xl font-medium uppercase tracking-tight text-white"
+              >
+                <ClockIcon className="size-6 text-[#c5a059]" /> Öppettider
+              </h2>
+              <OpenStatus tone="dark" />
+            </div>
+
+            <div className="mt-6 space-y-6">
+              {(Object.keys(hoursDisplay) as Season[])
+                .sort((a) => (a === CURRENT_SEASON ? -1 : 1))
+                .map((season) => (
+                  <div
+                    key={season}
+                    className="rounded-2xl border border-white/[0.08] bg-white/[0.03] p-4 sm:p-5"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-display text-lg sm:text-xl font-semibold tracking-wide text-[#e0c98d]">
+                        {seasonTitle[season]}
+                      </h3>
+                      {season === CURRENT_SEASON && (
+                        <span className="rounded-full border border-[#c5a059]/40 bg-[#c5a059]/15 px-2.5 py-0.5 font-sans text-[0.65rem] font-bold uppercase tracking-[0.16em] text-[#e0c98d]">
+                          Gäller nu
+                        </span>
+                      )}
+                    </div>
+                    <dl className="mt-3 divide-y divide-white/[0.06]">
+                      {hoursDisplay[season].map((row) => (
+                        <div
+                          key={row.days}
+                          className="flex items-baseline justify-between gap-4 py-2 text-xs sm:text-sm"
+                        >
+                          <dt className="text-stone-300 font-medium">{row.days}</dt>
+                          <dd className="tabular-nums font-mono text-white/90">
+                            {row.time}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </div>
+                ))}
+            </div>
+            <p className="mt-6 text-xs leading-relaxed text-[#a9adb5]">
+              Helgdagar och särskilda stängningar meddelas här på hemsidan och via telefon.
+            </p>
           </div>
-          <div className="mt-6 space-y-8">
-            {(Object.keys(hoursDisplay) as Season[])
-              .sort((a) => (a === CURRENT_SEASON ? -1 : 1))
-              .map((season) => (
-                <div key={season}>
-                  <h3 className="text-xl font-semibold text-gold">
-                    {seasonTitle[season]}
-                    {season === CURRENT_SEASON && (
-                      <span className="ml-3 rounded-full bg-gold/15 px-3 py-0.5 align-middle font-sans text-[0.68rem] font-semibold uppercase tracking-[0.14em]">
-                        Gäller nu
-                      </span>
-                    )}
-                  </h3>
-                  <dl className="mt-2 divide-y divide-ink-3">
-                    {hoursDisplay[season].map((row) => (
-                      <div
-                        key={row.days}
-                        className="flex justify-between gap-4 py-2.5 text-[0.95rem]"
-                      >
-                        <dt>{row.days}</dt>
-                        <dd className="tabular-nums text-muted-dark">
-                          {row.time}
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
-                </div>
-              ))}
-          </div>
-          <p className="mt-6 text-xs leading-relaxed text-muted-dark">
-            Helgdagar och särskilda stängningar meddelas här och via telefon.
-          </p>
         </section>
       </div>
 
-      <section aria-labelledby="lunch-title" className="wrap pb-14 sm:pb-20">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="flex gap-4 rounded-2xl border border-line bg-white p-6 shadow-card">
-            <span className="grid size-12 shrink-0 place-items-center rounded-full bg-cream text-gold-deep">
-              <ClockIcon className="size-5" />
-            </span>
-            <div>
-              <h2
-                id="lunch-title"
-                className="font-display text-2xl font-semibold"
-              >
-                Dagens lunch · {dagensLunch.price} kr
-              </h2>
-              <p className="mt-1 text-sm text-muted">
-                {dagensLunch.days} {dagensLunch.time}. {dagensLunch.includes}
-              </p>
-              <Link
-                href="/meny#lunch"
-                className="mt-3 inline-block text-sm font-semibold text-gold-deep underline underline-offset-4"
-              >
-                Se vad du kan välja
-              </Link>
-            </div>
+      {/* Interactive Map Section */}
+      <section aria-labelledby="map-title" className="py-12 sm:py-16 border-t border-[#e8e2d5]">
+        <div className="wrap">
+          <ContactMapHeader />
+          <div className="rounded-3xl overflow-hidden border border-[#e4ded0] shadow-md">
+            <MapEmbed />
           </div>
-          <ContactPickupCard />
         </div>
       </section>
 
-      <section aria-labelledby="faq-title" className="bg-cream py-16 sm:py-20" data-reveal="fade-up">
-        <div className="wrap">
-          <p className={eyebrow}>Vanliga frågor</p>
-          <h2
-            id="faq-title"
-            className="mt-1 text-2xl font-medium uppercase min-[440px]:text-3xl sm:text-5xl"
-          >
-            Bra att veta
-          </h2>
-          <div className="mt-8 divide-y divide-line rounded-2xl border border-line bg-white">
+      {/* FAQ Section */}
+      <section aria-labelledby="faq-title" className="bg-[#f5f1e8] py-16 sm:py-20 border-t border-[#e8e2d5]" data-reveal="fade-up">
+        <div className="wrap max-w-4xl">
+          <div className="text-center">
+            <p className={eyebrow}>Vanliga frågor</p>
+            <h2
+              id="faq-title"
+              className="mt-1 font-display text-3xl sm:text-4xl lg:text-5xl font-normal uppercase tracking-tight text-[#14161a]"
+            >
+              Bra att veta
+            </h2>
+          </div>
+          <div className="mt-8 space-y-3">
             {faqs.map((f) => (
-              <details key={f.q} className="group px-6 py-1">
-                <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 font-medium [&::-webkit-details-marker]:hidden">
-                  {f.q}
+              <details
+                key={f.q}
+                className="group rounded-2xl border border-[#e8e2d5] bg-white p-2 shadow-xs transition-colors hover:border-[#c5a059]"
+              >
+                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 px-4 py-2 font-medium text-[#14161a] [&::-webkit-details-marker]:hidden">
+                  <span className="text-sm sm:text-base font-semibold">{f.q}</span>
                   <span
                     aria-hidden="true"
-                    className="relative block size-4 shrink-0 text-gold-deep"
+                    className="relative block size-5 shrink-0 text-[#8a6d2b] transition-transform duration-200 group-open:rotate-45"
                   >
                     <span className="absolute left-0 top-1/2 block h-0.5 w-full -translate-y-1/2 rounded bg-current" />
-                    <span className="absolute left-1/2 top-0 block h-full w-0.5 -translate-x-1/2 rounded bg-current transition-opacity group-open:opacity-0" />
+                    <span className="absolute left-1/2 top-0 block h-full w-0.5 -translate-x-1/2 rounded bg-current" />
                   </span>
                 </summary>
-                <p className="pb-5 text-sm leading-relaxed text-muted">{f.a}</p>
+                <p className="px-4 pb-4 pt-1 text-xs sm:text-sm leading-relaxed text-[#5f636b]">{f.a}</p>
               </details>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section aria-labelledby="map-title" className="py-14 sm:py-20">
-        <div className="wrap">
-          <ContactMapHeader />
-          <MapEmbed />
-          <ContactMapAddress />
         </div>
       </section>
     </>
