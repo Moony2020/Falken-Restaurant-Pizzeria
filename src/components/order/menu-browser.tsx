@@ -15,6 +15,7 @@ import {
   ArrowIcon,
   ClockIcon,
   PhoneIcon,
+  SearchIcon,
 } from "@/components/icons";
 import { ProductCard, ingredientText } from "./product-card";
 
@@ -29,6 +30,60 @@ const getServerHash = () => "";
 function setHash(id: string) {
   window.history.pushState(null, "", `#${id}`);
   window.dispatchEvent(new HashChangeEvent("hashchange"));
+}
+
+interface CategoryMeta {
+  emoji: string;
+  bgColor: string;
+}
+
+const CATEGORY_META: Record<string, CategoryMeta> = {
+  pizza: { emoji: "🍕", bgColor: "bg-[#ffede0]" },
+  kebabpizza: { emoji: "🍕", bgColor: "bg-[#fef0ea]" },
+  kebab: { emoji: "🌯", bgColor: "bg-[#f5eee6]" },
+  hamburgare: { emoji: "🍔", bgColor: "bg-[#fdeee9]" },
+  sallader: { emoji: "🥗", bgColor: "bg-[#eaf5ee]" },
+  barn: { emoji: "⭐", bgColor: "bg-[#f0edfa]" },
+  nachos: { emoji: "🧀", bgColor: "bg-[#fef8e7]" },
+  alacarte: { emoji: "🍽️", bgColor: "bg-[#e8f1f8]" },
+  lunch: { emoji: "🍲", bgColor: "bg-[#fef6e7]" },
+  dryck: { emoji: "🍷", bgColor: "bg-[#edf2fb]" },
+};
+
+function getCategoryMeta(slug: string): CategoryMeta {
+  if (CATEGORY_META[slug]) return CATEGORY_META[slug];
+  if (slug.includes("pizza")) return { emoji: "🍕", bgColor: "bg-[#ffede0]" };
+  if (slug.includes("kebab") || slug.includes("rull")) return { emoji: "🌯", bgColor: "bg-[#f5eee6]" };
+  if (slug.includes("burg")) return { emoji: "🍔", bgColor: "bg-[#fdeee9]" };
+  if (slug.includes("sallad")) return { emoji: "🥗", bgColor: "bg-[#eaf5ee]" };
+  if (slug.includes("barn")) return { emoji: "⭐", bgColor: "bg-[#f0edfa]" };
+  if (slug.includes("nacho") || slug.includes("snack") || slug.includes("ost")) return { emoji: "🧀", bgColor: "bg-[#fef8e7]" };
+  if (slug.includes("dryck") || slug.includes("lask") || slug.includes("ol") || slug.includes("vin")) return { emoji: "🍷", bgColor: "bg-[#edf2fb]" };
+  if (slug.includes("lunch")) return { emoji: "🍲", bgColor: "bg-[#fef6e7]" };
+  return { emoji: "🍽️", bgColor: "bg-[#f3f0ea]" };
+}
+
+function getCategoryDisplayName(slug: string, originalName: string): string {
+  if (slug === "pizza") return "Pizzor";
+  if (slug === "dryck") return "Drycker";
+  if (slug === "kebab") return "Kebab & rullar";
+  return originalName;
+}
+
+function GridIcon({ className = "size-3.5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" fill="currentColor" className={className} aria-hidden="true">
+      <rect x="2" y="2" width="3.2" height="3.2" rx="0.75" />
+      <rect x="6.4" y="2" width="3.2" height="3.2" rx="0.75" />
+      <rect x="10.8" y="2" width="3.2" height="3.2" rx="0.75" />
+      <rect x="2" y="6.4" width="3.2" height="3.2" rx="0.75" />
+      <rect x="6.4" y="6.4" width="3.2" height="3.2" rx="0.75" />
+      <rect x="10.8" y="6.4" width="3.2" height="3.2" rx="0.75" />
+      <rect x="2" y="10.8" width="3.2" height="3.2" rx="0.75" />
+      <rect x="6.4" y="10.8" width="3.2" height="3.2" rx="0.75" />
+      <rect x="10.8" y="10.8" width="3.2" height="3.2" rx="0.75" />
+    </svg>
+  );
 }
 
 function groupProducts(
@@ -62,8 +117,15 @@ export function MenuBrowser() {
   const [query, setQuery] = useState("");
 
   const menu = state.status === "ready" ? state.menu : null;
+  const visibleCategories = useMemo(
+    () => (menu ? menu.categories.filter((c) => c.slug !== "kebabpizza") : []),
+    [menu],
+  );
+  const isAll = !hash || hash === "alla";
   const active = menu
-    ? (menu.categories.find((c) => c.slug === hash) ?? menu.categories[0])
+    ? isAll
+      ? undefined
+      : (visibleCategories.find((c) => c.slug === hash) ?? visibleCategories[0])
     : undefined;
 
   const q = query.trim().toLowerCase();
@@ -93,44 +155,107 @@ export function MenuBrowser() {
     <>
       <MenuHero query={query} setQuery={setQuery} disabled={!menu} />
 
-      <div className="sticky top-16 z-30 border-b border-line bg-ivory/95 backdrop-blur sm:top-20">
+      <div className="sticky top-16 z-30 bg-[#faf8f3]/95 backdrop-blur-md sm:top-20">
         <nav
           aria-label="Menykategorier"
-          className="wrap py-3"
+          className="mx-auto w-full max-w-[1760px] px-3 py-2.5 sm:px-5 sm:py-3 lg:px-7"
           aria-busy={state.status === "loading"}
         >
-          <ul className="no-scrollbar -mx-4 flex flex-nowrap items-center gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 scroll-smooth">
-            {menu
-              ? menu.categories.map((c) => {
-                  const current = !searching && c.slug === active?.slug;
+          <ul className="no-scrollbar flex flex-nowrap items-center gap-2.5 overflow-x-auto pb-1 scroll-smooth">
+            {menu ? (
+              <>
+                {/* 1. Alla Category Pill */}
+                <li className="shrink-0">
+                  <a
+                    href="#alla"
+                    onClick={(e) => selectTab(e, "alla")}
+                    aria-current={!searching && isAll ? "true" : undefined}
+                    className={`group inline-flex min-h-[46px] items-center gap-2.5 rounded-full pl-1.5 pr-4 text-[0.84rem] sm:text-[0.88rem] font-semibold transition-all duration-200 select-none ${
+                      !searching && isAll
+                        ? "border border-[#181a1e] bg-[#181a1e] text-white shadow-sm"
+                        : "border border-[#eae4d9] bg-white text-[#2d2926] shadow-[0_1px_4px_rgba(0,0,0,0.04)] hover:border-[#c5a059] hover:bg-stone-50/50"
+                    }`}
+                  >
+                    <span
+                      className={`flex size-8 shrink-0 items-center justify-center rounded-full transition-colors ${
+                        !searching && isAll
+                          ? "bg-[#dce6df] text-[#1c1f24]"
+                          : "bg-[#eef2ef] text-[#2d2926]"
+                      }`}
+                      aria-hidden="true"
+                    >
+                      <GridIcon className="size-3.5" />
+                    </span>
+                    <span>Alla</span>
+                  </a>
+                </li>
+
+                {/* 2. Specific Category Pills */}
+                {visibleCategories.map((c) => {
+                  const current = !searching && !isAll && c.slug === active?.slug;
+                  const meta = getCategoryMeta(c.slug);
+                  const displayName = getCategoryDisplayName(c.slug, c.name);
+
                   return (
                     <li key={c.slug} className="shrink-0">
                       <a
                         href={`#${c.slug}`}
                         onClick={(e) => selectTab(e, c.slug)}
                         aria-current={current ? "true" : undefined}
-                        className={`inline-flex min-h-11 items-center rounded-full border px-4 text-[0.75rem] font-semibold uppercase tracking-[0.06em] transition ${
+                        className={`group inline-flex min-h-[46px] items-center gap-2.5 rounded-full pl-1.5 pr-4 text-[0.84rem] sm:text-[0.88rem] font-semibold transition-all duration-200 select-none ${
                           current
-                            ? "border-ink bg-ink text-ivory"
-                            : "border-line bg-white text-ink hover:border-gold-deep"
+                            ? "border border-[#181a1e] bg-[#181a1e] text-white shadow-sm"
+                            : "border border-[#eae4d9] bg-white text-[#2d2926] shadow-[0_1px_4px_rgba(0,0,0,0.04)] hover:border-[#c5a059] hover:bg-stone-50/50"
                         }`}
                       >
-                        {c.name}
+                        <span
+                          className={`flex size-8 shrink-0 items-center justify-center rounded-full text-base sm:text-[1.05rem] leading-none transition-transform group-hover:scale-105 ${meta.bgColor}`}
+                          aria-hidden="true"
+                        >
+                          {meta.emoji}
+                        </span>
+                        <span>{displayName}</span>
                       </a>
                     </li>
                   );
-                })
-              : state.status === "loading" &&
-                Array.from({ length: 6 }, (_, i) => (
-                  <li key={i} className="shrink-0" aria-hidden="true">
-                    <span className="block h-11 w-24 animate-pulse rounded-full bg-cream" />
-                  </li>
-                ))}
+                })}
+              </>
+            ) : (
+              state.status === "loading" &&
+              Array.from({ length: 8 }, (_, i) => (
+                <li key={i} className="shrink-0" aria-hidden="true">
+                  <span className="flex h-[46px] w-28 animate-pulse items-center gap-2 rounded-full border border-[#eae4d9] bg-white pl-1.5 pr-4">
+                    <span className="size-8 rounded-full bg-cream" />
+                    <span className="h-3.5 w-14 rounded-full bg-cream" />
+                  </span>
+                </li>
+              ))
+            )}
           </ul>
         </nav>
       </div>
 
-      <div id="menu-panel" className="wrap scroll-mt-44 py-10 sm:py-14">
+      <div id="menu-panel" className="mx-auto w-full max-w-[1760px] px-3 sm:px-5 lg:px-7 scroll-mt-44 py-6 sm:py-10">
+        {/* In-page menu search bar matching mockup */}
+        <div className="relative mb-6 sm:mb-8 w-full max-w-2xl">
+          <label htmlFor="in-menu-search" className="sr-only">
+            Sök efter en rätt eller ingrediens
+          </label>
+          <SearchIcon
+            className="pointer-events-none absolute left-4 top-1/2 z-10 size-4.5 -translate-y-1/2 text-stone-400"
+            aria-hidden="true"
+          />
+          <input
+            id="in-menu-search"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Sök efter en rätt eller ingrediens..."
+            disabled={!menu}
+            className="h-11 sm:h-12 w-full rounded-2xl sm:rounded-full border border-[#eae4d9] bg-white pl-11 pr-5 text-sm sm:text-[0.95rem] text-[#2d2926] placeholder:text-stone-400 shadow-2xs transition focus:border-[#c5a059] focus:outline-none focus:ring-1 focus:ring-[#c5a059]"
+          />
+        </div>
+
         {state.status === "loading" && <MenuSkeleton />}
         {state.status === "error" && <MenuError reason={state.reason} />}
 
@@ -142,6 +267,12 @@ export function MenuBrowser() {
                 query={query}
                 onClear={() => setQuery("")}
               />
+            ) : isAll ? (
+              <div className="space-y-16 sm:space-y-20">
+                {visibleCategories.map((c) => (
+                  <CategoryPanel key={c.slug} category={c} menu={menu} onSelect={setHash} />
+                ))}
+              </div>
             ) : active ? (
               <CategoryPanel category={active} menu={menu} onSelect={setHash} />
             ) : (
@@ -252,18 +383,24 @@ function CategoryPanel({
   menu: PublicMenu;
   onSelect: (id: string) => void;
 }) {
-  const items = menu.products.filter((p) => p.category === category.slug);
+  const items =
+    category.slug === "pizza"
+      ? menu.products.filter(
+          (p) => p.category === "pizza" || p.category === "kebabpizza",
+        )
+      : menu.products.filter((p) => p.category === category.slug);
+  const displayName = getCategoryDisplayName(category.slug, category.name);
 
   return (
-    <section aria-labelledby="panel-title" className="animate-fade">
-      <header className="mb-8 max-w-2xl">
+    <section id={category.slug} aria-labelledby={`panel-title-${category.slug}`} className="animate-fade scroll-mt-44">
+      <header className="mb-6 max-w-3xl">
         <h2
-          id="panel-title"
-          className="font-display text-4xl font-semibold uppercase tracking-wide sm:text-5xl"
+          id={`panel-title-${category.slug}`}
+          className="font-display text-3xl font-medium sm:text-4xl text-ink"
         >
-          {category.name}
+          {displayName}
         </h2>
-        <p className="mt-2 text-[0.95rem] leading-relaxed text-muted">
+        <p className="mt-1.5 text-[0.92rem] leading-relaxed text-muted">
           {category.blurb}
         </p>
         {category.slug === "pizza" &&
