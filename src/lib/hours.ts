@@ -1,6 +1,38 @@
 // Opening-hours logic. Pure and timezone-safe: everything is evaluated in Europe/Stockholm.
 
 export type Season = "vinter" | "sommar";
+export type ManualRestaurantOverride = "open" | "closed" | null;
+
+export type RestaurantOrderingSettings = {
+  onlineOrderingEnabled: boolean;
+  manualOverride: ManualRestaurantOverride;
+};
+
+/** Manual open/close overrides determine restaurant hours independently of online ordering. */
+export function isRestaurantOpenBySettings(
+  isOpenBySchedule: boolean,
+  manualOverride: ManualRestaurantOverride,
+): boolean {
+  if (manualOverride === "open") return true;
+  if (manualOverride === "closed") return false;
+  return isOpenBySchedule;
+}
+
+export function isRestaurantOrderingDisabled(settings: RestaurantOrderingSettings): boolean {
+  return settings.manualOverride === "closed" ||
+    (!settings.onlineOrderingEnabled && settings.manualOverride !== "open");
+}
+
+export function canAcceptOnlineOrders(
+  isRestaurantOpen: boolean,
+  settings: RestaurantOrderingSettings,
+): boolean {
+  return isRestaurantOpen && !isRestaurantOrderingDisabled(settings);
+}
+
+export function manualOverrideForOrderingToggle(targetState: boolean): Exclude<ManualRestaurantOverride, null> {
+  return targetState ? "open" : "closed";
+}
 
 type Hours = { open: number; close: number };
 

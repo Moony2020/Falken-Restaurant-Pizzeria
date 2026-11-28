@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { CURRENT_SEASON, LAST_PICKUP_BEFORE_CLOSE, PICKUP_GRACE_MINUTES, PICKUP_MAX_AHEAD_HOURS, PREP_MINUTES, SLOT_STEP_MINUTES } from "../data/site.ts";
-import { isValidPickupTime } from "../lib/hours.ts";
+import { isRestaurantOrderingDisabled, isValidPickupTime } from "../lib/hours.ts";
 import { orderRequestSchema, type CartInput, type OrderRequest } from "./cart-schema.ts";
 import { loadCatalogForCart } from "./catalog-repo.ts";
 import { OrderModel, type OrderDoc } from "./models/order.ts";
@@ -132,8 +132,10 @@ export async function createOrder(body: unknown, now: Date = new Date(), options
       .lean()) as RestaurantSettingsDoc | null;
     const settings = sellerSettingsDoc;
     isManuallyOpen = settings?.manualOverride === "open";
-    const isManuallyClosed =
-      settings?.manualOverride === "closed" || settings?.onlineOrderingEnabled === false;
+    const isManuallyClosed = isRestaurantOrderingDisabled({
+      onlineOrderingEnabled: settings?.onlineOrderingEnabled ?? true,
+      manualOverride: settings?.manualOverride ?? null,
+    });
     if (isManuallyClosed) {
       throw new OrderError("ordering_closed", 409, "Onlinebeställningar är tillfälligt stängda.");
     }

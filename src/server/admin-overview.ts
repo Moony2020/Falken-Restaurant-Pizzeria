@@ -1,5 +1,6 @@
 import { OrderModel, PaymentModel } from "./models/order.ts";
 import { RestaurantSettingsModel } from "./models/restaurant-settings.ts";
+import { manualOverrideForOrderingToggle } from "../lib/hours.ts";
 import { adminVisibleOrderFilter } from "./admin-orders.ts";
 
 const ZONE = "Europe/Stockholm";
@@ -156,6 +157,31 @@ export type OrderingUpdateOptions = {
   manualOverride?: "open" | "closed" | null;
 };
 
+export function resolveOrderingUpdate(options: boolean | OrderingUpdateOptions): {
+  onlineOrderingEnabled?: boolean;
+  manualOverride?: "open" | "closed" | null;
+} {
+  if (typeof options === "boolean") {
+    return options
+      ? { onlineOrderingEnabled: true, manualOverride: manualOverrideForOrderingToggle(true) }
+      : { manualOverride: manualOverrideForOrderingToggle(false) };
+  }
+
+  const update: {
+    onlineOrderingEnabled?: boolean;
+    manualOverride?: "open" | "closed" | null;
+  } = {};
+  if (options.enabled !== undefined) update.onlineOrderingEnabled = options.enabled;
+  if (options.targetState !== undefined) {
+    update.manualOverride = manualOverrideForOrderingToggle(options.targetState);
+    if (options.targetState && options.enabled === undefined) update.onlineOrderingEnabled = true;
+  } else if (options.manualOverride !== undefined) {
+    update.manualOverride = options.manualOverride;
+    if (options.manualOverride === "open" && options.enabled === undefined) update.onlineOrderingEnabled = true;
+  }
+  return update;
+}
+
 export async function getRestaurantSettings(): Promise<{
   onlineOrderingEnabled: boolean;
   manualOverride: "open" | "closed" | null;
@@ -170,44 +196,18 @@ export async function getRestaurantSettings(): Promise<{
 }
 
 export async function setOnlineOrdering(options: boolean | OrderingUpdateOptions, staffId: string) {
-  let targetState: boolean;
-  let manualOverride: "open" | "closed" | null;
-
-  if (typeof options === "boolean") {
-    targetState = options;
-  } else if (options.targetState !== undefined) {
-    targetState = options.targetState;
-  } else if (options.enabled !== undefined) {
-    targetState = options.enabled;
-  } else if (options.manualOverride !== undefined) {
-    targetState = options.manualOverride === "open";
-  } else {
-    targetState = true;
-  }
-
-  if (targetState) {
-    // Admin enables online ordering -> clear any manual closure so schedule takes over automatically
-    manualOverride = null;
-  } else {
-    // Admin disables online ordering -> manual close
-    manualOverride = "closed";
-  }
-
-  // Keep onlineOrderingEnabled true unless explicitly set to false via options.enabled
-  const enabled =
-    typeof options !== "boolean" && options.enabled !== undefined
-      ? options.enabled
-      : true;
+  const update = resolveOrderingUpdate(options);
+  const setFields = { ...update, updatedBy: staffId };
 
   const settings = await RestaurantSettingsModel.findOneAndUpdate(
     { _id: "restaurant" },
-    { $set: { onlineOrderingEnabled: enabled, manualOverride, updatedBy: staffId } },
+    { $set: setFields },
     { upsert: true, new: true, runValidators: true, projection: { onlineOrderingEnabled: 1, manualOverride: 1 } },
   ).lean();
 
   return {
-    onlineOrderingEnabled: settings?.onlineOrderingEnabled ?? enabled,
-    manualOverride: settings?.manualOverride ?? manualOverride,
+    onlineOrderingEnabled: settings?.onlineOrderingEnabled ?? update.onlineOrderingEnabled ?? true,
+    manualOverride: settings?.manualOverride ?? update.manualOverride ?? null,
   };
 }
 

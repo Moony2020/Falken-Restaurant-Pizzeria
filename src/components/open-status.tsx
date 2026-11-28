@@ -12,7 +12,7 @@ export function OpenStatus({ tone = "dark" }: { tone?: "dark" | "light" }) {
         <>
           <span
             aria-hidden="true"
-            className={`size-2.5 rounded-full ${status.isOpen ? "bg-emerald-500 animate-pulse" : "bg-ember"}`}
+            className={`size-2.5 rounded-full ${status.isRestaurantOpen ? "bg-emerald-500 animate-pulse" : "bg-ember"}`}
           />
           {status.label}
         </>

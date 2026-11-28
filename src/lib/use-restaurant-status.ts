@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore, useCallback } from "react";
 import { CURRENT_SEASON } from "@/data/site";
-import { getOpenStatus, type CustomWeeklyHours, type Season } from "@/lib/hours";
+import { canAcceptOnlineOrders, getOpenStatus, isRestaurantOpenBySettings, type CustomWeeklyHours, type Season } from "@/lib/hours";
 import { useNow } from "@/lib/use-now";
 import type { RestaurantStatusResponse } from "@/app/api/restaurant/status/route";
 
@@ -10,6 +10,8 @@ export interface RestaurantStatus {
   onlineOrderingEnabled: boolean;
   manualOverride?: "open" | "closed" | null;
   isOpenBySchedule: boolean;
+  isRestaurantOpen: boolean;
+  canAcceptOnlineOrders: boolean;
   isOpen: boolean;
   label: string;
   scheduleLabel: string;
@@ -169,24 +171,21 @@ export function useRestaurantStatus(): {
   const scheduleStatus = getOpenStatus(new Date(now), season, settings.hours);
   const isOpenBySchedule = scheduleStatus.isOpen;
 
-  let isOpen: boolean;
+  const isRestaurantOpen = isRestaurantOpenBySettings(isOpenBySchedule, settings.manualOverride);
+  const canOrder = canAcceptOnlineOrders(isRestaurantOpen, settings);
+  const isOpen = canOrder;
   let closeReason: "manual" | "schedule" | null = null;
   let label = scheduleStatus.label;
 
   if (settings.manualOverride === "open") {
-    isOpen = true;
-    closeReason = null;
     label = "Öppet nu";
-  } else if (settings.manualOverride === "closed") {
-    isOpen = false;
+  } else if (isRestaurantOpen && !settings.onlineOrderingEnabled) {
     closeReason = "manual";
-    label = "Stängt för beställningar";
-  } else if (!settings.onlineOrderingEnabled && isOpenBySchedule) {
-    isOpen = false;
+    label = "Öppet nu – onlinebeställningar pausade";
+  } else if (settings.manualOverride === "closed" || !settings.onlineOrderingEnabled) {
     closeReason = "manual";
     label = "Stängt för beställningar";
   } else {
-    isOpen = isOpenBySchedule;
     if (!isOpen) {
       closeReason = "schedule";
       label = scheduleStatus.label;
@@ -198,6 +197,8 @@ export function useRestaurantStatus(): {
       onlineOrderingEnabled: settings.onlineOrderingEnabled,
       manualOverride: settings.manualOverride,
       isOpenBySchedule,
+      isRestaurantOpen,
+      canAcceptOnlineOrders: canOrder,
       isOpen,
       label,
       scheduleLabel: scheduleStatus.label,

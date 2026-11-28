@@ -10,7 +10,7 @@ import { useAdminOrders, type AdminOrderFilter } from "@/components/admin/use-ad
 import { AdminOrderDialog } from "@/components/admin/admin-order-dialog";
 import type { AdminOrderSummary } from "@/server/admin-orders";
 import { CURRENT_SEASON } from "@/data/site";
-import { getOpenStatus } from "@/lib/hours";
+import { getOpenStatus, isRestaurantOpenBySettings } from "@/lib/hours";
 import { useNow } from "@/lib/use-now";
 import { notifyStatusChange } from "@/lib/use-restaurant-status";
 import { AdminHoursTab } from "@/components/admin/admin-hours-tab";
@@ -21,6 +21,7 @@ import { AdminProductsTab } from "@/components/admin/admin-products-tab";
 import { AdminCategoriesTab } from "@/components/admin/admin-categories-tab";
 import { AdminModifiersTab } from "@/components/admin/admin-modifiers-tab";
 import { AdminSettingsTab } from "@/components/admin/admin-settings-tab";
+import { AdminReviewsTab } from "@/components/admin/admin-reviews-tab";
 import type { ReceiptPdfInput } from "@/lib/order-receipt-pdf";
 import { AdminReceiptModal } from "@/components/admin/admin-receipt-modal";
 
@@ -991,12 +992,9 @@ export function AdminDashboard({
   const manualOverride = overview?.settings?.manualOverride ?? null;
   const isManualEnabled = overview?.settings?.onlineOrderingEnabled ?? true;
 
-  const isActuallyOpen =
-    manualOverride === "closed" || !isManualEnabled
-      ? false
-      : isScheduleOpen;
+  const isActuallyOpen = isRestaurantOpenBySettings(isScheduleOpen, manualOverride);
 
-  const isManuallyClosed = manualOverride === "closed" || (!isManualEnabled && isScheduleOpen);
+  const isManuallyClosed = !isActuallyOpen && manualOverride === "closed";
 
   const [orderSearchQuery, setOrderSearchQuery] = useState("");
   const apiFilter: AdminOrderFilter = ({
@@ -1538,6 +1536,9 @@ export function AdminDashboard({
                       ? "Stängt manuellt"
                       : "Stängt nu"}
                   </span>
+                  {isActuallyOpen && !isManualEnabled && (
+                    <span className="whitespace-nowrap text-amber-700">Onlinebeställningar pausade</span>
+                  )}
                   <span
                     className={`relative inline-block h-5 w-9 rounded-full transition ${
                       isActuallyOpen ? "bg-[#4caf73]" : "bg-[#ce2b37]"
@@ -1647,6 +1648,9 @@ export function AdminDashboard({
                   ? "Stängt manuellt"
                   : "Stängt nu"}
               </span>
+              {isActuallyOpen && !isManualEnabled && (
+                <span className="whitespace-nowrap text-amber-700">Onlinebeställningar pausade</span>
+              )}
               <span
                 className={`relative inline-block h-4.5 w-8 rounded-full transition ${
                   isActuallyOpen ? "bg-[#4caf73]" : "bg-[#ce2b37]"
@@ -2214,21 +2218,29 @@ export function AdminDashboard({
                         <span className="text-sm text-[#8a7040]">★</span>
                         <h2 className="font-serif text-sm sm:text-base font-bold text-[#1f2328]">Betyg &amp; Omdömen</h2>
                       </div>
-                      <span className="rounded-full bg-[#f5f1e8] px-2 py-0.5 text-[10px] font-semibold text-[#7c828d]">
-                        Ej ansluten
+                      <span className="rounded-full bg-[#f0fdf4] px-2 py-0.5 text-[10px] font-semibold text-[#15803d]">
+                        Google · Manuellt uppdaterat
                       </span>
                     </div>
 
-                    <div className="py-3 text-center">
-                      <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-xl bg-[#f5efdf] text-[#8a7040] mb-1.5">
-                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                        </svg>
+                    <div className="py-2.5 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <span className="font-serif text-2xl font-bold text-[#1f2328]">4,4</span>
+                        <span className="text-xs font-semibold text-[#a78347]">★★★★★</span>
                       </div>
-                      <p className="text-xs font-bold text-[#1f2328]">Inga omdömen registrerade</p>
+                      <p className="mt-0.5 text-xs font-semibold text-[#1f2328]">340+ recensioner på Google</p>
                       <p className="mt-0.5 text-[10px] sm:text-[11px] text-[#7c828d] max-w-xs mx-auto leading-relaxed">
-                        Google Recensioner är inte anslutet till administrationspanelen ännu. Inga fabricerade omdömen visas.
+                        Betyg och utvalda citat visas på startsidan; ingen automatisk synkronisering.
                       </p>
+                      <div className="mt-2.5">
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab("omdomen")}
+                          className="text-[11px] font-semibold text-[#a78347] hover:underline cursor-pointer"
+                        >
+                          Visa alla omdömen &amp; länk &rarr;
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -2657,6 +2669,8 @@ export function AdminDashboard({
             <AdminCategoriesTab />
           ) : activeTab === "tillagg" ? (
             <AdminModifiersTab />
+          ) : activeTab === "omdomen" ? (
+            <AdminReviewsTab />
           ) : (
             /* Fallback generic view for other tabs */
             <div className="rounded-2xl border border-[#e7e1d5] bg-white p-8 shadow-xs text-center space-y-4">

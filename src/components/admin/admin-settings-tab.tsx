@@ -251,12 +251,15 @@ export function AdminSettingsTab({ adminEmail = "admin@restaurangfalken.se" }: {
   const derivedPhoneLink = phone ? derivePhoneHref(phone) : "";
 
   return (
-    <div className="max-w-4xl space-y-8 pb-12">
-      <div className="border-b border-[#e8e2d5] pb-4">
-        <h2 className="font-serif text-2xl font-bold text-[#1f2328]">Restauranginställningar &amp; Identitet</h2>
-        <p className="text-xs text-[#7c828d]">
-          Hantera restaurangens information, kontaktuppgifter, foton och driftsparametrar.
-        </p>
+    <div className="w-full space-y-6 sm:space-y-8 pb-12">
+      <div className="flex flex-wrap items-end justify-between gap-4 border-b border-[#e8e2d5] pb-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#a78347]">System &amp; Profil</p>
+          <h2 className="mt-1 font-serif text-2xl sm:text-3xl font-bold text-[#1f2328]">Restauranginställningar &amp; Identitet</h2>
+          <p className="mt-1 text-xs text-[#7c828d]">
+            Hantera restaurangens information, kontaktuppgifter, foton och driftsparametrar.
+          </p>
+        </div>
       </div>
 
       {feedback && (
@@ -291,7 +294,7 @@ export function AdminSettingsTab({ adminEmail = "admin@restaurangfalken.se" }: {
             <p className="text-xs text-[#7c828d]">Visningsnamn och beskrivande text för webbplatsen och logotypen.</p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-1.5">
               <label htmlFor="setting-name" className="block text-xs font-semibold text-[#1f2328]">
                 Restaurangnamn (Kort/Logotyp) <span className="text-[#a78347]">*</span>
@@ -324,7 +327,7 @@ export function AdminSettingsTab({ adminEmail = "admin@restaurangfalken.se" }: {
               />
             </div>
 
-            <div className="space-y-1.5 sm:col-span-2">
+            <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
               <label htmlFor="setting-tagline" className="block text-xs font-semibold text-[#1f2328]">
                 Slogan / Undertitel
               </label>
@@ -350,7 +353,7 @@ export function AdminSettingsTab({ adminEmail = "admin@restaurangfalken.se" }: {
             <p className="text-xs text-[#7c828d]">Visas i sidfoten, kontaktsidan och på kvitton.</p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-1.5">
               <label htmlFor="setting-phone" className="block text-xs font-semibold text-[#1f2328]">
                 Telefonnummer <span className="text-[#a78347]">*</span>
@@ -437,21 +440,6 @@ export function AdminSettingsTab({ adminEmail = "admin@restaurangfalken.se" }: {
               </div>
             </div>
 
-            <div className="space-y-1.5 sm:col-span-2">
-              <label htmlFor="setting-maps" className="block text-xs font-semibold text-[#1f2328]">
-                Google Maps Länk (måste vara https://google.com/maps eller maps.app.goo.gl)
-              </label>
-              <input
-                id="setting-maps"
-                type="url"
-                maxLength={500}
-                value={mapsUrl}
-                onChange={(e) => setMapsUrl(e.target.value)}
-                placeholder="https://www.google.com/maps/search/?api=1&query=..."
-                className="w-full rounded-xl border border-[#e4ded2] bg-[#faf8f4] px-3.5 py-2.5 text-xs text-[#1f2328] outline-none transition focus:border-[#b88e4d] focus:bg-white"
-              />
-            </div>
-
             <div className="space-y-1.5">
               <label htmlFor="setting-fb" className="block text-xs font-semibold text-[#1f2328]">
                 Facebook URL (https://www.facebook.com/...)
@@ -478,6 +466,21 @@ export function AdminSettingsTab({ adminEmail = "admin@restaurangfalken.se" }: {
                 value={instagram}
                 onChange={(e) => setInstagram(e.target.value)}
                 placeholder="https://www.instagram.com/falkenvintrosa/"
+                className="w-full rounded-xl border border-[#e4ded2] bg-[#faf8f4] px-3.5 py-2.5 text-xs text-[#1f2328] outline-none transition focus:border-[#b88e4d] focus:bg-white"
+              />
+            </div>
+
+            <div className="space-y-1.5 sm:col-span-2 lg:col-span-3">
+              <label htmlFor="setting-maps" className="block text-xs font-semibold text-[#1f2328]">
+                Google Maps Länk (måste vara https://google.com/maps eller maps.app.goo.gl)
+              </label>
+              <input
+                id="setting-maps"
+                type="url"
+                maxLength={500}
+                value={mapsUrl}
+                onChange={(e) => setMapsUrl(e.target.value)}
+                placeholder="https://www.google.com/maps/search/?api=1&query=..."
                 className="w-full rounded-xl border border-[#e4ded2] bg-[#faf8f4] px-3.5 py-2.5 text-xs text-[#1f2328] outline-none transition focus:border-[#b88e4d] focus:bg-white"
               />
             </div>
@@ -676,88 +679,92 @@ export function AdminSettingsTab({ adminEmail = "admin@restaurangfalken.se" }: {
           </div>
         )}
 
-        <form onSubmit={handlePasswordChange} className="space-y-4 max-w-md">
-          <div className="space-y-1.5">
-            <label htmlFor="pw-current" className="block text-xs font-semibold text-[#1f2328]">
-              Nuvarande lösenord
-            </label>
-            <div className="relative">
-              <input
-                id="pw-current"
-                type={showCurrentPw ? "text" : "password"}
-                required
-                value={currentPw}
-                onChange={(e) => setCurrentPw(e.target.value)}
-                className="w-full rounded-xl border border-[#e4ded2] bg-[#faf8f4] px-3.5 py-2.5 pr-11 text-xs text-[#1f2328] outline-none transition focus:border-[#b88e4d] focus:bg-white"
-              />
-              <button
-                type="button"
-                onClick={() => setShowCurrentPw((prev) => !prev)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#7c828d] transition hover:text-[#1f2328] focus:outline-none"
-                aria-label={showCurrentPw ? "Dölj lösenord" : "Visa lösenord"}
-              >
-                {showCurrentPw ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
-              </button>
+        <form onSubmit={handlePasswordChange} className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="space-y-1.5">
+              <label htmlFor="pw-current" className="block text-xs font-semibold text-[#1f2328]">
+                Nuvarande lösenord
+              </label>
+              <div className="relative">
+                <input
+                  id="pw-current"
+                  type={showCurrentPw ? "text" : "password"}
+                  required
+                  value={currentPw}
+                  onChange={(e) => setCurrentPw(e.target.value)}
+                  className="w-full rounded-xl border border-[#e4ded2] bg-[#faf8f4] px-3.5 py-2.5 pr-11 text-xs text-[#1f2328] outline-none transition focus:border-[#b88e4d] focus:bg-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPw((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#7c828d] transition hover:text-[#1f2328] focus:outline-none"
+                  aria-label={showCurrentPw ? "Dölj lösenord" : "Visa lösenord"}
+                >
+                  {showCurrentPw ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="pw-new" className="block text-xs font-semibold text-[#1f2328]">
+                Nytt lösenord
+              </label>
+              <div className="relative">
+                <input
+                  id="pw-new"
+                  type={showNewPw ? "text" : "password"}
+                  required
+                  placeholder="Minst 8 tecken"
+                  value={newPw}
+                  onChange={(e) => setNewPw(e.target.value)}
+                  className="w-full rounded-xl border border-[#e4ded2] bg-[#faf8f4] px-3.5 py-2.5 pr-11 text-xs text-[#1f2328] outline-none transition focus:border-[#b88e4d] focus:bg-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPw((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#7c828d] transition hover:text-[#1f2328] focus:outline-none"
+                  aria-label={showNewPw ? "Dölj lösenord" : "Visa lösenord"}
+                >
+                  {showNewPw ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="pw-confirm" className="block text-xs font-semibold text-[#1f2328]">
+                Bekräfta nytt lösenord
+              </label>
+              <div className="relative">
+                <input
+                  id="pw-confirm"
+                  type={showConfirmPw ? "text" : "password"}
+                  required
+                  placeholder="Upprepa lösenordet"
+                  value={confirmPw}
+                  onChange={(e) => setConfirmPw(e.target.value)}
+                  className="w-full rounded-xl border border-[#e4ded2] bg-[#faf8f4] px-3.5 py-2.5 pr-11 text-xs text-[#1f2328] outline-none transition focus:border-[#b88e4d] focus:bg-white"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPw((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#7c828d] transition hover:text-[#1f2328] focus:outline-none"
+                  aria-label={showConfirmPw ? "Dölj lösenord" : "Visa lösenord"}
+                >
+                  {showConfirmPw ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="pw-new" className="block text-xs font-semibold text-[#1f2328]">
-              Nytt lösenord
-            </label>
-            <div className="relative">
-              <input
-                id="pw-new"
-                type={showNewPw ? "text" : "password"}
-                required
-                placeholder="Minst 8 tecken"
-                value={newPw}
-                onChange={(e) => setNewPw(e.target.value)}
-                className="w-full rounded-xl border border-[#e4ded2] bg-[#faf8f4] px-3.5 py-2.5 pr-11 text-xs text-[#1f2328] outline-none transition focus:border-[#b88e4d] focus:bg-white"
-              />
-              <button
-                type="button"
-                onClick={() => setShowNewPw((prev) => !prev)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#7c828d] transition hover:text-[#1f2328] focus:outline-none"
-                aria-label={showNewPw ? "Dölj lösenord" : "Visa lösenord"}
-              >
-                {showNewPw ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
-              </button>
-            </div>
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={passwordBusy}
+              className="rounded-xl bg-[#a78347] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#96743b] transition disabled:opacity-50 cursor-pointer"
+            >
+              {passwordBusy ? "Uppdaterar…" : "Uppdatera lösenord"}
+            </button>
           </div>
-
-          <div className="space-y-1.5">
-            <label htmlFor="pw-confirm" className="block text-xs font-semibold text-[#1f2328]">
-              Bekräfta nytt lösenord
-            </label>
-            <div className="relative">
-              <input
-                id="pw-confirm"
-                type={showConfirmPw ? "text" : "password"}
-                required
-                placeholder="Upprepa lösenordet"
-                value={confirmPw}
-                onChange={(e) => setConfirmPw(e.target.value)}
-                className="w-full rounded-xl border border-[#e4ded2] bg-[#faf8f4] px-3.5 py-2.5 pr-11 text-xs text-[#1f2328] outline-none transition focus:border-[#b88e4d] focus:bg-white"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPw((prev) => !prev)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-[#7c828d] transition hover:text-[#1f2328] focus:outline-none"
-                aria-label={showConfirmPw ? "Dölj lösenord" : "Visa lösenord"}
-              >
-                {showConfirmPw ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
-              </button>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={passwordBusy}
-            className="rounded-xl bg-[#a78347] px-4 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#96743b] transition disabled:opacity-50"
-          >
-            {passwordBusy ? "Uppdaterar…" : "Uppdatera lösenord"}
-          </button>
         </form>
       </section>
     </div>

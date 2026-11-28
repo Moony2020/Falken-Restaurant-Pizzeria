@@ -1,6 +1,6 @@
 import { connection } from "next/server";
 import { CURRENT_SEASON } from "@/data/site";
-import { getOpenStatus, type CustomWeeklyHours, type Season } from "@/lib/hours";
+import { canAcceptOnlineOrders, getOpenStatus, isRestaurantOpenBySettings, type CustomWeeklyHours, type Season } from "@/lib/hours";
 import { connectDb } from "@/server/db";
 import { json } from "@/server/http";
 import { RestaurantSettingsModel } from "@/server/models/restaurant-settings";
@@ -9,6 +9,8 @@ export interface RestaurantStatusResponse {
   onlineOrderingEnabled: boolean;
   manualOverride?: "open" | "closed" | null;
   isOpenBySchedule: boolean;
+  isRestaurantOpen: boolean;
+  canAcceptOnlineOrders: boolean;
   isOpen: boolean;
   label: string;
   scheduleLabel: string;
@@ -34,24 +36,21 @@ export async function GET() {
     const scheduleStatus = getOpenStatus(now, season, customHours);
     const isOpenBySchedule = scheduleStatus.isOpen;
 
-    let isOpen: boolean;
+    const isRestaurantOpen = isRestaurantOpenBySettings(isOpenBySchedule, manualOverride);
+    const canOrder = canAcceptOnlineOrders(isRestaurantOpen, { onlineOrderingEnabled, manualOverride });
+    const isOpen = canOrder;
     let closeReason: "manual" | "schedule" | null = null;
     let label = scheduleStatus.label;
 
     if (manualOverride === "open") {
-      isOpen = true;
-      closeReason = null;
       label = "Öppet nu";
-    } else if (manualOverride === "closed") {
-      isOpen = false;
+    } else if (isRestaurantOpen && !onlineOrderingEnabled) {
       closeReason = "manual";
-      label = "Stängt för beställningar";
-    } else if (!onlineOrderingEnabled && isOpenBySchedule) {
-      isOpen = false;
+      label = "Öppet nu – onlinebeställningar pausade";
+    } else if (manualOverride === "closed" || !onlineOrderingEnabled) {
       closeReason = "manual";
       label = "Stängt för beställningar";
     } else {
-      isOpen = isOpenBySchedule;
       if (!isOpen) {
         closeReason = "schedule";
         label = scheduleStatus.label;
@@ -62,6 +61,8 @@ export async function GET() {
       onlineOrderingEnabled,
       manualOverride,
       isOpenBySchedule,
+      isRestaurantOpen,
+      canAcceptOnlineOrders: canOrder,
       isOpen,
       label,
       scheduleLabel: scheduleStatus.label,
@@ -82,6 +83,8 @@ export async function GET() {
     return json({
       onlineOrderingEnabled: true,
       isOpenBySchedule: scheduleStatus.isOpen,
+      isRestaurantOpen: scheduleStatus.isOpen,
+      canAcceptOnlineOrders: scheduleStatus.isOpen,
       isOpen: scheduleStatus.isOpen,
       label: scheduleStatus.label,
       scheduleLabel: scheduleStatus.label,

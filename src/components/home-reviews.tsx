@@ -53,7 +53,7 @@ export function HomeReviews() {
     <section aria-labelledby="reviews-title" className="bg-[#fbf9f5] py-10 sm:py-16 border-b border-[#ede6da]">
       <div className="mx-auto w-full max-w-[1760px] px-3 sm:px-5 lg:px-7">
         
-        {/* Section Header with Live Google Badge & Navigation Controls */}
+        {/* Section Header with Google review summary & navigation controls */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6" data-reveal="fade-up">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-gold-deep">
@@ -66,7 +66,7 @@ export function HomeReviews() {
               Älskat av <span className="text-gold-deep italic lowercase font-serif tracking-normal">Vintrosa</span>
             </h2>
             
-            {/* Real Google Rating Badge from Google Business Profile */}
+            {/* Google rating summary (maintained as page content) */}
             <div className="mt-2 sm:mt-2.5">
               <a
                 href={reviewsGoogleUrl}

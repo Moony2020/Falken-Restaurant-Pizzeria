@@ -178,7 +178,7 @@ export function AdminHoursTab() {
           <span
             aria-hidden="true"
             className={`size-2.5 rounded-full ${
-              liveStatus?.isOpen ? "bg-[#4caf73] animate-pulse" : "bg-[#ce2b37]"
+              liveStatus?.isRestaurantOpen ? "bg-[#4caf73] animate-pulse" : "bg-[#ce2b37]"
             }`}
           />
           <span className="font-semibold text-[#1f2328]">
@@ -241,7 +241,7 @@ export function AdminHoursTab() {
               >
                 <div>
                   <div className="font-semibold text-[#236b3b]">Tvinga Öppet nu</div>
-                  <div className="text-[11px] text-[#7c828d]">Öppnar beställningar direkt oavsett schema</div>
+                  <div className="text-[11px] text-[#7c828d]">Öppnar restaurangen och tar emot beställningar direkt, oavsett schema.</div>
                 </div>
                 {manualOverride === "open" && <span className="text-[#4caf73] font-bold">✓</span>}
               </button>

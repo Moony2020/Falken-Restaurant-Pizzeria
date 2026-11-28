@@ -182,14 +182,14 @@ export function HomeVisit() {
             {status && (
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold shadow-xs ${
-                  status.isOpen
+                  status.isRestaurantOpen
                     ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                     : "bg-amber-50 text-amber-900 border border-amber-200"
                 }`}
               >
                 <span
                   className={`size-2 rounded-full ${
-                    status.isOpen ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                    status.isRestaurantOpen ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
                   }`}
                   aria-hidden="true"
                 />
@@ -199,10 +199,10 @@ export function HomeVisit() {
           </div>
 
           <h3 className="mt-2 font-display text-2xl sm:text-3xl lg:text-[2.1rem] font-normal uppercase tracking-wide text-ink">
-            {status ? (status.isOpen ? "Vi har öppet" : "Vi har stängt") : "Öppettider"}
+            {status ? (status.isRestaurantOpen ? "Vi har öppet" : "Vi har stängt") : "Öppettider"}
           </h3>
           <p className="mt-2 text-xs sm:text-sm text-muted leading-relaxed">
-            {status && !status.isOpen
+            {status && !status.isRestaurantOpen
               ? "Välkommen åter under våra ordinarie öppettider. Dagens lunch serveras vardagar 11:00–14:00."
               : "Välkommen under våra ordinarie öppettider. Dagens lunch serveras vardagar 11:00–14:00."}
           </p>

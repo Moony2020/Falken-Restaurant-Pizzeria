@@ -97,6 +97,9 @@ export async function PATCH(request: Request) {
     if (parsed.data.manualOverride !== undefined) {
       updateFields.manualOverride =
         parsed.data.manualOverride === "auto" ? null : parsed.data.manualOverride;
+      if (parsed.data.manualOverride === "open") {
+        updateFields.onlineOrderingEnabled = true;
+      }
     }
 
     if (parsed.data.onlineOrderingEnabled !== undefined) {
