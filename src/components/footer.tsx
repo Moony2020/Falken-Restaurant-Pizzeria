@@ -11,7 +11,7 @@ export function Footer() {
 
   return (
     <footer className="bg-ink text-ivory">
-      <div className="wrap grid gap-12 py-16 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1.2fr_1.2fr]">
+      <div className="wrap grid gap-10 py-14 sm:grid-cols-2 sm:gap-x-12 sm:gap-y-10 lg:grid-cols-[1.3fr_0.8fr_1.45fr_1.35fr] lg:gap-10 xl:gap-12 lg:py-16">
         <div className="space-y-5">
           <Logo />
           <p className="max-w-xs text-sm leading-relaxed text-muted-dark">
@@ -69,20 +69,21 @@ export function Footer() {
               <PhoneIcon className="size-5 shrink-0 text-gold" />
               {settings.phone}
             </a>
-            <a href={`mailto:${settings.email}`} className="flex items-center gap-3 break-all hover:text-gold">
+            <a href={`mailto:${settings.email}`} className="flex items-center gap-3 hover:text-gold">
               <MailIcon className="size-5 shrink-0 text-gold" />
-              {settings.email}
+              <span className="break-words [word-break:break-word]">{settings.email}</span>
             </a>
           </address>
         </div>
 
-        <div>
+        <div className="max-w-xs sm:max-w-sm">
           <h2 className="font-display text-xl text-gold">Öppettider</h2>
           <dl className="mt-4 space-y-2 text-sm">
             {hoursDisplay[CURRENT_SEASON].map((row) => (
-              <div key={row.days} className="flex justify-between gap-4">
-                <dt className="text-ivory/85">{row.days}</dt>
-                <dd className="tabular-nums text-muted-dark">{row.time}</dd>
+              <div key={row.days} className="flex items-baseline justify-between gap-3">
+                <dt className="text-ivory/85 shrink-0">{row.days}</dt>
+                <span className="flex-1 border-b border-dotted border-white/15 mb-1" aria-hidden="true" />
+                <dd className="tabular-nums font-mono text-muted-dark shrink-0">{row.time}</dd>
               </div>
             ))}
           </dl>

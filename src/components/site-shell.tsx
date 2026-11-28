@@ -23,12 +23,6 @@ export function SiteShell({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <a
-        href="#innehall"
-        className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-4 focus-visible:z-[100] focus-visible:rounded-md focus-visible:bg-[#14161a] focus-visible:text-[#fbf9f5] focus-visible:border focus-visible:border-[#c5a059] focus-visible:px-4 focus-visible:py-1.5 focus-visible:text-xs focus-visible:font-semibold focus-visible:shadow-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c5a059]"
-      >
-        Hoppa till innehållet
-      </a>
       <Suspense fallback={<div className="h-16 bg-ink-2 sm:h-20" aria-hidden="true" />}>
         <Header />
       </Suspense>
